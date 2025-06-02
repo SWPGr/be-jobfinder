@@ -2,8 +2,10 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.ProfileRequest;
 import com.example.jobfinder.dto.ProfileResponse;
+import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetail;
+import com.example.jobfinder.repository.EducationRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -17,10 +19,12 @@ import java.util.List;
 public class ProfileService {
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
+    private final EducationRepository educationRepository;
 
-    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository) {
+    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository, EducationRepository educationRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
+        this.educationRepository = educationRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
@@ -38,6 +42,11 @@ public class ProfileService {
 
         String roleName = user.getRole().getName();
         if (roleName.equals("JOB_SEEKER")) {
+            if (request.getEducation() != null) {
+                Education education = educationRepository.findById(request.getEducation())
+                        .orElseThrow(() -> new Exception("invalid education id"));
+                userDetail.setEducation(education);
+            }
             userDetail.setLocation(request.getLocation());
             userDetail.setFullName(request.getFullName());
             userDetail.setPhone(request.getPhone());
@@ -83,6 +92,7 @@ public class ProfileService {
         response.setEmail(user.getEmail());
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
+        response.setEducation(userDetail.getEducation().getId());
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
         response.setYearsExperience(userDetail.getYearsExperience());
