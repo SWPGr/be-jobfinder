@@ -1,5 +1,6 @@
 package com.example.jobfinder.dto;
 
+import com.example.jobfinder.model.Education;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +13,7 @@ public class ProfileResponse {
     private String roleName;
     private String location;
     private String fullName;
+    private Long education;
     private String phone;
     private Integer yearsExperience;
     private String resumeUrl;
