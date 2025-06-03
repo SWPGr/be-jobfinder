@@ -11,8 +11,10 @@ import lombok.Setter;
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @Column(unique = true, length = 50)
-    private String name;
+    Long id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    String name; // e.g., "JOB_SEEKER", "EMPLOYER", "ADMIN"
+
 
 }

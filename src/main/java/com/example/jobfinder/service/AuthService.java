@@ -4,7 +4,7 @@ import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.*;
 import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
+import com.example.jobfinder.model.UserDetails;
 import com.example.jobfinder.repository.RoleRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
@@ -60,7 +60,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        UserDetail userDetail = new UserDetail();
+        UserDetails userDetail = new UserDetails();
         userDetail.setUser(user);
 
         userDetailsRepository.save(userDetail);
