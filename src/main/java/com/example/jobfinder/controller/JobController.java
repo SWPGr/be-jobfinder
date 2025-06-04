@@ -1,8 +1,8 @@
 package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.JobCreationRequest;
-import com.example.jobfinder.dto.JobResponse;
-import com.example.jobfinder.dto.JobUpdateRequest;
+import com.example.jobfinder.dto.job.JobCreationRequest;
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.service.JobService;
 import jakarta.validation.Valid;
@@ -38,8 +38,7 @@ public class JobController {
     }
 
     @PutMapping("/{jobId}")
-    public JobResponse updateJob(@PathVariable Long jobId, @RequestBody JobUpdateRequest request) { // ID là Long
-
+    public JobResponse updateJob(@PathVariable Long jobId, @RequestBody JobUpdateRequest request) {
         return jobService.updateJob(jobId, request);
     }
 

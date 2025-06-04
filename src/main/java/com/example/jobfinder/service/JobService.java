@@ -1,9 +1,9 @@
 package com.example.jobfinder.service;
 
 
-import com.example.jobfinder.dto.JobCreationRequest;
-import com.example.jobfinder.dto.JobResponse;
-import com.example.jobfinder.dto.JobUpdateRequest;
+import com.example.jobfinder.dto.job.JobCreationRequest;
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -39,7 +39,7 @@ public class JobService {
         User employer = userRepository.findByEmail(currentUsername);
 
         if (employer == null) {
-            throw new AppException(ErrorCode.USER_NOT_EXIST); // Thay vì USER_EXIST
+            throw new AppException(ErrorCode.USER_NOT_FOUND); // Thay vì USER_EXIST
         }
 
         // 3. Lấy Category Entity từ ID
@@ -55,7 +55,7 @@ public class JobService {
         }
 
         if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
-            throw new AppException(ErrorCode.JOB_EXIST);
+            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
         }
 
         JobLevel jobLevel = jobLevelRepository.findById(jobCreationRequest.getJobLevelId())
@@ -85,8 +85,8 @@ public class JobService {
 
         jobMapper.updateJob(job, request);
 
-        if (request.getEmployer().getId() != null && !request.getEmployer().getId().equals(job.getEmployer().getId())) {
-            User newEmployer = userRepository.findById(request.getEmployer().getId())
+        if (request.getEmployerId() != null && !request.getEmployerId().equals(job.getEmployer().getId())) {
+            User newEmployer = userRepository.findById(request.getEmployerId())
                     .orElseThrow(() -> new AppException(ErrorCode.EMPLOYER_NOT_FOUND));
 
             if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"COMPANY_ADMIN".equals(newEmployer.getRole().getName())) {

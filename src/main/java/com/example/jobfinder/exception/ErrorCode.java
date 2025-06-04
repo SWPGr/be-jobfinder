@@ -1,51 +1,104 @@
 package com.example.jobfinder.exception;
 
+import org.springframework.http.HttpStatus;
+
 public enum ErrorCode {
 
     //1000 _> Success
 
-    // General Errors (Lỗi chung)
-    UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error"), // Lỗi không phân loại
-    INVALID_KEY(1001, "invalid key"), // Key không hợp lệ (ví dụ: trong trường hợp JWT)
+    // Mã 1xxx: Các lỗi hệ thống, không phân loại hoặc liên quan đến request/response chung.
+    UNCATEGORIZED_EXCEPTION(1000, "Uncategorized error"), // Lỗi không phân loại
+    INVALID_KEY(1001, "Invalid key"), // Key không hợp lệ (ví dụ: trong JWT)
+    INVALID_PARAMETER(1002, "Invalid parameter"), // Tham số không hợp lệ (có thể kèm thông tin chi tiết từ validation)
+    INVALID_INPUT_DATA(1003, "Invalid input data"), // Dữ liệu đầu vào chung không hợp lệ (validation tổng quát)
 
-    // User-related Errors (Lỗi liên quan đến User)
-    USER_EXIST(1002, "user existed"), // Người dùng đã tồn tại (khi đăng ký với email/username đã có)
-    USERNAME_INVALID(1003, "username is invalid, must at least 3 characters"), // Username không hợp lệ
-    PASSWORD_INVALID(1004, "password is invalid, must at more than 8 characters"), // Mật khẩu không hợp lệ
-    USER_NOT_EXIST(1005, "user not existed"), // Người dùng không tồn tại (khi tìm kiếm user không có)
-    UNAUTHENTICATED(1006, "Unauthenticated"), // Chưa xác thực (ví dụ: thiếu token, token hết hạn)
-    UNAUTHORIZED(1007, "You do not have permission"), // Không có quyền (đã xác thực nhưng không đủ quyền)
+    // -----------------------------------------------------------
+    // Nhóm lỗi xác thực & phân quyền (Authentication & Authorization Errors) - Mã từ 2000 đến 2999
+    // -----------------------------------------------------------
+    // Mã 2xxx: Lỗi liên quan đến đăng nhập, đăng ký, token, quyền hạn.
+    EMAIL_EXISTED(2001, "Email already exists"), // User đã tồn tại (khi đăng ký với email đã có)
+    USERNAME_INVALID(2002, "Username is invalid, must be at least 3 characters"),
+    PASSWORD_INVALID(2003, "Password is invalid, must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character"),
+    USER_NOT_FOUND(2004, "User not found"), // Người dùng không tồn tại (khi tìm kiếm user không có)
+    UNAUTHENTICATED(2005, "Unauthenticated"), // Chưa xác thực (ví dụ: thiếu token, token hết hạn)
+    UNAUTHORIZED(2006, "You do not have permission to perform this action"), // Không có quyền (đã xác thực nhưng không đủ quyền)
+    CREDENTIAL_INVALID(2007, "Invalid username or password"), // Dùng cho lỗi đăng nhập sai tài khoản/mật khẩu
+    USER_NOT_VERIFIED(2008, "User not verified, please verify your email"), // Tài khoản chưa được xác minh
+    INVALID_TOKEN(2009, "Invalid or expired token"), // Dùng cho JWT token không hợp lệ/hết hạn
+    OLD_PASSWORD_NOT_MATCH(2010, "Old password is not correct"), // Khi đổi mật khẩu cũ không đúng
+    USER_EXIST(2011, "User already exists"),
 
-    // Job-related Errors (Lỗi liên quan đến Job)
-    JOB_NOT_FOUND(1008, "Job not found"), // Job không tồn tại (đã đổi exsited thành found cho đúng ngữ pháp)
-    JOB_INVALID_INPUT(1009, "Invalid job input data"), // Dữ liệu đầu vào cho Job không hợp lệ (validation)
-    EMPLOYER_NOT_FOUND(1010, "Employer not found"), // Employer không tồn tại khi tạo/cập nhật Job
-    JOB_EXIST(1023, "Job existed"),
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến quản lý danh mục (Category) - Mã từ 3000 đến 3099
+    // -----------------------------------------------------------
+    // Mã 30xx
+    CATEGORY_NOT_FOUND(3000, "Category not found"),
+    CATEGORY_NAME_EXISTED(3001, "Category name already exists"), // Tên Category đã tồn tại (khi tạo/cập nhật)
+    CATEGORY_IN_USE(3002, "Category cannot be deleted as it is currently in use"), // Category đang được sử dụng, không thể xóa
 
-    // Category-relatded Errors (Lỗi liên quan đến Category)
-    // Category-relatded Errors (Lỗi liên quan đến Category)
-    CATEGORY_NOT_FOUND(1011, "Category not found"), // Category không tồn tại
-    CATEGORY_NAME_EXISTED(1012, "Category name existed"), // Tên Category đã tồn tại (khi tạo Category mới)
-    CATEGORY_INVALID_INPUT(1013, "Invalid category input data"), // Dữ liệu đầu vào cho Category không hợp lệ
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến cấp độ công việc (Job Level) - Mã từ 3100 đến 3199
+    // -----------------------------------------------------------
+    // Mã 31xx
+    JOB_LEVEL_NOT_FOUND(3100, "Job Level not found"),
+    JOB_LEVEL_NAME_EXISTED(3101, "Job Level name already exists"),
+    JOB_LEVEL_IN_USE(3102, "Job Level cannot be deleted as it is currently in use"),
 
-    // Role-related Errors (Lỗi liên quan đến Role)
-    ROLE_NOT_FOUND(1014, "Role not found"), // Role không tồn tại
-    ROLE_NAME_EXISTED(1015, "Role name existed"), // Tên Role đã tồn tại
-    ROLE_INVALID_INPUT(1016, "Invalid role input data"), // Dữ liệu đầu vào cho Role không hợp lệ
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến loại công việc (Job Type) - Mã từ 3200 đến 3299
+    // -----------------------------------------------------------
+    // Mã 32xx
+    JOB_TYPE_NOT_FOUND(3200, "Job Type not found"),
+    JOB_TYPE_NAME_EXISTED(3201, "Job Type name already exists"),
+    JOB_TYPE_IN_USE(3202, "Job Type cannot be deleted as it is currently in use"),
 
-    // Application-related Errors (Lỗi liên quan đến Application - Hồ sơ ứng tuyển)
-    APPLICATION_NOT_FOUND(1017, "Application not found"), // Hồ sơ ứng tuyển không tồn tại
-    APPLICATION_ALREADY_EXISTS(1018, "Application already exists for this job and user"), // Đã nộp hồ sơ cho công việc này
-    INVALID_APPLICATION_STATUS(1019, "Invalid application status transition"), // Chuyển trạng thái hồ sơ không hợp lệ
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến Education (Education) - Mã từ 3300 đến 3399 <-- MỚI
+    // -----------------------------------------------------------
+    EDUCATION_NOT_FOUND(3300, "Education not found"),
+    EDUCATION_NAME_EXISTED(3301, "Education name already exists"),
+    EDUCATION_IN_USE(3302, "Education cannot be deleted as it is currently in use"), // Nếu Education được dùng bởi UserProfile/Job
 
-    // Common Validation Errors (Lỗi Validation chung)
-    INVALID_PARAMETER(1020, "Invalid parameter: "), // Tham số không hợp lệ (có thể thêm tên tham số)
-    EMAIL_INVALID(1021, "Email is invalid"), // Email không đúng định dạng
-    PHONE_NUMBER_INVALID(1022, "Phone number is invalid"); // Số điện thoại không đúng định dạng
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến vai trò (Role) - Mã từ 4000 đến 4099
+    // -----------------------------------------------------------
+    // Mã 40xx
+    ROLE_NOT_FOUND(4000, "Role not found"),
+    ROLE_NAME_EXISTED(4001, "Role name already exists"),
+    ROLE_IN_USE(4002, "Role cannot be deleted as it is currently assigned to users"), // Role đang được gán cho user
+
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến công việc (Job) - Mã từ 5000 đến 5099
+    // -----------------------------------------------------------
+    // Mã 50xx
+    JOB_NOT_FOUND(5000, "Job not found"),
+    JOB_ALREADY_EXISTS(5001, "Job with this title for this employer already exists"),
+    INVALID_SALARY_RANGE(5002, "Minimum salary cannot be greater than maximum salary"),
+    JOB_UPDATE_NOT_ALLOWED(5003, "You are not allowed to update this job"),
+    JOB_DELETE_NOT_ALLOWED(5004, "You are not allowed to delete this job"),
+    EMPLOYER_NOT_FOUND(5005, "Employer not found"), // Employer không tồn tại khi tạo/cập nhật Job
+
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến hồ sơ ứng tuyển (Application) - Mã từ 6000 đến 6099
+    // -----------------------------------------------------------
+    // Mã 60xx
+    APPLICATION_NOT_FOUND(6000, "Application not found"),
+    APPLICATION_ALREADY_SUBMITTED(6001, "Application already exists for this job and user"),
+    INVALID_APPLICATION_STATUS_TRANSITION(6002, "Invalid application status transition"),
+
+    // -----------------------------------------------------------
+    // Nhóm lỗi liên quan đến Profile người dùng (User Details/Profile) - Mã từ 7000 đến 7099
+    // -----------------------------------------------------------
+    // Mã 70xx
+    PROFILE_NOT_FOUND(7000, "User profile not found"),
+    PROFILE_UPDATE_NOT_ALLOWED(7001, "You are not allowed to update this profile"),
+    EMAIL_INVALID(7002, "Email is invalid"),
+    PHONE_NUMBER_INVALID(7003, "Phone number is invalid"),
+    ADDRESS_INVALID(7004, "Address is invalid"),
+    DATE_OF_BIRTH_INVALID(7005, "Date of birth is invalid"),
+    GENDER_INVALID(7006, "Gender is invalid");
 
 
-
-    ;
 
     ErrorCode(int errorCode, String errorMessage) {
         this.errorCode = errorCode;

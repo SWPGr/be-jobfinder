@@ -1,22 +1,22 @@
+// D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\model\Category.java
 package com.example.jobfinder.model;
 
-
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.*; // Đảm bảo import AccessLevel
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "categories")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class Category {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Getter
+@Setter
+@SuperBuilder
+@ToString(callSuper = true)
+@AttributeOverride(name = "name", column = @Column(name = "category_name", unique = true, nullable = false, length = 100))
+public class Category extends BaseNameEntity {
+    public Category() {
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String name;
+    }
 }

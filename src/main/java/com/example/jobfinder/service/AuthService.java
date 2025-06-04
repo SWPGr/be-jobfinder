@@ -1,7 +1,7 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.config.JwtUtil;
-import com.example.jobfinder.dto.*;
+import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetails;
@@ -15,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class AuthService {
@@ -44,10 +44,7 @@ public class AuthService {
             throw new Exception("Email already exists");
         }
 
-        Role role = roleRepository.findByName(request.getRoleName());
-        if(role == null) {
-            throw new Exception("Role not found");
-        }
+        Role role = roleRepository.findByName(request.getRoleName()).orElseThrow(() -> new Exception("Role not found"));
 
         User user = new User();
         user.setEmail(request.getEmail());

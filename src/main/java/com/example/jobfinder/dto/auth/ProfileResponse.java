@@ -1,6 +1,5 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.auth;
 
-import com.example.jobfinder.model.Education;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,11 +7,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @Data
-public class ProfileRequest {
+public class ProfileResponse {
+    private String email;
+    private String roleName;
     private String location;
     private String fullName;
-    private String phone;
     private Long education;
+    private String phone;
     private Integer yearsExperience;
     private String resumeUrl;
     private String companyName;

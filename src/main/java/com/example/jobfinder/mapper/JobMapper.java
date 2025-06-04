@@ -1,9 +1,9 @@
 package com.example.jobfinder.mapper;
 
 
-import com.example.jobfinder.dto.JobCreationRequest;
-import com.example.jobfinder.dto.JobResponse;
-import com.example.jobfinder.dto.JobUpdateRequest;
+import com.example.jobfinder.dto.job.JobCreationRequest;
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.model.Job;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

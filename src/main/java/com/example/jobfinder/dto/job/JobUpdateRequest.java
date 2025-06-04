@@ -1,18 +1,14 @@
-package com.example.jobfinder.dto;
-import com.example.jobfinder.model.Category;
-import com.example.jobfinder.model.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+package com.example.jobfinder.dto.job;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-
-public class JobResponse {
+public class JobUpdateRequest {
     private Long id;
     private String title;
     private String description;
@@ -31,3 +27,5 @@ public class JobResponse {
     private Long jobTypeId;  // <-- Đảm bảo tên là 'jobTypeId'
     private String jobTypeName;
 }
+
+

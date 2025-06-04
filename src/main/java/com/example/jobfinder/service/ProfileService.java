@@ -1,7 +1,7 @@
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.ProfileRequest;
-import com.example.jobfinder.dto.ProfileResponse;
+import com.example.jobfinder.dto.auth.ProfileRequest;
+import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetails;

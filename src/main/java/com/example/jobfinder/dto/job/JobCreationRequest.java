@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.job;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
