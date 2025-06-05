@@ -2,9 +2,11 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.*;
 import com.example.jobfinder.service.AuthService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.Map;
 
 @RestController
@@ -30,7 +32,9 @@ public class AuthController {
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String token)throws Exception {
         authService.verifyEmail(token);
-        return ResponseEntity.ok("Email verification successfully.");
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create("http://localhost:3030/api/auth/verify"))
+                .build();
     }
 
     @PostMapping("/resend-verification")
