@@ -2,6 +2,7 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.JobRequest;
 import com.example.jobfinder.model.Job;
+import com.example.jobfinder.service.ApplicationService;
 import com.example.jobfinder.service.JobService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,9 +19,11 @@ public class JobController {
         this.jobService = jobService;
     }
 
+
     @PostMapping
     public ResponseEntity<Job> createJob(@RequestBody JobRequest request) {
         Job job = jobService.createJob(request);
         return ResponseEntity.ok(job);
     }
+
 }
