@@ -32,24 +32,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/**",      // Các API liên quan đến xác thực (đăng ký, đăng nhập, quên mật khẩu...)
-                                "/api/debug/**",     // Các endpoint debug (nếu có và bạn muốn cho phép truy cập public)
-                                "/api/profiles/me",  // Có thể bạn muốn /api/profiles/me yêu cầu xác thực, cân nhắc lại.
-                                // Nếu /api/profiles/** là public, thì /me cũng public.
-                                "/api/profiles/**",  // Các API liên quan đến hồ sơ người dùng (nếu có public profile)
-
-                                "/api/job/**",       // Các API liên quan đến Job (ví dụ: xem danh sách jobs)
-                                "/api/categories/**", // Các API liên quan đến Category (ví dụ: xem danh sách categories)
-
-                                // THÊM CÁC ĐƯỜNG DẪN MỚI TẠI ĐÂY:
-                                "/api/job-levels/**", // API cho Job Levels (ví dụ: xem danh sách job levels)
-                                "/api/job-types/**",  // API cho Job Types (ví dụ: xem danh sách job types)
-                                "/api/educations/**", // API cho Education (ví dụ: xem danh sách educations)
-                                "/swagger-ui/**",     // Swagger UI documentation
-                                "/v3/api-docs/**",    // OpenAPI 3 documentation
-                                "/error"              // Đường dẫn mặc định của Spring Boot cho lỗi
-                        ).permitAll()
+                        .requestMatchers("/api/auth/**", "/api/debug/**", "/api/profiles/**", "/api/profiles/me").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -64,8 +48,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3030",
-                "http://localhost:8080",
-                "http://localhost:3000"
+                "http://localhost:8080"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));

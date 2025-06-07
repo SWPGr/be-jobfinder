@@ -6,11 +6,17 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "applications")
+@Table(name = "applications", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"job_seeker_id", "job_id"})
+})
+@Getter
+@Setter
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

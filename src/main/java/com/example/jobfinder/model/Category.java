@@ -1,4 +1,3 @@
-// D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\model\Category.java
 package com.example.jobfinder.model;
 
 import jakarta.persistence.AttributeOverride;

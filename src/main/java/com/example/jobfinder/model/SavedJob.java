@@ -10,27 +10,25 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "saved_jobs")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
+@Table(name = "saved_jobs", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"job_seeker_id", "job_id"})
+})
+@Getter
+@Setter
 public class SavedJob {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "job_seeker_id", nullable = false)
-    User jobSeeker;
+    private User jobSeeker;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "job_id", nullable = false)
-    Job job;
+    private Job job;
 
-    @CreatedDate
-    @Column(name = "saved_at", nullable = false, updatable = false)
-    LocalDateTime savedAt;
+    @Column(name = "saved_at")
+    private LocalDateTime savedAt;
+
 }

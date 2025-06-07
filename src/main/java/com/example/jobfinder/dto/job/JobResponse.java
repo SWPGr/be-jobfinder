@@ -1,6 +1,11 @@
 package com.example.jobfinder.dto.job;
+import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.user.UserResponse;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -15,15 +20,15 @@ public class JobResponse {
     private String location;
     private Double salaryMin;
     private Double salaryMax;
-    private String createdAt; // Hoặc LocalDateTime nếu bạn giữ nguyên kiểu
-    private String updatedAt; // Hoặc LocalDateTime nếu bạn giữ nguyên kiểu
 
-    // Các trường ID và tên của các mối quan hệ
-    private Long employerId;
-    private Long categoryId; // <-- Đảm bảo tên là 'categoryId'
-    private String categoryName;
-    private Long jobLevelId; // <-- Đảm bảo tên là 'jobLevelId'
-    private String jobLevelName;
-    private Long jobTypeId;  // <-- Đảm bảo tên là 'jobTypeId'
-    private String jobTypeName;
+    // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedAt; // <-- PHẢI CÓ TRƯỜNG NÀY VỚI KIỂU NÀY
+
+    UserResponse employer; // <-- Phải là EmployerDto, không phải Long employerId
+    SimpleNameResponse category; // <-- Phải là CategoryDto, không phải Long categoryId, String categoryName
+    SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
+    SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
 }
