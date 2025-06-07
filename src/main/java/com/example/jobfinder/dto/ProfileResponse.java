@@ -12,6 +12,7 @@ public class ProfileResponse {
     private String roleName;
     private String location;
     private String fullName;
+    private Long education;
     private String phone;
     private Integer yearsExperience;
     private String resumeUrl;

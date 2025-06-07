@@ -11,6 +11,7 @@ public class ProfileRequest {
     private String location;
     private String fullName;
     private String phone;
+    private Long education;
     private Integer yearsExperience;
     private String resumeUrl;
     private String companyName;
