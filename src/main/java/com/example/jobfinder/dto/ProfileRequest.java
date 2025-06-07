@@ -1,6 +1,5 @@
 package com.example.jobfinder.dto;
 
-import com.example.jobfinder.model.Education;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;

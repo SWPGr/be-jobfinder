@@ -2,7 +2,6 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.JobRequest;
 import com.example.jobfinder.model.Job;
-import com.example.jobfinder.service.ApplicationService;
 import com.example.jobfinder.service.JobService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
