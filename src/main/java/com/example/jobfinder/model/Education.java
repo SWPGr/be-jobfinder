@@ -15,7 +15,5 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 @AttributeOverride(name = "name", column = @Column(name = "education_name", unique = true, nullable = false, length = 100))
 public class Education extends BaseNameEntity {
-    public Education() {
-
-    }
+    public Education() {}
 }

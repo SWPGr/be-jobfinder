@@ -18,5 +18,4 @@ public class JobLevel extends BaseNameEntity {
     public JobLevel() {
 
     }
-    // ...
 }
