@@ -2,7 +2,11 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.ApplicationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.user.UserResponse;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
+import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.User;
@@ -24,8 +28,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ApplicationService {
     private static final Logger log = LoggerFactory.getLogger(ApplicationService.class);
@@ -34,6 +38,7 @@ public class ApplicationService {
      final UserRepository userRepository;
      final JobRepository jobRepository;
      final JobMapper jobMapper;
+     final UserMapper userMapper;
 
     public Application applyJob(ApplicationRequest request) throws Exception {
         log.debug("Processing job application with request: {}", request);
@@ -84,5 +89,23 @@ public class ApplicationService {
 
         // Ánh xạ danh sách Job Entity sang danh sách JobResponse DTO
         return jobMapper.toJobResponseList(appliedJobs);
+    }
+
+    public List<UserResponse> getCandidatesByJobId(Long jobId) {
+        // Kiểm tra Job có tồn tại không
+        jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        // Lấy tất cả các Application cho Job này
+        List<Application> applications = applicationRepository.findByJob_Id(jobId);
+
+        // Chuyển đổi danh sách Application thành danh sách Job Seekers (User)
+        // và sau đó map sang UserResponse DTO
+        List<User> jobSeekers = applications.stream()
+                .map(Application::getJobSeeker)
+                .collect(Collectors.toList());
+
+        // Sử dụng UserMapper để chuyển đổi List<User> sang List<UserResponse>
+        return userMapper.toUserResponseList(jobSeekers); // <-- Cần có toUserResponseList trong UserMapper
     }
 }

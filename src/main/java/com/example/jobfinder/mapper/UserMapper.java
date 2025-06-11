@@ -8,11 +8,16 @@ import com.example.jobfinder.dto.SimpleNameResponse; // <-- Import SimpleNameRes
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring",
         uses = {SimpleNameMapper.class}) // <-- Rất quan trọng: UserMapper sử dụng SimpleNameMapper
 // để ánh xạ trường 'role'
 public interface UserMapper {
+    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
+
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "email", source = "email")
@@ -20,7 +25,5 @@ public interface UserMapper {
     @Mapping(target = "role", source = "role")
     UserResponse toUserResponse(User user);
 
-    // Bạn cũng có thể thêm một phương thức để ánh xạ Role Entity sang SimpleNameResponse
-    // nếu bạn không muốn SimpleNameMapper xử lý Role, nhưng dùng SimpleNameMapper là tốt hơn
-    // SimpleNameResponse toSimpleNameResponse(Role role); // Có thể đặt ở đây hoặc trong SimpleNameMapper
+    List<UserResponse> toUserResponseList(List<User> users);
 }

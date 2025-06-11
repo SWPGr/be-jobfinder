@@ -1,25 +1,34 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.SavedJobRequest;
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.SavedJob;
 import com.example.jobfinder.service.SavedJobService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/save")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SavedJobController {
 
-    private final SavedJobService savedJobService;
+    final SavedJobService savedJobService;
 
-    public SavedJobController(SavedJobService savedJobService) {
-        this.savedJobService = savedJobService;
+    @GetMapping("/{jobSeekerId}")
+    public ResponseEntity<List<JobResponse>> getSavedJobsForJobSeeker(@PathVariable Long jobSeekerId) { // <-- Thay đổi kiểu trả về
+        List<JobResponse> savedJobs = savedJobService.getSavedJobsByJobSeekerId(jobSeekerId);
+        return ResponseEntity.ok(savedJobs);
     }
 
-    @PostMapping("/save")
+    @PostMapping()
     public ResponseEntity<SavedJob> saveJob(@RequestBody SavedJobRequest request) {
         SavedJob savedJob = savedJobService.savedJob(request);
         return ResponseEntity.ok(savedJob);

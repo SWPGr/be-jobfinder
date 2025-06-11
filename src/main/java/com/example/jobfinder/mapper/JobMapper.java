@@ -16,6 +16,7 @@ import java.util.List;
 @Mapper(componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
         uses = {SimpleNameMapper.class, UserMapper.class}) // Đảm bảo các mapper này tồn tại và được import đúng
+
 public interface JobMapper {
 
     @Mapping(target = "id", ignore = true) // ID được DB tạo
