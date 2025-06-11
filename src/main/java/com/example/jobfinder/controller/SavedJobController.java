@@ -3,11 +3,9 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.SavedJobRequest;
 import com.example.jobfinder.model.SavedJob;
 import com.example.jobfinder.service.SavedJobService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -19,9 +17,14 @@ public class SavedJobController {
         this.savedJobService = savedJobService;
     }
 
-    @PostMapping("/save")
+    @PostMapping("/saved-jobs")
     public ResponseEntity<SavedJob> saveJob(@RequestBody SavedJobRequest request) {
         SavedJob savedJob = savedJobService.savedJob(request);
         return ResponseEntity.ok(savedJob);
+    }
+    @DeleteMapping("/saved-jobs/{jobId}")
+    public ResponseEntity<Void> unSaveJob(@Valid @RequestBody SavedJobRequest request) {
+        savedJobService.unsaveJob(request);
+        return ResponseEntity.ok().build();
     }
 }

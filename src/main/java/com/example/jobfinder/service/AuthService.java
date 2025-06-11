@@ -108,7 +108,7 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
     }
 
-    public void forgotPassowrd(ForgotPasswordRequest request) throws Exception {
+    public void forgotPassword(ForgotPasswordRequest request) throws Exception {
         User user = userRepository.findByEmail(request.getEmail());
         if(user == null) {
             throw new Exception("User not found");
