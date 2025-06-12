@@ -1,15 +1,13 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.SavedJobRequest;
+import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.JobResponse;
-import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.SavedJob;
 import com.example.jobfinder.service.SavedJobService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

@@ -1,9 +1,9 @@
 // D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\service\EducationService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.SimpleNameCreationRequest;
-import com.example.jobfinder.dto.SimpleNameUpdateRequest;
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
+import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.ErrorCode; // Cần import ErrorCode
 import com.example.jobfinder.mapper.EducationMapper; // Cần import EducationMapper
 import com.example.jobfinder.model.Education; // Cần import Education entity

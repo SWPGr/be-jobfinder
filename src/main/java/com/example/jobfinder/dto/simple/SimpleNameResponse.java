@@ -1,5 +1,5 @@
 // dto/response/SimpleNameResponse.java
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.simple;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

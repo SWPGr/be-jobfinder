@@ -96,7 +96,12 @@ public enum ErrorCode {
     PHONE_NUMBER_INVALID(7003, "Phone number is invalid"),
     ADDRESS_INVALID(7004, "Address is invalid"),
     DATE_OF_BIRTH_INVALID(7005, "Date of birth is invalid"),
-    GENDER_INVALID(7006, "Gender is invalid");
+    GENDER_INVALID(7006, "Gender is invalid"),
+
+    NOTIFICATION_NOT_FOUND(8000, "Notification not found"),
+    NOTIFICATION_MARK_READ_FAILED(8001, "Failed to mark notification as read"),
+    NOTIFICATION_DELETE_FAILED(8002, "Failed to delete notification"),
+    ;
 
 
 

@@ -1,6 +1,6 @@
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.SavedJobRequest;
+import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;

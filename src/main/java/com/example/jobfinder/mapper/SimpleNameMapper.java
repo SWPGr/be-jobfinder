@@ -1,7 +1,7 @@
 // D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\mapper\SimpleNameMapper.java
 package com.example.jobfinder.mapper;
 
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.model.Category;
 import com.example.jobfinder.model.JobLevel;
 import com.example.jobfinder.model.JobType;

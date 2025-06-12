@@ -1,7 +1,7 @@
 
 package com.example.jobfinder.dto.user;
 
-import com.example.jobfinder.dto.SimpleNameResponse; // <-- Import RoleResponse
+import com.example.jobfinder.dto.simple.SimpleNameResponse; // <-- Import RoleResponse
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

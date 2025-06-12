@@ -1,9 +1,9 @@
 // service/CategoryService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.SimpleNameCreationRequest;
-import com.example.jobfinder.dto.SimpleNameUpdateRequest;
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
+import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.CategoryMapper;
 import com.example.jobfinder.model.Category;

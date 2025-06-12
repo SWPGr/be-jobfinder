@@ -3,8 +3,6 @@ package com.example.jobfinder.mapper;
 
 import com.example.jobfinder.dto.user.UserResponse; // Import UserResponse
 import com.example.jobfinder.model.User; // Import User entity
-import com.example.jobfinder.model.Role; // <-- Import Role Entity (nếu bạn có)
-import com.example.jobfinder.dto.SimpleNameResponse; // <-- Import SimpleNameResponse
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -1,5 +1,5 @@
 package com.example.jobfinder.dto.job;
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;

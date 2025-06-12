@@ -1,8 +1,8 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.SimpleNameCreationRequest;
-import com.example.jobfinder.dto.SimpleNameUpdateRequest;
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
+import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.service.BaseNameService; // Vẫn dùng BaseNameService (abstract class)
 import com.example.jobfinder.dto.ApiResponse;
 import jakarta.validation.Valid;

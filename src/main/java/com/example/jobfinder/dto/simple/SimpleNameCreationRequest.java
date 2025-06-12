@@ -1,5 +1,5 @@
-// dto/request/SimpleNameUpdateRequest.java (thường giống Creation cho trường hợp này)
-package com.example.jobfinder.dto;
+// dto/request/SimpleNameCreationRequest.java
+package com.example.jobfinder.dto.simple;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,8 +11,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SimpleNameUpdateRequest {
-    @NotBlank(message = "NAME_BLANK")
-    @Size(min = 3, max = 100, message = "NAME_INVALID")
+public class SimpleNameCreationRequest {
+    @NotBlank(message = "Name cannot be blank")
+    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     String name;
 }

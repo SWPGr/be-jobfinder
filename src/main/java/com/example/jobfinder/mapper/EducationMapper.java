@@ -1,9 +1,9 @@
 // D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\mapper\EducationMapper.java
 package com.example.jobfinder.mapper;
 
-import com.example.jobfinder.dto.SimpleNameCreationRequest;
-import com.example.jobfinder.dto.SimpleNameUpdateRequest;
-import com.example.jobfinder.dto.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
+import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.model.Education;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

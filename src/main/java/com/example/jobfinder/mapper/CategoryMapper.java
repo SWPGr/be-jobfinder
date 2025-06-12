@@ -1,12 +1,11 @@
 package com.example.jobfinder.mapper;
-import com.example.jobfinder.dto.SimpleNameCreationRequest;
-import com.example.jobfinder.dto.SimpleNameResponse;
-import com.example.jobfinder.dto.SimpleNameUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
+import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
 import com.example.jobfinder.model.Category;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface CategoryMapper {
