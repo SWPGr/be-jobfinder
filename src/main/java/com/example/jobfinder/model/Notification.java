@@ -1,8 +1,10 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -23,15 +25,16 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+            @JsonBackReference //Bỏ tuần tự hóa gọi cha con cha con .....
     User user;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     String message;
 
     @Column(name = "is_read", nullable = false)
-    boolean isRead; // Mặc định là FALSE trong SQL
+    boolean isRead;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     LocalDateTime createdAt;
 }

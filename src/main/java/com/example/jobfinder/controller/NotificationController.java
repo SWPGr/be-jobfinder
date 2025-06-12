@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,21 +27,19 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<List<NotificationResponse>> getMyNotifications(Authentication authentication) {
         String userEmail = authentication.getName();
-        User user = userRepository.findByEmail(userEmail);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException(userEmail));
         Long userId = user.getId();
 
         List<NotificationResponse> notifications = notificationService.getNotificationsForUser(userId);
         return ResponseEntity.ok(notifications);
-
-//        Long userId = ((User) authentication.getPrincipal()).getId();
-//        List<NotificationResponse> notifications = notificationService.getNotificationsForUser(userId);
-//        return ResponseEntity.ok(notifications);
     }
 
     @GetMapping("/unread")
     public ResponseEntity<List<NotificationResponse>> getMyUnreadNotifications(Authentication authentication) {
         String userEmail = authentication.getName();
-        User user = userRepository.findByEmail(userEmail);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->  new UsernameNotFoundException(userEmail));
         Long userId = user.getId();
 
         List<NotificationResponse> notifications = notificationService.getUnreadNotificationsForUser(userId);
@@ -51,7 +50,8 @@ public class NotificationController {
     public ResponseEntity<NotificationResponse> markNotificationAsRead(@PathVariable Long notificationId,
                                                                        Authentication authentication) {
         String userEmail = authentication.getName();
-        User user = userRepository.findByEmail(userEmail);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->  new UsernameNotFoundException(userEmail));
         Long userId = user.getId();
 
         NotificationResponse updatedNotification = notificationService.markNotificationAsRead(notificationId, userId);
@@ -62,7 +62,8 @@ public class NotificationController {
     public ResponseEntity<Void> deleteNotification(@PathVariable Long notificationId,
                                                    Authentication authentication) {
         String userEmail = authentication.getName();
-        User user = userRepository.findByEmail(userEmail);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->  new UsernameNotFoundException(userEmail));
         Long userId = user.getId();
 
         notificationService.deleteNotification(notificationId, userId);

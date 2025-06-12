@@ -15,14 +15,14 @@ import java.util.List;
 
 @Mapper(componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        uses = {SimpleNameMapper.class, UserMapper.class}) // Đảm bảo các mapper này tồn tại và được import đúng
+        uses = {SimpleNameMapper.class, UserMapper.class})
 
 public interface JobMapper {
 
-    @Mapping(target = "id", ignore = true) // ID được DB tạo
+    @Mapping(target = "id", ignore = true)
     Job toJob(JobCreationRequest request);
 
-    @Mapping(target = "id", ignore = true) // Không cập nhật ID
+    @Mapping(target = "id", ignore = true)
     void updateJob(@MappingTarget Job job, JobUpdateRequest request);
 
     JobResponse toJobResponse(Job job);

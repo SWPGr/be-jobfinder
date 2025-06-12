@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,7 +37,8 @@ public class JobService {
         String currentUsername = authentication.getName();
 
 
-        User employer = userRepository.findByEmail(currentUsername);
+        User employer = userRepository.findByEmail(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
         if (employer == null) {
             throw new AppException(ErrorCode.USER_NOT_FOUND); // Thay vì USER_EXIST

@@ -1,5 +1,6 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,13 +39,16 @@ public class User{
     private LocalDateTime resetPasswordExpiry;
 
     @OneToMany(mappedBy = "jobSeeker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference //Cho phép tuần tự hóa
     private Set<Application> applications;
 
     @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Set<Job> jobs;
 
     // Đã sửa 'mappedBy = "user"' thành 'mappedBy = "jobSeeker"'
     @OneToMany(mappedBy = "jobSeeker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private Set<SavedJob> savedJobs;
 
 }

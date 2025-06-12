@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -62,7 +63,8 @@ public class SavedJobService {
         }
         String email = authentication.getName();
         log.debug("Authenticated email: {}", email);
-        User jobSeeker = userRepository.findByEmail(email);
+        User jobSeeker = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
         if (jobSeeker == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
