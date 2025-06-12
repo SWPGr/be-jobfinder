@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 
 @Entity
@@ -35,4 +36,15 @@ public class User{
     private String resetPasswordToken;
     @Column(name = "reset_password_expiry")
     private LocalDateTime resetPasswordExpiry;
+
+    @OneToMany(mappedBy = "jobSeeker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Application> applications;
+
+    @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<Job> jobs;
+
+    // Đã sửa 'mappedBy = "user"' thành 'mappedBy = "jobSeeker"'
+    @OneToMany(mappedBy = "jobSeeker", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<SavedJob> savedJobs;
+
 }

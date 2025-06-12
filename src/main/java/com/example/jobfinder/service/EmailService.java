@@ -20,7 +20,7 @@ public class EmailService {
 
         helper.setTo(to);
         helper.setSubject("verify your email");
-        String verificationLink = "http://localhost:8080/api/auth/verify?token=" + token;
+        String verificationLink = "http://localhost:3030/api/auth/verify?token=" + token;
         helper.setText(
                 "<h1>Please Verify Your Email</h1>" +
                         "<p>Click the link below to verify your email:</p>" +
