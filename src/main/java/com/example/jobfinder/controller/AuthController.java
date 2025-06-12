@@ -1,6 +1,6 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.*;
+import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

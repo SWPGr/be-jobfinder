@@ -32,9 +32,16 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/debug/**", "/api/profiles/**", "/api/profiles/me", "/error").permitAll()
-                        .requestMatchers("api/jobs/**").hasAnyRole("EMPLOYER")
-                        .requestMatchers("/api/apply/**", "/api/save/**").hasAnyRole("JOB_SEEKER")
+                        .requestMatchers(
+                        "/api/auth/**",
+                        "/api/debug/**",
+                        "/api/profiles/**",
+                        "/api/profiles/me",
+                        "/api/apply/**",
+                        "/api/save/**",
+                        "/api/notifications"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -53,7 +60,7 @@ public class SecurityConfig {
                 "http://localhost:8080"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Origin"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

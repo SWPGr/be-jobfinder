@@ -1,10 +1,10 @@
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.ProfileRequest;
-import com.example.jobfinder.dto.ProfileResponse;
+import com.example.jobfinder.dto.auth.ProfileRequest;
+import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
+import com.example.jobfinder.model.UserDetails;
 import com.example.jobfinder.repository.EducationRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
@@ -35,7 +35,7 @@ public class ProfileService {
             throw new Exception("User not found");
         }
 
-        UserDetail userDetail = userDetailsRepository.findByUserId(user.getId());
+        UserDetails userDetail = userDetailsRepository.findByUserId(user.getId());
         if (userDetail == null) {
             throw new Exception("Profile not found.");
         }
@@ -78,7 +78,7 @@ public class ProfileService {
             throw new Exception("Please verify your email first");
         }
 
-        UserDetail userDetail = userDetailsRepository.findByUserId(currentUser.getId());
+        UserDetails userDetail = userDetailsRepository.findByUserId(currentUser.getId());
         if (userDetail == null) {
             return Collections.emptyList();
         }
@@ -87,7 +87,7 @@ public class ProfileService {
         return Collections.singletonList(response);
     }
 
-    private ProfileResponse mapToProfileResponse(User user, UserDetail userDetail) {
+    private ProfileResponse mapToProfileResponse(User user, UserDetails userDetail) {
         ProfileResponse response = new ProfileResponse();
         response.setEmail(user.getEmail());
         response.setRoleName(user.getRole().getName());
