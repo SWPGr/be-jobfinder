@@ -3,6 +3,8 @@ package com.example.jobfinder.model;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.CurrentTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -37,5 +39,6 @@ public class EmployerReview {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
     LocalDateTime createdAt;
 }

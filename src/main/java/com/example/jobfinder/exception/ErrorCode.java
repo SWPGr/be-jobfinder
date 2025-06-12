@@ -101,6 +101,21 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(8000, "Notification not found"),
     NOTIFICATION_MARK_READ_FAILED(8001, "Failed to mark notification as read"),
     NOTIFICATION_DELETE_FAILED(8002, "Failed to delete notification"),
+
+    APPLICATION_DENIED(8003, "Application has been denied"),
+    APPLICATION_WITHDRAWN(8004, "Application has been withdrawn"),
+    APPLICATION_LIMIT_EXCEEDED(8005, "Application limit exceeded for this user or job"),
+    APPLICATION_UPDATE_NOT_ALLOWED(8006, "You are not allowed to update this application"),
+    // Thêm các lỗi sau:
+    UNAUTHORIZED_APPLICATION_UPDATE(8007, "You are not authorized to update this application's status"),
+    INVALID_APPLICATION_STATUS(8008, "Invalid application status provided"),
+
+    REVIEW_NOT_FOUND(6000, "Review not found"),
+    REVIEW_ALREADY_EXISTS(6001, "You have already submitted a review for this employer"),
+    CANNOT_REVIEW_SELF(6002, "You cannot review yourself"),
+    UNAUTHORIZED_REVIEW_ACTION(6003, "You are not authorized to perform this review action"),
+    INVALID_RATING_VALUE(6005, "Rating value must be between 1 and 5"),
+    REVIEW_UNAUTHORIZED_NO_RELATION(6006, "You can only review employers you have applied to");
     ;
 
 

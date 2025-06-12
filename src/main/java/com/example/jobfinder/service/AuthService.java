@@ -2,15 +2,22 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetails;
 import com.example.jobfinder.repository.RoleRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,26 +25,17 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthService {
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final UserDetailsRepository userDetailsRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
-    private final EmailService emailService;
+    UserRepository userRepository;
+    RoleRepository roleRepository;
+    UserDetailsRepository userDetailsRepository;
+    PasswordEncoder passwordEncoder;
+    AuthenticationManager authenticationManager;
+    JwtUtil jwtUtil;
+    EmailService emailService;
 
-    public AuthService(UserRepository userRepository, RoleRepository roleRepository, UserDetailsRepository userDetailsRepository,
-                       PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtUtil jwtUtil,
-                       EmailService emailService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userDetailsRepository = userDetailsRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.emailService = emailService;
-    }
 
     public void register(RegisterRequest request) throws Exception {
         if(userRepository.findByEmail(request.getEmail()) != null) {
@@ -72,7 +70,8 @@ public class AuthService {
                 )
         );
 
-        User user = userRepository.findByEmail(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
         if(!user.isVerified()) {
             throw new RuntimeException("Please verify your email first");
         }
@@ -82,7 +81,8 @@ public class AuthService {
     }
 
     public void verifyEmail(String token) throws Exception {
-        User user = userRepository.findByVerificationToken(token);
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException(token));
         if(user == null) {
             throw new Exception("Invalid verification token");
         }
@@ -92,7 +92,8 @@ public class AuthService {
     }
 
     public void resendVerificationEmail(String email) throws Exception {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
         if(user == null) {
             throw new Exception("User not found");
         }
@@ -106,7 +107,8 @@ public class AuthService {
     }
 
     public void forgotPassowrd(ForgotPasswordRequest request) throws Exception {
-        User user = userRepository.findByEmail(request.getEmail());
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
         if(user == null) {
             throw new Exception("User not found");
         }
@@ -120,7 +122,8 @@ public class AuthService {
     }
 
     public void resetPassword(ResetPasswordRequest request) throws Exception {
-        User user = userRepository.findByResetPasswordToken(request.getToken());
+        User user = userRepository.findByResetPasswordToken(request.getToken())
+                .orElseThrow(() -> new UsernameNotFoundException(request.getToken()));
         if(user == null) {
             throw new Exception("Invalid or expired reset token");
         }
@@ -133,5 +136,22 @@ public class AuthService {
         user.setResetPasswordToken(null);
         user.setResetPasswordExpiry(null);
         userRepository.save(user);
+    }
+
+    // Helper method to get authenticated user ID
+    Long getAuthenticatedUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)); // Hoặc UNAUTHENTICATED
+        return currentUser.getId();
+    }
+
+    // Helper method to get authenticated user entity
+    User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication.getName();
+        return userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 }

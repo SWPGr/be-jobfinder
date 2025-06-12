@@ -39,6 +39,7 @@ public class SecurityConfig {
                         "/api/profiles/me",
                         "/api/apply/**",
                         "/api/save/**",
+                        "/api/employer-reviews",
                         "/api/notifications"
                         ).permitAll()
 

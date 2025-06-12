@@ -10,6 +10,7 @@ import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -30,7 +31,8 @@ public class ProfileService {
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->  new UsernameNotFoundException(email));
         if (user == null) {
             throw new Exception("User not found");
         }
@@ -69,7 +71,8 @@ public class ProfileService {
     public List<ProfileResponse> listCurrentUserProfiles() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User currentUser = userRepository.findByEmail(email);
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->  new UsernameNotFoundException(email));
         if (currentUser == null) {
             throw new Exception("User not found");
         }
