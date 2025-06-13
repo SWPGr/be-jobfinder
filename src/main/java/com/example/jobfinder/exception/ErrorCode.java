@@ -115,7 +115,25 @@ public enum ErrorCode {
     CANNOT_REVIEW_SELF(6002, "You cannot review yourself"),
     UNAUTHORIZED_REVIEW_ACTION(6003, "You are not authorized to perform this review action"),
     INVALID_RATING_VALUE(6005, "Rating value must be between 1 and 5"),
-    REVIEW_UNAUTHORIZED_NO_RELATION(6006, "You can only review employers you have applied to");
+    REVIEW_UNAUTHORIZED_NO_RELATION(6006, "You can only review employers you have applied to"),
+
+    // ... (các mã lỗi hiện có của bạn)
+
+    // Nhóm lỗi liên quan đến Social Type (Mã từ 7000 đến 7099)
+// Mã 70xx
+    SOCIAL_TYPE_NOT_FOUND(7000, "Social type not found"),
+    SOCIAL_TYPE_ALREADY_EXISTS(7001, "Social type name already exists"),
+    SOCIAL_TYPE_IN_USE(7002, "Social type cannot be deleted as it is in use by user social links"),
+
+    // Nhóm lỗi liên quan đến User Social Type (Mã từ 7100 đến 7199)
+// Mã 71xx
+    USER_SOCIAL_TYPE_NOT_FOUND(7100, "User social link not found"),
+    USER_SOCIAL_TYPE_ALREADY_EXISTS(7101, "You already have a link for this social type"),
+    UNAUTHORIZED_USER_SOCIAL_ACTION(7102, "You are not authorized to perform this action on user social link"),
+    INVALID_SOCIAL_URL(7103, "Invalid social media URL format");
+
+// ... (phần còn lại của ErrorCode enum của bạn)
+    ;
     ;
 
 
