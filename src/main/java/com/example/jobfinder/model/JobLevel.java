@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString(callSuper = true)
-@AttributeOverride(name = "name", column = @Column(name = "level_name", unique = true, nullable = false, length = 50))
+@AttributeOverride(name = "name", column = @Column(name = "job_level_name", unique = true, nullable = false, length = 50))
 public class JobLevel extends BaseNameEntity {
     public JobLevel() {
 
