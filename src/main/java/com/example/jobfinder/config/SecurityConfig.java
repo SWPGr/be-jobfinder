@@ -34,7 +34,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/debug/**", "/api/profiles/**", "/api/profiles/me", "/error").permitAll()
                         .requestMatchers("/api/jobs/**").hasAnyRole("EMPLOYER")
-                        .requestMatchers("/api/apply/**", "/api/saved-jobs/**", "/api/unSave/**").hasAnyRole("JOB_SEEKER")
+                        .requestMatchers("/api/apply/**", "/api/saved-jobs/**", "/api/unSave/**", "/api/job-views/**", "/api/recommendations/**")
+                        .hasRole("JOB_SEEKER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
