@@ -1,12 +1,9 @@
+// src/main/java/com/example/jobfinder/repository/JobLevelRepository.java
 package com.example.jobfinder.repository;
 
-import com.example.jobfinder.model.JobLevel;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.example.jobfinder.model.JobLevel; // Import entity JobLevel
 import org.springframework.stereotype.Repository;
+@Repository // Đánh dấu đây là một Spring Data Repository
+public interface JobLevelRepository extends BaseNameRepository<JobLevel, Long> {
 
-import java.util.Optional;
-
-@Repository
-public interface JobLevelRepository extends JpaRepository<JobLevel, Long> {
-    Optional<JobLevel> findByName(String name);
 }

@@ -1,7 +1,7 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.ProfileRequest;
-import com.example.jobfinder.dto.ProfileResponse;
+import com.example.jobfinder.dto.auth.ProfileRequest;
+import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.service.ProfileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

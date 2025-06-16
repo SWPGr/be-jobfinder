@@ -17,7 +17,7 @@ public class Job {
 
     @ManyToOne
     @JoinColumn(name = "employer_id", nullable = false)
-    private User employerId;
+    private User employer;
     @Column(nullable = false)
     private String title;
     @Column(columnDefinition = "TEXT")

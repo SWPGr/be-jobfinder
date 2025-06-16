@@ -1,17 +1,21 @@
 package com.example.jobfinder.model;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "job_levels")
-@Getter
 @Setter
-public class JobLevel {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @Column(nullable = false, unique = true)
-    private String name;
+@Getter
+@SuperBuilder
+@ToString(callSuper = true)
+@AttributeOverride(name = "name", column = @Column(name = "name", unique = true, nullable = false, length = 50))
+public class JobLevel extends BaseNameEntity {
+    public JobLevel() {
+
+    }
 }

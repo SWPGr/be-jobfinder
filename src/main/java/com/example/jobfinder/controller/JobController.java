@@ -1,28 +1,50 @@
 package com.example.jobfinder.controller;
-
-import com.example.jobfinder.dto.JobRequest;
+import com.example.jobfinder.dto.ApiResponse;
+import com.example.jobfinder.dto.job.JobCreationRequest;
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.service.JobService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/jobs")
+@RequestMapping("/api/job")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class JobController {
-    private final JobService jobService;
 
-    public JobController(JobService jobService) {
-        this.jobService = jobService;
-    }
-
+    JobService jobService; // Spring sẽ inject JobService vào đây
 
     @PostMapping
-    public ResponseEntity<Job> createJob(@RequestBody JobRequest request) {
-        Job job = jobService.createJob(request);
-        return ResponseEntity.ok(job);
+    public ApiResponse<Job> createJob(@RequestBody @Valid JobCreationRequest request) {
+        ApiResponse<Job> response = new ApiResponse<>();
+        response.setResult(jobService.createJob(request));
+        return response;
     }
 
+    @GetMapping
+    public List<JobResponse> getAllJobs() {
+        return jobService.getAllJobs();
+    }
+
+    @GetMapping("/{jobId}")
+    public JobResponse getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long
+        return jobService.getJobById(jobId);
+    }
+
+    @PutMapping("/{jobId}")
+    public JobResponse updateJob(@PathVariable Long jobId, @RequestBody JobUpdateRequest request) {
+        return jobService.updateJob(jobId, request);
+    }
+
+    @DeleteMapping("/{jobId}")
+    public String deleteJob(@PathVariable Long jobId) { // ID là Long
+        jobService.deleteJob(jobId);
+        return "Job with ID " + jobId + " has been deleted successfully!";
+    }
 }

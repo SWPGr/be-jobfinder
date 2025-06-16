@@ -6,7 +6,5 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository
-public interface CategoryRepository extends JpaRepository<Category, Long> {
-    Optional<Category> findByName(String name);
-}
+@Repository // Đánh dấu interface này là một Spring Data Repository
+public interface CategoryRepository extends BaseNameRepository<Category, Long> {}

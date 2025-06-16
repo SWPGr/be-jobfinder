@@ -1,6 +1,6 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.SavedJobRequest;
+import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.model.SavedJob;
 import com.example.jobfinder.service.SavedJobService;
 import jakarta.validation.Valid;

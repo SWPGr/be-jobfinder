@@ -1,6 +1,8 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.JobViewRequest;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.model.User;
@@ -40,10 +42,8 @@ public class JobViewService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         log.debug("Authenticated username: {}", email);
-        User jobSeeker = userRepository.findByEmail(email);
-        if (jobSeeker == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
+        User jobSeeker = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String role = jobSeeker.getRole().getName();
         log.debug("User role: {}", role);
