@@ -7,7 +7,7 @@ import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserSocialTypeMapper;
 import com.example.jobfinder.model.SocialType;
 import com.example.jobfinder.model.User; // Để lấy User chính
-import com.example.jobfinder.model.UserDetails;
+import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.UserSocialType;
 import com.example.jobfinder.repository.SocialTypeRepository;
 import com.example.jobfinder.repository.UserDetailsRepository; // <-- Cần UserDetailRepository
@@ -43,7 +43,7 @@ public class UserSocialTypeService {
     }
 
     // Helper method to get UserDetail of the authenticated user
-    private UserDetails getAuthenticatedUserDetail() {
+    private UserDetail getAuthenticatedUserDetail() {
         User user = getAuthenticatedUser();
         return userDetailRepository.findByUser(user) // <-- Giả định UserDetailRepository có phương thức này
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail not found for this user
@@ -56,7 +56,7 @@ public class UserSocialTypeService {
      */
     @Transactional
     public UserSocialTypeResponse createUserSocialLink(UserSocialTypeRequest request) {
-        UserDetails userDetail = getAuthenticatedUserDetail();
+        UserDetail userDetail = getAuthenticatedUserDetail();
 
         SocialType socialType = socialTypeRepository.findById(request.getSocialTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND));
@@ -74,13 +74,13 @@ public class UserSocialTypeService {
     }
 
     public List<UserSocialTypeResponse> getMySocialLinks() {
-        UserDetails userDetail = getAuthenticatedUserDetail();
+        UserDetail userDetail = getAuthenticatedUserDetail();
         List<UserSocialType> socialLinks = userSocialTypeRepository.findByUserDetail_Id(userDetail.getId());
         return userSocialTypeMapper.toUserSocialTypeResponseList(socialLinks);
     }
 
     public UserSocialTypeResponse getSocialLinkById(Long id) {
-        UserDetails userDetail = getAuthenticatedUserDetail(); // Đảm bảo người dùng đã xác thực
+        UserDetail userDetail = getAuthenticatedUserDetail(); // Đảm bảo người dùng đã xác thực
         UserSocialType socialLink = userSocialTypeRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_SOCIAL_TYPE_NOT_FOUND));
 
@@ -93,7 +93,7 @@ public class UserSocialTypeService {
 
     @Transactional
     public UserSocialTypeResponse updateUserSocialLink(Long id, UserSocialTypeRequest request) {
-        UserDetails userDetail = getAuthenticatedUserDetail();
+        UserDetail userDetail = getAuthenticatedUserDetail();
         UserSocialType existingLink = userSocialTypeRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_SOCIAL_TYPE_NOT_FOUND));
 
@@ -119,7 +119,7 @@ public class UserSocialTypeService {
     @Transactional
     public void deleteUserSocialLink(Long id) {
         User authenticatedUser = getAuthenticatedUser();
-        UserDetails userDetail = userDetailRepository.findByUser(authenticatedUser)
+        UserDetail userDetail = userDetailRepository.findByUser(authenticatedUser)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
 
         UserSocialType socialLink = userSocialTypeRepository.findById(id)

@@ -53,7 +53,7 @@ public class JobService {
         if (employer.getRole() == null ||
                 (!employer.getRole().getName().equals("JOB_SEEKER") &&
                         !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); // <-- CHÍNH LÀ DÒNG LỖI CỦA BẠN!
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
@@ -77,7 +77,6 @@ public class JobService {
         newJob.setJobLevel(jobLevel);
         newJob.setJobType(jobType);
 
-
         return jobRepository.save(newJob);
     }
 
@@ -97,9 +96,6 @@ public class JobService {
 
             job.setEmployer(newEmployer);
         }
-
-
-
         return jobMapper.toJobResponse(jobRepository.save(job));
     }
 

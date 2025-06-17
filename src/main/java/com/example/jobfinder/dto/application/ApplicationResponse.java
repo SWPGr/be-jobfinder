@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Builder // Đảm bảo bạn có constructor hoặc @Builder để dễ tạo
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ApplicationResponse {
     private Long id;
     private UserResponse jobSeeker;

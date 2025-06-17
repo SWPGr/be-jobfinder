@@ -8,13 +8,18 @@ import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.SocialTypeMapper;
 import com.example.jobfinder.model.SocialType;
 import com.example.jobfinder.repository.SocialTypeRepository;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SocialTypeService extends BaseNameService<SocialType> {
 
-    private final SocialTypeMapper socialTypeMapper;
+    SocialTypeMapper socialTypeMapper;
 
     public SocialTypeService(SocialTypeRepository socialTypeRepository, SocialTypeMapper socialTypeMapper) {
         super(socialTypeRepository);

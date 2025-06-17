@@ -18,6 +18,7 @@ public class UserResponse {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     Boolean verified;
+    Boolean isPremium;
 
     SimpleNameResponse role; // <-- Trả về đối tượng RoleResponse lồng nhau
 }
