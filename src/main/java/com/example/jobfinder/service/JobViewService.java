@@ -32,12 +32,28 @@ public class JobViewService {
     private final UserRepository userRepository;
     private final JobRepository jobRepository;
 
+    /****
+     * Constructs a JobViewService with the required repositories for managing job view records.
+     */
     public JobViewService(JobViewRepository jobViewRepository, UserRepository userRepository, JobRepository jobRepository) {
         this.jobViewRepository = jobViewRepository;
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
     }
 
+    /**
+     * Records a job view event for the authenticated job seeker, ensuring only one view per job per day is stored.
+     *
+     * If the job seeker has not viewed the specified job today, creates and saves a new job view record.
+     * If a view already exists for today, returns the existing record.
+     * Only users with the "JOB_SEEKER" role are permitted to record job views.
+     *
+     * @param request the job view request containing the job ID to be viewed
+     * @return a response DTO representing the job view event
+     *
+     * @throws AppException if the authenticated user is not found
+     * @throws ResponseStatusException if the user is not a job seeker or the job does not exist
+     */
     public JobViewResponse recordJobView(JobViewRequest request) {
         log.debug("Processing job view request: {}", request);
 
@@ -77,6 +93,12 @@ public class JobViewService {
 
     }
 
+    /**
+     * Converts a JobView entity to a JobViewResponse DTO containing job and job seeker details.
+     *
+     * @param jobView the JobView entity to convert
+     * @return a JobViewResponse with job ID, title, job seeker information, and view timestamp
+     */
     private JobViewResponse mapToJobViewResponse(JobView jobView) {
         return JobViewResponse.builder()
                 .id(jobView.getId())

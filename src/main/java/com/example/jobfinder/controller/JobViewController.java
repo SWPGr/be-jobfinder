@@ -20,6 +20,12 @@ public class JobViewController {
         this.jobViewService = jobViewService;
     }
 
+    /****
+     * Records a job view event based on the provided request data.
+     *
+     * @param request the job view request payload containing details of the job view event
+     * @return HTTP 200 response containing the recorded job view information
+     */
     @PostMapping
     public ResponseEntity<JobViewResponse> recordJobView(@Valid @RequestBody JobViewRequest request) {
         JobViewResponse jobView = jobViewService.recordJobView(request);

@@ -34,6 +34,9 @@ public class RecommendationService {
     private final JobLevelRepository jobLevelRepository;
     private final JobTypeRepository jobTypeRepository;
 
+    /****
+     * Constructs a RecommendationService with the specified repositories for users, jobs, user details, job recommendations, categories, job levels, and job types.
+     */
     public RecommendationService(UserRepository userRepository, JobRepository jobRepository,
                                  UserDetailsRepository userDetailsRepository, JobRecommendationRepository jobRecommendationRepository,
                                  CategoryRepository categoryRepository, JobLevelRepository jobLevelRepository,
@@ -47,6 +50,13 @@ public class RecommendationService {
         this.jobTypeRepository = jobTypeRepository;
     }
 
+    /**
+     * Generates and saves personalized job recommendations for the authenticated job seeker.
+     *
+     * Retrieves the current user's details, verifies the "JOB_SEEKER" role, and computes recommendation scores for all available jobs.
+     * Deletes any existing recommendations for the user, then saves up to 10 new recommendations with the highest scores above a threshold.
+     * Throws a 403 error if the user is not a job seeker, or a 404 error if user details are missing.
+     */
     @Transactional
     public void generateRecommendations() {
         log.debug("Generating recommendations");
@@ -109,6 +119,13 @@ public class RecommendationService {
         }
     }
 
+    /**
+     * Retrieves the authenticated job seeker's job recommendations, ordered by relevance.
+     *
+     * @return a list of job recommendation responses for the current user
+     * @throws ResponseStatusException if the user is not a job seeker
+     * @throws AppException if the user is not found
+     */
     public List<JobRecommendationResponse> getRecommendations() {
         log.debug("Fetching job recommendations");
 
@@ -127,6 +144,15 @@ public class RecommendationService {
         return recommendations.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Calculates a composite relevance score for a job based on the user's profile.
+     *
+     * The score is determined by weighted factors: experience match (40%), location match (30%), category relevance (20%), and description similarity (10%). The final score is capped at 1.0.
+     *
+     * @param userDetail the user's detailed profile information
+     * @param job the job to evaluate for recommendation
+     * @return a float value between 0.0 and 1.0 representing the job's relevance to the user
+     */
     private float calculateJobScore(UserDetail userDetail, Job job) {
         float score = 0.0f;
 
@@ -147,6 +173,16 @@ public class RecommendationService {
         return Math.min(score, 1.0f);
     }
 
+    /**
+     * Calculates a similarity score between the user's description and the job description based on overlapping words.
+     *
+     * The score is the ratio of shared words to the total number of words in the job description, capped at 1.0.
+     * Returns 0 if either description is null or if there are no overlapping words.
+     *
+     * @param userDescription the user's profile description
+     * @param jobDescription the job's description
+     * @return a float score between 0.0 and 1.0 representing description similarity
+     */
     private float calculateDescriptionScore(String userDescription, String jobDescription) {
         if(userDescription == null || jobDescription == null) {
             return 0.0f;
@@ -159,6 +195,13 @@ public class RecommendationService {
         return userWords.size() > 0 ? Math.min((float) userWords.size() / jobWords.size(), 1.0f) : 0.0f;
     }
 
+    /**
+     * Calculates a match score between a user's years of experience and a job's required level.
+     *
+     * @param yearsExperience the user's years of experience
+     * @param jobLevel the job's required experience level (e.g., "Internship", "EntryLevel", "MidLevel", "HighLevel")
+     * @return a score between 0.0 and 1.0 indicating how well the user's experience matches the job level
+     */
     private float calculateExperienceScore(Integer yearsExperience, String jobLevel) {
         if(yearsExperience == null) {
             return 0.0f;
@@ -179,6 +222,12 @@ public class RecommendationService {
     }
 
 
+    /**
+     * Converts a JobRecommendation entity into a JobRecommendationResponse DTO.
+     *
+     * @param recommendation the JobRecommendation to convert
+     * @return a JobRecommendationResponse containing job details and recommendation score
+     */
     private JobRecommendationResponse convertToResponse(JobRecommendation recommendation) {
         JobRecommendationResponse response = new JobRecommendationResponse();
 
