@@ -15,6 +15,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     List<Job> findByTitleContainingIgnoreCase(String title);
     List<Job> findByLocation(String location);
 
+    boolean existsByIdAndEmployerId(Long jobId, Long employerId);
+
     // Hàm tìm kiếm linh hoạt hơn
     @Query(QueryConstants.FIND_JOBS_BY_CRITERIA)
     List<Job> findJobsByCriteria(@Param("title") String title,

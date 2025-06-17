@@ -3,6 +3,7 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.model.SavedJob;
+import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SavedJobService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,15 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.core.Authentication; // Import Authentication
+import org.springframework.security.core.context.SecurityContextHolder; // Import SecurityContextHolder
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import com.example.jobfinder.exception.ErrorCode; // Import ErrorCode của bạn
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 
 @RestController
 @RequestMapping("/api/save")
@@ -19,10 +28,27 @@ import java.util.List;
 public class SavedJobController {
 
     final SavedJobService savedJobService;
+    final UserRepository userRepository;
 
-    @GetMapping("/{jobSeekerId}")
-    public ResponseEntity<List<JobResponse>> getSavedJobsForJobSeeker(@PathVariable Long jobSeekerId) { // <-- Thay đổi kiểu trả về
-        List<JobResponse> savedJobs = savedJobService.getSavedJobsByJobSeekerId(jobSeekerId);
+    @GetMapping // Không cần PathVariable nữa
+    public ResponseEntity<List<JobResponse>> getSavedJobsForCurrentUser() { // Đổi tên phương thức cho rõ ràng
+        // Lấy đối tượng Authentication từ SecurityContextHolder
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Kiểm tra xem người dùng đã được xác thực chưa
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        // Lấy email của người dùng từ Authentication
+        String userEmail = authentication.getName(); // getName() trả về principal name, thường là email
+
+        // Tìm User entity bằng email để lấy ID
+        com.example.jobfinder.model.User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+
+        // Truyền userId vào service
+        List<JobResponse> savedJobs = savedJobService.getSavedJobsByJobSeekerId(currentUser.getId());
         return ResponseEntity.ok(savedJobs);
     }
 

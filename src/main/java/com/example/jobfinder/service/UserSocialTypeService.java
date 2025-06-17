@@ -1,16 +1,17 @@
+// src/main/java/com/example/jobfinder/service/UserSocialTypeService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.social_type.UserSocialTypeRequest;
-import com.example.jobfinder.dto.social_type.UserSocialTypeResponse;
+import com.example.jobfinder.dto.user_social_type.UserSocialTypeRequest;
+import com.example.jobfinder.dto.user_social_type.UserSocialTypeResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserSocialTypeMapper;
 import com.example.jobfinder.model.SocialType;
-import com.example.jobfinder.model.User; // Để lấy User chính
+import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.UserSocialType;
 import com.example.jobfinder.repository.SocialTypeRepository;
-import com.example.jobfinder.repository.UserDetailsRepository; // <-- Cần UserDetailRepository
+import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.repository.UserSocialTypeRepository;
 import lombok.AccessLevel;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,9 +31,9 @@ import java.util.List;
 public class UserSocialTypeService {
 
     UserSocialTypeRepository userSocialTypeRepository;
-    UserRepository userRepository; // Để lấy User từ Authentication
-    UserDetailsRepository userDetailRepository; // <-- Cần UserDetailRepository để tìm UserDetail
-    SocialTypeRepository socialTypeRepository; // Để tìm SocialType
+    UserRepository userRepository;
+    UserDetailsRepository userDetailRepository;
+    SocialTypeRepository socialTypeRepository;
     UserSocialTypeMapper userSocialTypeMapper;
 
     // Helper method to get authenticated user entity
@@ -39,14 +41,15 @@ public class UserSocialTypeService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
         return userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)); // Hoặc UNAUTHENTICATED
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
     // Helper method to get UserDetail of the authenticated user
     private UserDetail getAuthenticatedUserDetail() {
         User user = getAuthenticatedUser();
-        return userDetailRepository.findByUser(user) // <-- Giả định UserDetailRepository có phương thức này
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail not found for this user
+        // Giả sử UserDetailRepository có phương thức findByUser(User user)
+        return userDetailRepository.findByUser(user)
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
     }
 
     /**
@@ -58,78 +61,97 @@ public class UserSocialTypeService {
     public UserSocialTypeResponse createUserSocialLink(UserSocialTypeRequest request) {
         UserDetail userDetail = getAuthenticatedUserDetail();
 
+        // 1. Tìm SocialType dựa trên socialTypeId
         SocialType socialType = socialTypeRepository.findById(request.getSocialTypeId())
-                .orElseThrow(() -> new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND)); // Ném lỗi nếu không tìm thấy
 
-        if (userSocialTypeRepository.existsByUserDetail_IdAndSocialType_Id(userDetail.getId(), request.getSocialTypeId())) {
+        // 2. Kiểm tra xem người dùng đã có liên kết cho loại mạng xã hội này chưa
+        if (userSocialTypeRepository.existsByUserDetail_IdAndSocialType_Id(userDetail.getId(), socialType.getId())) {
             throw new AppException(ErrorCode.USER_SOCIAL_TYPE_ALREADY_EXISTS);
         }
 
+        // 3. Ánh xạ request sang entity và thiết lập các mối quan hệ
         UserSocialType userSocialType = userSocialTypeMapper.toUserSocialType(request);
         userSocialType.setUserDetail(userDetail);
         userSocialType.setSocialType(socialType);
 
+        // 4. Lưu vào database và trả về response DTO
         UserSocialType savedLink = userSocialTypeRepository.save(userSocialType);
         return userSocialTypeMapper.toUserSocialTypeResponse(savedLink);
     }
 
+    /**
+     * Lấy tất cả các liên kết mạng xã hội của người dùng đang đăng nhập.
+     * @return Danh sách UserSocialTypeResponse.
+     */
     public List<UserSocialTypeResponse> getMySocialLinks() {
         UserDetail userDetail = getAuthenticatedUserDetail();
         List<UserSocialType> socialLinks = userSocialTypeRepository.findByUserDetail_Id(userDetail.getId());
         return userSocialTypeMapper.toUserSocialTypeResponseList(socialLinks);
     }
 
+    /**
+     * Lấy một liên kết mạng xã hội cụ thể của người dùng đang đăng nhập theo ID.
+     * @param id ID của liên kết.
+     * @return UserSocialTypeResponse.
+     */
     public UserSocialTypeResponse getSocialLinkById(Long id) {
-        UserDetail userDetail = getAuthenticatedUserDetail(); // Đảm bảo người dùng đã xác thực
+        UserDetail userDetail = getAuthenticatedUserDetail();
         UserSocialType socialLink = userSocialTypeRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_SOCIAL_TYPE_NOT_FOUND));
 
-        // Kiểm tra quyền: Người dùng đang đăng nhập phải là chủ sở hữu của liên kết này
+        // Đảm bảo người dùng đang đăng nhập là chủ sở hữu của liên kết
         if (!socialLink.getUserDetail().getId().equals(userDetail.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED_USER_SOCIAL_ACTION);
         }
         return userSocialTypeMapper.toUserSocialTypeResponse(socialLink);
     }
 
+    /**
+     * Cập nhật một liên kết mạng xã hội cụ thể của người dùng đang đăng nhập.
+     * @param id ID của liên kết cần cập nhật.
+     * @param request DTO chứa socialTypeId và URL mới.
+     * @return UserSocialTypeResponse của liên kết đã cập nhật.
+     */
     @Transactional
     public UserSocialTypeResponse updateUserSocialLink(Long id, UserSocialTypeRequest request) {
         UserDetail userDetail = getAuthenticatedUserDetail();
         UserSocialType existingLink = userSocialTypeRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_SOCIAL_TYPE_NOT_FOUND));
 
+        // Đảm bảo người dùng đang đăng nhập là chủ sở hữu của liên kết
         if (!existingLink.getUserDetail().getId().equals(userDetail.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED_USER_SOCIAL_ACTION);
         }
 
-        SocialType newSocialType = socialTypeRepository.findById(request.getSocialTypeId())
+        // 1. Tìm SocialType mới dựa trên newSocialTypeId
+        Long newSocialTypeId = request.getSocialTypeId();
+        if (newSocialTypeId == null) {
+            throw new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND);
+        }
+        SocialType newSocialType = socialTypeRepository.findById(newSocialTypeId)
                 .orElseThrow(() -> new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND));
 
-        if (!existingLink.getSocialType().getId().equals(request.getSocialTypeId()) &&
-                userSocialTypeRepository.existsByUserDetail_IdAndSocialType_Id(userDetail.getId(), request.getSocialTypeId())) {
+        // 2. Kiểm tra trùng lặp nếu loại mạng xã hội thay đổi
+        // Tránh trường hợp người dùng đã có liên kết cho newSocialType này
+        if (!existingLink.getSocialType().getId().equals(newSocialType.getId()) &&
+                userSocialTypeRepository.existsByUserDetail_IdAndSocialType_Id(userDetail.getId(), newSocialType.getId())) {
             throw new AppException(ErrorCode.USER_SOCIAL_TYPE_ALREADY_EXISTS);
         }
 
-        existingLink.setSocialType(newSocialType);
-        existingLink.setUrl(request.getUrl());
+        // 3. Cập nhật entity bằng mapper
+        userSocialTypeMapper.updateUserSocialType(existingLink, request);
+        existingLink.setSocialType(newSocialType); // Gán SocialType mới
 
+        // 4. Lưu và trả về
         UserSocialType updatedLink = userSocialTypeRepository.save(existingLink);
         return userSocialTypeMapper.toUserSocialTypeResponse(updatedLink);
     }
 
     @Transactional
-    public void deleteUserSocialLink(Long id) {
-        User authenticatedUser = getAuthenticatedUser();
-        UserDetail userDetail = userDetailRepository.findByUser(authenticatedUser)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
-
+    public void deleteUserSocialLink(Long id) { //Dùng cho người dùng tự xóa social link của mình, không validate
         UserSocialType socialLink = userSocialTypeRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_SOCIAL_TYPE_NOT_FOUND));
-
-        if (!socialLink.getUserDetail().getId().equals(userDetail.getId()) &&
-                !authenticatedUser.getRole().equals("ADMIN")) {
-            throw new AppException(ErrorCode.UNAUTHORIZED_USER_SOCIAL_ACTION);
-        }
-
         userSocialTypeRepository.delete(socialLink);
     }
 }

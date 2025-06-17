@@ -149,8 +149,4 @@ public final class QueryConstants {
             (:isRead IS NULL OR n.isRead = :isRead) AND
             (:messageKeyword IS NULL OR LOWER(n.message) LIKE LOWER(CONCAT('%', :messageKeyword, '%')))
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - u.email, n.isRead, n.message là chính xác.
-     */
 }

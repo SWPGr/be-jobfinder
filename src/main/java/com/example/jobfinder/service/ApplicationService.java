@@ -100,6 +100,10 @@ public class ApplicationService {
         return applicationMapper.toApplicationResponse(createdApplication);
     }
 
+    public boolean isJobOwnedByEmployer(Long jobId, Long employerId) {
+        return jobRepository.existsByIdAndEmployerId(jobId, employerId); // Cần phương thức này trong JobRepository
+    }
+
     @Transactional
     public ApplicationResponse updateApplicationStatus(Long applicationId,
                                                        ApplicationStatusUpdateRequest request,
@@ -132,6 +136,13 @@ public class ApplicationService {
     public List<JobResponse> getAppliedJobsByUserId(Long userId) {
 
         List<Application> applications = applicationRepository.findByJobSeekerId(userId);
+
+        User jobSeeker = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+
+        if (!jobSeeker.getRole().getName().equals("JOB_SEEKER") && !jobSeeker.getRole().getName().equals("ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+        }
 
         List<Job> appliedJobs = applications.stream()
                 .map(Application::getJob)

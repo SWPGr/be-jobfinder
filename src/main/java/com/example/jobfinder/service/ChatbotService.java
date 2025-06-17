@@ -2,18 +2,21 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.chat.ChatResponse;
 import com.example.jobfinder.dto.gemini.GeminiIntentResponse;
-import com.example.jobfinder.model.*; // Import tất cả các model bạn cần
-import com.example.jobfinder.repository.*; // Import tất cả các repository bạn cần
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
+import com.example.jobfinder.exception.ErrorCode; // Import ErrorCode của bạn
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus; // Để sử dụng HttpStatus
+import org.springframework.security.core.Authentication; // Để lấy thông tin xác thực
 import org.springframework.stereotype.Service;
-
+import org.springframework.web.server.ResponseStatusException; // Để ném exception
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.format.DateTimeFormatter; // Để format ngày tháng
 
 @Service
 @RequiredArgsConstructor
@@ -24,18 +27,16 @@ public class ChatbotService {
     GeminiService geminiService;
     JobRepository jobRepository;
     UserRepository userRepository;
-    UserDetailsRepository userDetailsRepository; // Để tìm thông tin công ty từ employer details
+    UserDetailsRepository userDetailsRepository;
     SubscriptionRepository subscriptionRepository;
-    EmployerReviewRepository employerReviewRepository; // Cần tạo repo này
-    ApplicationRepository applicationRepository; // Cần tạo repo này
-    RoleRepository roleRepository; // Nếu cần lấy role object
-    CategoryRepository categoryRepository; // Nếu cần lấy category object
-    JobLevelRepository jobLevelRepository; // Nếu cần lấy jobLevel object
-    JobTypeRepository jobTypeRepository; // Nếu cần lấy jobType object
+    EmployerReviewRepository employerReviewRepository;
+    ApplicationRepository applicationRepository;
+    RoleRepository roleRepository;
+    CategoryRepository categoryRepository;
+    JobLevelRepository jobLevelRepository;
+    JobTypeRepository jobTypeRepository;
     SubscriptionPlanRepository subscriptionPlanRepository;
 
-    // System instruction cho Gemini để phân tích ý định và trích xuất thông tin
-    // RẤT QUAN TRỌNG: Prompt này phải rõ ràng, bao gồm ví dụ cụ thể để Gemini hiểu.
     private static final String INTENT_SYSTEM_INSTRUCTION = """
             You are an AI assistant for a job finding platform. Your task is to identify the user's intent and extract all relevant parameters from their query.
             Respond ONLY with a JSON object. Do not add any other text, explanation, or markdown formatting (like ```json).
@@ -87,17 +88,25 @@ public class ChatbotService {
             Always return a complete JSON object, even if all parameters are null or the intent is 'general_chat'/'unclear'.
             """;
 
-
     /**
-     * Lấy phản hồi từ chatbot, sử dụng Gemini để phân tích ý định và RAG.
+     * Lấy phản hồi từ chatbot, sử dụng Gemini để phân tích ý định và RAG, có phân quyền.
      *
      * @param userMessage Tin nhắn từ người dùng.
+     * @param authentication Đối tượng xác thực của người dùng hiện tại.
      * @return Phản hồi từ chatbot.
      */
-    public ChatResponse getChatResponse(String userMessage) {
-        log.info("Processing chat message with advanced RAG: {}", userMessage);
+    public ChatResponse getChatResponse(String userMessage, Authentication authentication) {
+        log.info("Processing chat message with advanced RAG and authorization: {}", userMessage);
 
         try {
+            // Lấy thông tin người dùng hiện tại
+            String currentUserEmail = authentication.getName();
+            User currentUser = userRepository.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+            String currentUserRole = currentUser.getRole().getName();
+            log.info("Current user: {} with role: {}", currentUserEmail, currentUserRole);
+
+
             // Bước 1: Dùng Gemini để phân tích ý định và trích xuất tham số
             GeminiIntentResponse.IntentAnalysisResult analysisResult =
                     geminiService.analyzeIntent(userMessage, INTENT_SYSTEM_INSTRUCTION);
@@ -108,8 +117,10 @@ public class ChatbotService {
 
             log.info("Gemini identified intent: {}", intent);
 
+            // --- Logic Phân Quyền cho từng Intent ---
             switch (intent) {
                 case "job_search":
+                    // Mọi người dùng đều có thể tìm kiếm công việc
                     GeminiIntentResponse.JobSearchParams searchParams = analysisResult.getJobSearchParams();
                     log.info("Job search params: {}", searchParams);
 
@@ -128,11 +139,18 @@ public class ChatbotService {
                         if (!foundJobs.isEmpty()) {
                             contextForGemini.append("Dưới đây là một số thông tin công việc phù hợp mà tôi tìm thấy: ");
                             String jobListString = foundJobs.stream()
-                                    .limit(5) // Giới hạn số lượng kết quả để prompt không quá dài
-                                    .map(job -> String.format("- Vị trí: %s, Công ty: %s, Địa điểm: %s, Lương: %.0f-%.0f, Mô tả: %s...",
-                                            job.getTitle(), userDetailsRepository.findByUserId(job.getEmployer().getId()).getCompanyName(), job.getLocation(),
-                                            job.getSalaryMin(), job.getSalaryMax(),
-                                            job.getDescription().substring(0, Math.min(job.getDescription().length(), 100))))
+                                    .limit(5)
+                                    .map(job -> {
+                                        String companyName = "N/A";
+                                        UserDetail employerDetail = userDetailsRepository.findByUserId(job.getEmployer().getId());
+                                        if (employerDetail != null && employerDetail.getCompanyName() != null) {
+                                            companyName = employerDetail.getCompanyName();
+                                        }
+                                        return String.format("- Vị trí: %s, Công ty: %s, Địa điểm: %s, Lương: %.0f-%.0f, Mô tả: %s...",
+                                                job.getTitle(), companyName, job.getLocation(),
+                                                job.getSalaryMin(), job.getSalaryMax(),
+                                                job.getDescription().substring(0, Math.min(job.getDescription().length(), 100)));
+                                    })
                                     .collect(Collectors.joining("\n"));
                             contextForGemini.append("\n").append(jobListString);
                             contextForGemini.append("\n\nDựa vào thông tin này, hãy trả lời câu hỏi của người dùng một cách hữu ích và giới thiệu các công việc tìm được. Nếu có nhiều kết quả, chỉ cần liệt kê 5 cái đầu tiên và nói rằng có thể tìm thêm.");
@@ -150,10 +168,40 @@ public class ChatbotService {
                     break;
 
                 case "user_info":
+                    // Chỉ ADMIN hoặc người dùng tìm kiếm thông tin của chính họ mới được phép
+                    if (!"ADMIN".equals(currentUserRole)) {
+                        GeminiIntentResponse.UserSearchParams userSearchParams = analysisResult.getUserSearchParams();
+                        boolean isAskingAboutSelf = userSearchParams != null &&
+                                (currentUserEmail.equalsIgnoreCase(userSearchParams.getEmail()) ||
+                                        (userSearchParams.getFullName() != null
+                                                && userDetailsRepository.findByUserId(currentUser.getId()).getFullName() != null
+                                                && userDetailsRepository.findByUserId(currentUser.getId()).getFullName().equalsIgnoreCase(userSearchParams.getFullName()))
+
+                                );
+
+                        if (!isAskingAboutSelf) {
+                            log.warn("User {} (role {}) attempted to access unauthorized user info.", currentUserEmail, currentUserRole);
+                            contextForGemini.append("Xin lỗi, bạn không có quyền truy vấn thông tin cá nhân của người dùng khác.");
+                            contextForGemini.append("\n\nHãy thông báo cho người dùng rằng họ không được phép truy cập thông tin này.");
+                            break; // Dừng xử lý intent này
+                        }
+                    }
+
+                    // Nếu là ADMIN hoặc tìm kiếm thông tin của chính mình
                     GeminiIntentResponse.UserSearchParams userSearchParams = analysisResult.getUserSearchParams();
                     log.info("User search params: {}", userSearchParams);
 
                     if (userSearchParams != null && (userSearchParams.getEmail() != null || userSearchParams.getFullName() != null || userSearchParams.getRole() != null || userSearchParams.getLocation() != null || userSearchParams.getYearsExperience() != null || userSearchParams.getIsPremium() != null)) {
+                        // Thêm ràng buộc nếu không phải ADMIN, chỉ tìm kiếm chính người dùng đó
+                        if (!"ADMIN".equals(currentUserRole)) {
+                            userSearchParams.setEmail(currentUserEmail); // Đảm bảo chỉ tìm email của chính họ
+                            // Các tham số khác (full_name, role, location, years_experience, is_premium)
+                            // sẽ bị bỏ qua hoặc lọc bởi Repository nếu không phải là của chính họ.
+                            // Để đơn giản, chỉ cần đảm bảo email là của họ.
+                            // Nếu bạn muốn chi tiết hơn, bạn cần điều chỉnh UserRepository để lọc sâu hơn
+                            // dựa trên currentUserRole và các tham số khác.
+                        }
+
                         List<User> foundUsers = userRepository.findUsersByCriteria(
                                 userSearchParams.getEmail(),
                                 userSearchParams.getFullName(),
@@ -167,12 +215,12 @@ public class ChatbotService {
                         if (!foundUsers.isEmpty()) {
                             contextForGemini.append("Dưới đây là một số thông tin người dùng phù hợp mà tôi tìm thấy: ");
                             String userListString = foundUsers.stream()
-                                    .limit(3) // Giới hạn số lượng kết quả
+                                    .limit(3)
                                     .map(user -> {
                                         String roleName = (user.getRole() != null) ? user.getRole().getName() : "N/A";
-
-                                        String fullName = ( userDetailsRepository.findByUserId(user.getId()) != null &&  userDetailsRepository.findByUserId(user.getId()).getFullName() != null) ?  userDetailsRepository.findByUserId(user.getId()).getFullName() : "N/A";
-                                        String location = ( userDetailsRepository.findByUserId(user.getId()) != null &&  userDetailsRepository.findByUserId(user.getId()).getLocation() != null) ?  userDetailsRepository.findByUserId(user.getId()).getLocation() : "N/A";
+                                        UserDetail userDetail = userDetailsRepository.findByUserId(user.getId());
+                                        String fullName = (userDetail != null && userDetail.getFullName() != null) ? userDetail.getFullName() : "N/A";
+                                        String location = (userDetail != null && userDetail.getLocation() != null) ? userDetail.getLocation() : "N/A";
                                         return String.format("- Email: %s, Tên: %s, Vai trò: %s, Địa điểm: %s",
                                                 user.getEmail(), fullName, roleName, location);
                                     })
@@ -193,10 +241,29 @@ public class ChatbotService {
                     break;
 
                 case "subscription_info":
+                    // Chỉ ADMIN hoặc người dùng tìm kiếm thông tin gói của chính họ mới được phép
+                    if (!"ADMIN".equals(currentUserRole)) {
+                        GeminiIntentResponse.SubscriptionSearchParams subSearchParams = analysisResult.getSubscriptionSearchParams();
+                        boolean isAskingAboutSelf = subSearchParams != null && currentUserEmail.equalsIgnoreCase(subSearchParams.getUserEmail());
+
+                        if (!isAskingAboutSelf && subSearchParams != null && subSearchParams.getUserEmail() != null) {
+                            log.warn("User {} (role {}) attempted to access unauthorized subscription info for another user: {}", currentUserEmail, currentUserRole, subSearchParams.getUserEmail());
+                            contextForGemini.append("Xin lỗi, bạn không có quyền truy vấn thông tin gói đăng ký của người dùng khác.");
+                            contextForGemini.append("\n\nHãy thông báo cho người dùng rằng họ không được phép truy cập thông tin này.");
+                            break; // Dừng xử lý intent này
+                        }
+                        // Nếu không có userEmail trong query, JobSeeker/Employer chỉ có thể hỏi về các gói plan chung
+                    }
+
                     GeminiIntentResponse.SubscriptionSearchParams subSearchParams = analysisResult.getSubscriptionSearchParams();
                     log.info("Subscription search params: {}", subSearchParams);
 
                     if (subSearchParams != null && (subSearchParams.getUserEmail() != null || subSearchParams.getPlanName() != null || subSearchParams.getIsActive() != null)) {
+                        // Nếu không phải ADMIN, và có email người dùng trong params, hãy đảm bảo đó là email của chính họ.
+                        if (!"ADMIN".equals(currentUserRole) && subSearchParams.getUserEmail() != null) {
+                            subSearchParams.setUserEmail(currentUserEmail); // Ghi đè để đảm bảo an toàn
+                        }
+
                         List<Subscription> foundSubscriptions = subscriptionRepository.findSubscriptionsByCriteria(
                                 subSearchParams.getUserEmail(),
                                 subSearchParams.getPlanName(),
@@ -224,6 +291,7 @@ public class ChatbotService {
                         }
                     } else {
                         // Nếu không có tham số nào, có thể liệt kê tất cả các gói đăng ký
+                        // Mọi người dùng đều có thể hỏi về các gói đăng ký chung
                         List<SubscriptionPlan> allPlans = subscriptionPlanRepository.findAll();
                         if (!allPlans.isEmpty()) {
                             contextForGemini.append("Dưới đây là các gói đăng ký hiện có trên hệ thống của chúng tôi: ");
@@ -243,6 +311,7 @@ public class ChatbotService {
                     break;
 
                 case "company_info":
+                    // Mọi người dùng đều có thể tìm kiếm thông tin công ty công khai
                     GeminiIntentResponse.CompanyInfoParams companyInfoParams = analysisResult.getCompanyInfoParams();
                     log.info("Company info params: {}", companyInfoParams);
 
@@ -253,14 +322,12 @@ public class ChatbotService {
                                     companyInfoParams.getCompanyName(), companyInfoParams.getLocation()
                             );
                         } else {
-                            foundCompanyDetails = userDetailsRepository.findByCompanyNameContainingIgnoreCase(companyInfoParams.getCompanyName()).stream().collect(Collectors.toList());
+                            foundCompanyDetails = userDetailsRepository.findByCompanyNameContainingIgnoreCase(companyInfoParams.getCompanyName());
                         }
-
 
                         if (!foundCompanyDetails.isEmpty()) {
                             contextForGemini.append("Dưới đây là thông tin tôi tìm được về công ty: ");
-                            // Lấy thông tin từ user_details của Employer
-                            UserDetail companyDetail = foundCompanyDetails.get(0); // Lấy cái đầu tiên
+                            UserDetail companyDetail = foundCompanyDetails.get(0);
                             contextForGemini.append(String.format("\n- Tên công ty: %s, Địa điểm: %s, Mô tả: %s, Website: %s",
                                     companyDetail.getCompanyName(), companyDetail.getLocation(),
                                     companyDetail.getDescription() != null ? companyDetail.getDescription() : "N/A",
@@ -280,13 +347,14 @@ public class ChatbotService {
                     break;
 
                 case "employer_reviews":
+                    // Mọi người dùng đều có thể xem đánh giá công khai
                     GeminiIntentResponse.EmployerReviewParams reviewParams = analysisResult.getEmployerReviewParams();
                     log.info("Employer review params: {}", reviewParams);
 
                     if (reviewParams != null && reviewParams.getEmployerName() != null) {
                         List<UserDetail> employerDetails = userDetailsRepository.findByCompanyNameContainingIgnoreCase(reviewParams.getEmployerName());
                         if (!employerDetails.isEmpty()) {
-                            User employerUser = employerDetails.get(0).getUser();
+                            User employerUser = employerDetails.get(0).getUser(); // Lấy đối tượng User từ UserDetail
                             List<EmployerReview> reviews = employerReviewRepository.findEmployerReviewsByEmployerAndRating(
                                     employerUser.getId(), reviewParams.getMinRating(), reviewParams.getMaxRating()
                             );
@@ -318,17 +386,62 @@ public class ChatbotService {
                     break;
 
                 case "application_status":
+                    // Phân quyền cho application_status:
+                    // Job Seeker chỉ được xem đơn ứng tuyển của chính mình.
+                    // Employer chỉ được xem đơn ứng tuyển vào các công việc của họ.
+                    // Admin có thể xem tất cả.
                     GeminiIntentResponse.ApplicationSearchParams appSearchParams = analysisResult.getApplicationSearchParams();
                     log.info("Application search params: {}", appSearchParams);
 
-                    if (appSearchParams != null && (appSearchParams.getJobSeekerEmail() != null || appSearchParams.getJobTitle() != null || appSearchParams.getStatus() != null)) {
-                        List<Application> foundApplications = applicationRepository.findApplicationsByCriteria(
-                                appSearchParams.getJobSeekerEmail(),
-                                appSearchParams.getJobTitle(),
-                                appSearchParams.getStatus()
-                        );
+                    List<Application> foundApplications = null;
 
-                        if (!foundApplications.isEmpty()) {
+                    if (appSearchParams != null && (appSearchParams.getJobSeekerEmail() != null || appSearchParams.getJobTitle() != null || appSearchParams.getStatus() != null)) {
+                        if ("JOB_SEEKER".equals(currentUserRole)) {
+                            // Job Seeker chỉ có thể hỏi về đơn ứng tuyển của chính mình
+                            if (appSearchParams.getJobSeekerEmail() != null && !currentUserEmail.equalsIgnoreCase(appSearchParams.getJobSeekerEmail())) {
+                                log.warn("Job Seeker {} attempted to access application status of another user: {}", currentUserEmail, appSearchParams.getJobSeekerEmail());
+                                contextForGemini.append("Xin lỗi, bạn chỉ có thể xem tình trạng đơn ứng tuyển của chính mình.");
+                                contextForGemini.append("\n\nHãy thông báo cho người dùng rằng họ không được phép truy cập thông tin này.");
+                                break;
+                            }
+                            // Ghi đè email của Job Seeker để đảm bảo an toàn
+                            appSearchParams.setJobSeekerEmail(currentUserEmail);
+                            foundApplications = applicationRepository.findApplicationsByJobSeekerAndJobTitleAndStatus(
+                                    currentUser.getId(), appSearchParams.getJobTitle(), appSearchParams.getStatus());
+
+                        } else if ("EMPLOYER".equals(currentUserRole)) {
+                            // Employer chỉ có thể xem đơn ứng tuyển vào các công việc của họ
+                            // Cần lấy tất cả job IDs của employer này và tìm kiếm ứng tuyển
+                            List<Long> employerJobIds = jobRepository.findById(currentUser.getId())
+                                    .stream().map(Job::getId).collect(Collectors.toList());
+
+                            if (employerJobIds.isEmpty()) {
+                                contextForGemini.append("Bạn chưa đăng công việc nào nên không có đơn ứng tuyển để hiển thị.");
+                                contextForGemini.append("\n\nHãy trả lời người dùng rằng không có công việc nào được đăng.");
+                                break;
+                            }
+                            foundApplications = applicationRepository.findApplicationsByEmployerJobsAndCriteria(
+                                    employerJobIds,
+                                    appSearchParams.getJobSeekerEmail(), // Vẫn có thể lọc theo email nếu muốn
+                                    appSearchParams.getJobTitle(),
+                                    appSearchParams.getStatus()
+                            );
+                        } else if ("ADMIN".equals(currentUserRole)) {
+                            // Admin có thể truy vấn tất cả
+                            foundApplications = applicationRepository.findApplicationsByCriteria(
+                                    appSearchParams.getJobSeekerEmail(),
+                                    appSearchParams.getJobTitle(),
+                                    appSearchParams.getStatus()
+                            );
+                        } else {
+                            // Các vai trò khác không được phép truy cập thông tin ứng tuyển
+                            log.warn("User {} (role {}) attempted to access application status. Unauthorized.", currentUserEmail, currentUserRole);
+                            contextForGemini.append("Xin lỗi, vai trò của bạn không có quyền truy cập thông tin tình trạng đơn ứng tuyển.");
+                            contextForGemini.append("\n\nHãy thông báo cho người dùng rằng họ không được phép truy cập thông tin này.");
+                            break;
+                        }
+
+                        if (foundApplications != null && !foundApplications.isEmpty()) {
                             contextForGemini.append("Dưới đây là tình trạng các đơn ứng tuyển tôi tìm thấy: ");
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
                             String appListString = foundApplications.stream()
@@ -377,6 +490,9 @@ public class ChatbotService {
 
             return new ChatResponse(finalGeminiResponse);
 
+        } catch (ResponseStatusException e) {
+            // Xử lý các exception mà chúng ta ném ra để GlobalExceptionHandler bắt
+            throw e;
         } catch (IOException e) {
             log.error("Error communicating with Gemini service during RAG process: {}", e.getMessage(), e);
             return new ChatResponse("Xin lỗi, tôi đang gặp vấn đề kỹ thuật khi giao tiếp với AI. Vui lòng thử lại sau.");
