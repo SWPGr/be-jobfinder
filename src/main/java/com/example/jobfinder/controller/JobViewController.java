@@ -1,6 +1,7 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.JobViewRequest;
+import com.example.jobfinder.dto.job.JobViewResponse;
 import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.service.JobViewService;
 import jakarta.validation.Valid;
@@ -20,8 +21,8 @@ public class JobViewController {
     }
 
     @PostMapping
-    public ResponseEntity<JobView> recordJobView(@Valid @RequestBody JobViewRequest request) {
-        JobView jobView = jobViewService.recordJobView(request);
+    public ResponseEntity<JobViewResponse> recordJobView(@Valid @RequestBody JobViewRequest request) {
+        JobViewResponse jobView = jobViewService.recordJobView(request);
         return ResponseEntity.ok(jobView);
     }
 }

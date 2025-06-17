@@ -6,7 +6,7 @@ import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobRecommendation;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetails;
+import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ public class RecommendationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only JOB_SEEKER can view recommendations");
         }
 
-        UserDetails userDetail = userDetailsRepository.findByUserId(jobSeeker.getId());
+        UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId());
         if (userDetail == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User details not found");
         }
@@ -127,7 +127,7 @@ public class RecommendationService {
         return recommendations.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
 
-    private float calculateJobScore(UserDetails userDetail, Job job) {
+    private float calculateJobScore(UserDetail userDetail, Job job) {
         float score = 0.0f;
 
         float experienceScore = calculateExperienceScore(userDetail.getYearsExperience(), job.getJobLevel().getName());

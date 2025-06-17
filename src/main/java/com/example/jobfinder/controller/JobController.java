@@ -43,7 +43,7 @@ public class JobController {
     }
 
     @DeleteMapping("/{jobId}")
-    public String deleteJob(@PathVariable Long jobId) { // ID là Long
+    public String deleteJob(@PathVariable Long jobId) {
         jobService.deleteJob(jobId);
         return "Job with ID " + jobId + " has been deleted successfully!";
     }

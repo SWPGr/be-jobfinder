@@ -1,9 +1,11 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.JobViewRequest;
+import com.example.jobfinder.dto.job.JobViewResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Job;
+import com.example.jobfinder.model.JobLevel;
 import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.JobRepository;
@@ -36,7 +38,7 @@ public class JobViewService {
         this.jobRepository = jobRepository;
     }
 
-    public JobView recordJobView(JobViewRequest request) {
+    public JobViewResponse recordJobView(JobViewRequest request) {
         log.debug("Processing job view request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -55,15 +57,34 @@ public class JobViewService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found" + request.getJobId()));
 
         LocalDateTime startOfDay = LocalDate.now().atTime(LocalTime.MIN);
-        if(jobViewRepository.findByJobSeekerIdAndJobIdAndViewedAtAfter(jobSeeker.getId(), job.getId(), startOfDay).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have already view this job today");
+        boolean alreadyViewedToday = jobViewRepository.findByJobSeekerIdAndJobIdAndViewedAtAfter(jobSeeker.getId(), job.getId(), startOfDay)
+                .isPresent();
+        if(!alreadyViewedToday) {
+            JobView jobView = new JobView();
+            jobView.setJobSeeker(jobSeeker);
+            jobView.setJob(job);
+            jobView.setViewedAt(LocalDateTime.now());
+            log.debug("Recording job view for user: {} and job: {}", jobSeeker.getId(), job.getId());
+            jobViewRepository.save(jobView);
+            return mapToJobViewResponse(jobView);
+        } else {
+            log.debug("Job already viewed today by user: {} for job: {}", jobSeeker.getId(), job.getId());
+            JobView existingView = jobViewRepository.findByJobSeekerIdAndJobIdAndViewedAtAfter(jobSeeker.getId(), job.getId(), startOfDay)
+                    .get();
+            return mapToJobViewResponse(existingView);
         }
 
-        JobView jobView = new JobView();
-        jobView.setJobSeeker(jobSeeker);
-        jobView.setJob(job);
-        jobView.setViewedAt(LocalDateTime.now());
-        log.debug("Recording job view for user: {} and job: {}", jobSeeker.getId(), job.getId());
-        return jobViewRepository.save(jobView);
+
+    }
+
+    private JobViewResponse mapToJobViewResponse(JobView jobView) {
+        return JobViewResponse.builder()
+                .id(jobView.getId())
+                .jobId(jobView.getJob().getId())
+                .jobTitle(jobView.getJob().getTitle())
+                .jobSeekerId(jobView.getJobSeeker().getId())
+                .jobSeekerEmail(jobView.getJobSeeker().getEmail())
+                .viewedAt(jobView.getViewedAt())
+                .build();
     }
 }

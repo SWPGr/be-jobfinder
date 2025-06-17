@@ -1,9 +1,7 @@
 package com.example.jobfinder.mapper;
 
 // import com.example.jobfinder.dto.user_detail.UserDetailResponse; // Nếu bạn có UserDetailResponse DTO
-import com.example.jobfinder.model.UserDetails;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")

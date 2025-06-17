@@ -6,7 +6,7 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetails;
+import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.repository.RoleRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
@@ -38,7 +38,7 @@ public class AuthService {
 
 
     public void register(RegisterRequest request) throws Exception {
-        if(userRepository.findByEmail(request.getEmail()) != null) {
+        if(userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new Exception("Email already exists");
         }
 
@@ -51,11 +51,11 @@ public class AuthService {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user.setVerificationToken(UUID.randomUUID().toString());
-        user.setVerified(false);
+        user.setVerified(0);
 
         userRepository.save(user);
 
-        UserDetails userDetail = new UserDetails();
+        UserDetail userDetail = new UserDetail();
         userDetail.setUser(user);
 
         userDetailsRepository.save(userDetail);
@@ -72,7 +72,7 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
-        if(!user.isVerified()) {
+        if(user.getVerified() == 0) {
             throw new RuntimeException("Please verify your email first");
         }
 
@@ -86,7 +86,7 @@ public class AuthService {
         if(user == null) {
             throw new Exception("Invalid verification token");
         }
-        user.setVerified(true);
+        user.setVerified(1);
         user.setVerificationToken(null);
         userRepository.save(user);
     }
@@ -97,7 +97,7 @@ public class AuthService {
         if(user == null) {
             throw new Exception("User not found");
         }
-        if(user.isVerified()) {
+        if(user.getVerified() == 1) {
             throw new Exception("User already verified");
         }
 
@@ -122,7 +122,7 @@ public class AuthService {
     }
 
     public void resetPassword(ResetPasswordRequest request) throws Exception {
-        User user = userRepository.findByResetPasswordToken(request.getToken())
+        User user = userRepository.findByVerificationToken(request.getToken())
                 .orElseThrow(() -> new UsernameNotFoundException(request.getToken()));
         if(user == null) {
             throw new Exception("Invalid or expired reset token");

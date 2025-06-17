@@ -2,6 +2,7 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.SavedJobResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -54,7 +55,7 @@ public class SavedJobService {
     }
 
 
-    public SavedJob savedJob(SavedJobRequest request) {
+    public SavedJobResponse savedJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -86,10 +87,21 @@ public class SavedJobService {
         savedJob.setJob(job);
         savedJob.setSavedAt(LocalDateTime.now());
 
-        return savedJobRepository.save(savedJob);
+        savedJobRepository.save(savedJob);
+        return mapToSavedJobResponse(savedJob);
     }
 
-    public void unsaveJob(SavedJobRequest request) {
+    private SavedJobResponse mapToSavedJobResponse(SavedJob saved) {
+        return SavedJobResponse.builder()
+                .id(saved.getId())
+                .jobId(saved.getJob().getId())
+                .jobTitle(saved.getJob().getTitle())
+                .jobSeekerEmail(saved.getJobSeeker().getEmail())
+                .savedAt(saved.getSavedAt())
+                .build();
+    }
+
+    public void unSaveJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -112,4 +124,57 @@ public class SavedJobService {
         savedJobRepository.delete(savedJob);
         log.debug("unsaved job for user: {} and job: {}", jobSeeker.getId(), job.getId());
     }
+
+//    @Transactional // Đảm bảo phương thức này chạy trong một transaction
+//    public SavedJobResponse saveJob(SavedJobRequest request) { // Đổi tên phương thức để rõ ràng hơn
+//        log.debug("Processing save job request: {}", request);
+//
+//        // 1. Xác thực người dùng và vai trò
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication == null || authentication.getName() == null) {
+//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+//        }
+//        String email = authentication.getName();
+//        log.debug("Authenticated email: {}", email);
+//
+//        User jobSeeker = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new UsernameNotFoundException(email));
+//
+//        String role = jobSeeker.getRole().getName(); // Role đã được tải EAGERLY (như bạn đã sửa trước đó)
+//        log.debug("Role: {}", role);
+//        if (!role.equals("JOB_SEEKER")) {
+//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can save jobs");
+//        }
+//
+//        // 2. Tìm kiếm Job
+//        Job job = jobRepository.findById(request.getJobId())
+//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found with ID: " + request.getJobId()));
+//
+//        // 3. Kiểm tra trùng lặp
+//        if (savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId()).isPresent()) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have already saved this job");
+//        }
+//
+//        // 4. Tạo và lưu SavedJob entity
+//        SavedJob savedJob = new SavedJob();
+//        savedJob.setJobSeeker(jobSeeker);
+//        savedJob.setJob(job);
+//        // savedAt được tự động điền bởi @PrePersist trong entity nếu bạn đã có,
+//        // nếu không, hãy uncomment dòng dưới:
+//        // savedJob.setSavedAt(LocalDateTime.now());
+//
+//        SavedJob createdSavedJob = savedJobRepository.save(savedJob);
+//
+//        // 5. Chuyển đổi SavedJob entity sang SavedJobResponse DTO để trả về
+//        // Quan trọng: Vì @Transactional, các đối tượng jobSeeker và job
+//        // vẫn đang trong trạng thái managed và có thể được truy cập để lấy dữ liệu.
+//        return SavedJobResponse.builder()
+//                .id(createdSavedJob.getId())
+//                .savedAt(createdSavedJob.getSavedAt())
+//                .jobSeekerId(createdSavedJob.getJobSeeker().getId())
+//                .jobSeekerEmail(createdSavedJob.getJobSeeker().getEmail()) // Lấy email từ đối tượng User đã tải
+//                .jobId(createdSavedJob.getJob().getId())
+//                .jobTitle(createdSavedJob.getJob().getTitle()) // Lấy title từ đối tượng Job đã tải
+//                .build();
+//    }
 }

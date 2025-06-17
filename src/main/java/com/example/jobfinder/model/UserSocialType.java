@@ -1,44 +1,54 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_social_type")
-@Data
+@Table(name = "user_social_types")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class UserSocialType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_detail_id")
-    UserDetails userDetail;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "social_type_id")
-    SocialType socialType;
+    private Long id;
 
     @Column(length = 255)
-    String url;
+    private String url;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @CreationTimestamp
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
-    @CreationTimestamp
     @Column(name = "updated_at")
-    LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
+
+    // --- Mối quan hệ ---
+
+    // Một UserSocialType thuộc về một UserDetail
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_detail_id") // Có thể NULL theo DB schema nếu bạn cho phép, nhưng thường thì không
+    @JsonManagedReference("userDetail-userSocialTypes")
+    private UserDetail userDetail;
+
+    // Một UserSocialType có một SocialType
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "social_type_id")
+    @JsonManagedReference("socialType-userSocialTypes")
+    private SocialType socialType;
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
