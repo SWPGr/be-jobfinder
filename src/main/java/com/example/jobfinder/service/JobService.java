@@ -51,7 +51,7 @@ public class JobService {
 
 
         if (employer.getRole() == null ||
-                (!employer.getRole().getName().equals("JOB_SEEKER") &&
+                (!employer.getRole().getName().equals("EMPLOYER") &&
                         !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
             throw new AppException(ErrorCode.UNAUTHORIZED); // <-- CHÍNH LÀ DÒNG LỖI CỦA BẠN!
         }

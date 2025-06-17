@@ -3,6 +3,7 @@ package com.example.jobfinder.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -29,6 +30,7 @@ public class Job {
     @Column(name = "salary_max")
     private Float salaryMax;
     @Column(name = "created_at")
+    @CreationTimestamp
     private LocalDateTime createdAt;
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
