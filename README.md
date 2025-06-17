@@ -43,11 +43,11 @@ src
 │       └── static/templates   # (nếu có dùng frontend nội bộ)
 
 
-⚙️ **Hướng dẫn cài đặt**
+## ⚙️ Hướng dẫn cài đặt
 git clone https://github.com/<your-username>/jobfinder.git
 cd jobfinder
 
-**Cấu hình cơ sở dữ liệu**
+## Cấu hình cơ sở dữ liệu**
 application.properties
 # Database configuration
 spring.datasource.url=jdbc:mysql://localhost:3306/jobfinder?useSSL=false&serverTimezone=UTC
