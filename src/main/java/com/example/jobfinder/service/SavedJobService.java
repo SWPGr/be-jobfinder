@@ -2,6 +2,7 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.SavedJobResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -54,7 +55,7 @@ public class SavedJobService {
     }
 
 
-    public SavedJob savedJob(SavedJobRequest request) {
+    public SavedJobResponse savedJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -86,7 +87,42 @@ public class SavedJobService {
         savedJob.setJob(job);
         savedJob.setSavedAt(LocalDateTime.now());
 
-        return savedJobRepository.save(savedJob);
+        savedJobRepository.save(savedJob);
+        return mapToSavedJobResponse(savedJob);
+    }
+
+    private SavedJobResponse mapToSavedJobResponse(SavedJob saved) {
+        return SavedJobResponse.builder()
+                .id(saved.getId())
+                .jobId(saved.getJob().getId())
+                .jobTitle(saved.getJob().getTitle())
+                .jobSeekerEmail(saved.getJobSeeker().getEmail())
+                .savedAt(saved.getSavedAt())
+                .build();
+    }
+
+    public void unSaveJob(SavedJobRequest request) {
+        log.debug("Processing save job request: {}", request);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        log.debug("Authenticated email: {}", email);
+        User jobSeeker = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        String role = jobSeeker.getRole().getName();
+        if (!role.equals("JOB_SEEKER")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unsave jobs");
+        }
+
+        Job job = jobRepository.findById(request.getJobId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job not found" + request.getJobId()));
+
+        SavedJob savedJob = savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have not saved this job"));
+
+        savedJobRepository.delete(savedJob);
+        log.debug("unsaved job for user: {} and job: {}", jobSeeker.getId(), job.getId());
     }
 
 //    @Transactional // Đảm bảo phương thức này chạy trong một transaction

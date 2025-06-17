@@ -14,7 +14,7 @@ import java.util.Set;
 @Getter
 @SuperBuilder
 @ToString(callSuper = true)
-@AttributeOverride(name = "name", column = @Column(name = "education_name", unique = true, nullable = false, length = 100))
+@AttributeOverride(name = "name", column = @Column(name = "education_type", unique = true, nullable = false, length = 100))
 public class Education extends BaseNameEntity {
     public Education() {}
 
