@@ -38,12 +38,16 @@ public class SecurityConfig {
                                 "/api/profiles/**",
                                 "/api/profiles/me",
                                 "/api/apply/**",
-                                "/api/save/**",
+                                "/api/save/",
+                                "/api/saved-jobs",
                                 "/api/social-types",
-                                " ./api/job-levels",
+                                "/api/job-levels",
                                 "/api/employer-reviews",
                                 "/api/user-social-links",
-                                "/api/notifications"
+                                "/api/notifications",
+                                "/api/chat",
+                                "/api/job",
+                                "/error"
                         ).permitAll()
 
                         .anyRequest().authenticated()

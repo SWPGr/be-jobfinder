@@ -1,40 +1,43 @@
 package com.example.jobfinder.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-            @JsonBackReference //Bỏ tuần tự hóa gọi cha con cha con .....
-    User user;
+    private Long id;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    String message;
+    private String message;
 
-    @Column(name = "is_read", nullable = false)
-    boolean isRead;
+    @Column(name = "is_read", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isRead;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    @CreationTimestamp
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    // --- Mối quan hệ ---
+
+    // Một Notification thuộc về một User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonManagedReference("user-notifications")
+    private User user;
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

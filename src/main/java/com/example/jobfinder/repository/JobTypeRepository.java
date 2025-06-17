@@ -9,4 +9,5 @@ import java.util.Optional; // Thường dùng cho các phương thức findBy...
 
 @Repository // Đánh dấu đây là một Spring Data Repository
 public interface JobTypeRepository extends BaseNameRepository<JobType, Long> {
+    Optional<JobType> findByName(String jobTypeName);
 }

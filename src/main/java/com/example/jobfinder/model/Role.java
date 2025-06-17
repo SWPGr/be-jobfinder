@@ -1,11 +1,12 @@
 package com.example.jobfinder.model;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
+import java.util.Set;
+
 @Entity
 @Table(name = "roles")
 @Setter
@@ -17,4 +18,7 @@ public class Role extends BaseNameEntity{
     public Role() {
 
     }
+    @OneToMany(mappedBy = "role", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JsonBackReference("role-users")
+    private Set<User> users;
 }

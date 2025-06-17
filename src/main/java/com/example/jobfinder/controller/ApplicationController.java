@@ -14,9 +14,11 @@ import com.example.jobfinder.service.ApplicationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List;
 
@@ -44,9 +46,10 @@ public class ApplicationController {
     }
 
     @PostMapping
-    public ResponseEntity<Application> applyJob(@RequestBody ApplicationRequest request) throws Exception {
-        Application application = applicationService.applyJob(request);
-        return ResponseEntity.ok(application);
+    public ResponseEntity<ApplicationResponse> applyJob(@RequestBody ApplicationRequest request) throws Exception {
+        ApplicationResponse applicationResponse  = applicationService.applyJob(request);
+        return new ResponseEntity<>(applicationResponse, HttpStatus.CREATED);
+
     }
 
     @PutMapping("/{applicationId}/status")

@@ -1,12 +1,13 @@
 // D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\model\JobType.java
 package com.example.jobfinder.model;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "job_types")
@@ -14,10 +15,13 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @SuperBuilder
 @ToString(callSuper = true)
-@AttributeOverride(name = "name", column = @Column(name = "type_name", unique = true, nullable = false, length = 50))
+@AttributeOverride(name = "name", column = @Column(name = "job_type_name", unique = true, nullable = false, length = 50))
 public class JobType extends BaseNameEntity {
     public JobType() {
 
     }
-    // Không cần khai báo lại thuộc tính
+    // Một JobType có thể có nhiều Job
+    @OneToMany(mappedBy = "jobType", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("jobType-jobs")
+    private Set<Job> jobs = new HashSet<>();
 }

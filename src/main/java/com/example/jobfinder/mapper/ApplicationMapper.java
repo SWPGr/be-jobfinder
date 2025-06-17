@@ -21,7 +21,7 @@ public interface ApplicationMapper {
     // Ánh xạ từ Entity sang Response DTO
     @Mapping(source = "jobSeeker", target = "jobSeeker")
     @Mapping(source = "job", target = "job")
-    @Mapping(source = "status.value", target = "status")
+    @Mapping(source = "status", target = "status")
     ApplicationResponse toApplicationResponse(Application application);
 
     // Thêm phương thức ánh xạ list nếu cần
