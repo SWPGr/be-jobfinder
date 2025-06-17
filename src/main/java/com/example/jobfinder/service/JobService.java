@@ -31,6 +31,15 @@ public class JobService {
     JobLevelRepository jobLevelRepository;
     CategoryRepository categoryRepository;
 
+    /****
+     * Creates a new job posting for the authenticated employer or company admin.
+     *
+     * Retrieves the current user, validates their role, checks for duplicate job titles, and ensures referenced entities exist.
+     * Throws an exception if the user is unauthorized, required entities are missing, or a job with the same title already exists for the employer.
+     *
+     * @param jobCreationRequest the details of the job to be created
+     * @return the newly created Job entity
+     */
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

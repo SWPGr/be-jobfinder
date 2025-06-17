@@ -16,7 +16,10 @@ import java.util.Set;
 @ToString(callSuper = true)
 @AttributeOverride(name = "name", column = @Column(name = "education_type", unique = true, nullable = false, length = 100))
 public class Education extends BaseNameEntity {
-    public Education() {}
+    /**
+ * Constructs a new Education entity with default values.
+ */
+public Education() {}
 
     // Một Education có thể có nhiều UserDetail
     @OneToMany(mappedBy = "education", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)

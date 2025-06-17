@@ -11,7 +11,15 @@ import java.util.Optional;
 
 @Repository
 public interface JobViewRepository extends JpaRepository<JobView, Long> {
-    @Query("SELECT jv FROM JobView jv WHERE jv.jobSeeker.id = :jobSeekerId AND jv.job.id = :jobId AND jv.viewedAt >= :startOfDay")
+    /**
+             * Retrieves a JobView for a specific job seeker and job, where the view occurred on or after the specified start of day.
+             *
+             * @param jobSeekerId the ID of the job seeker
+             * @param jobId the ID of the job
+             * @param startOfDay the earliest viewedAt timestamp to consider
+             * @return an Optional containing the matching JobView if found, or empty if not found
+             */
+            @Query("SELECT jv FROM JobView jv WHERE jv.jobSeeker.id = :jobSeekerId AND jv.job.id = :jobId AND jv.viewedAt >= :startOfDay")
     Optional<JobView> findByJobSeekerIdAndJobIdAndViewedAtAfter(
             @Param("jobSeekerId") Long jobSeekerId,
             @Param("jobId") Long jobId,

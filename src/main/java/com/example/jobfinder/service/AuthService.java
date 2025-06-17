@@ -91,6 +91,12 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    /**
+     * Sends a new verification email to the user with the specified email address.
+     *
+     * @param email the email address of the user to resend the verification email to
+     * @throws Exception if the user is not found or is already verified
+     */
     public void resendVerificationEmail(String email) throws Exception {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -106,6 +112,13 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
     }
 
+    /****
+     * Initiates the password reset process for a user by generating a reset token and sending a reset email.
+     *
+     * @param request contains the email address of the user requesting a password reset
+     * @throws UsernameNotFoundException if no user is found with the provided email
+     * @throws Exception if the user is not found (redundant check)
+     */
     public void forgotPassword(ForgotPasswordRequest request) throws Exception {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));

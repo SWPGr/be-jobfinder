@@ -40,6 +40,13 @@ public class SavedJobService {
     JobRepository jobRepository;
     JobMapper  jobMapper;
 
+    /**
+     * Retrieves all jobs saved by a specific job seeker.
+     *
+     * @param jobSeekerId the ID of the job seeker whose saved jobs are to be retrieved
+     * @return a list of job response DTOs representing the saved jobs
+     * @throws AppException if the user with the given ID does not exist
+     */
     public List<JobResponse> getSavedJobsByJobSeekerId(Long jobSeekerId) { // <-- Thay đổi kiểu trả về thành List<JobResponse>
         userRepository.findById(jobSeekerId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -55,6 +62,16 @@ public class SavedJobService {
     }
 
 
+    /**
+     * Saves a job for the currently authenticated job seeker.
+     *
+     * Validates user authentication and role, checks for job existence and duplicate saves, then creates and persists a new saved job entry. Returns a response DTO with saved job details.
+     *
+     * @param request the request containing the job ID to be saved
+     * @return a response containing details of the saved job
+     * @throws ResponseStatusException if the user is not authenticated, not a job seeker, the job does not exist, or the job is already saved
+     * @throws UsernameNotFoundException if the authenticated user's email is not found
+     */
     public SavedJobResponse savedJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
@@ -91,6 +108,12 @@ public class SavedJobService {
         return mapToSavedJobResponse(savedJob);
     }
 
+    /**
+     * Converts a SavedJob entity to a SavedJobResponse DTO.
+     *
+     * @param saved the SavedJob entity to convert
+     * @return a SavedJobResponse containing the saved job's ID, job details, job seeker email, and saved timestamp
+     */
     private SavedJobResponse mapToSavedJobResponse(SavedJob saved) {
         return SavedJobResponse.builder()
                 .id(saved.getId())
@@ -101,6 +124,11 @@ public class SavedJobService {
                 .build();
     }
 
+    /**
+     * Removes a saved job entry for the authenticated job seeker.
+     *
+     * Validates the user's authentication and role, checks for the existence of the specified job and saved job record, and deletes the saved job if found. Throws exceptions if the user is not authorized, the job does not exist, or the job was not previously saved by the user.
+     */
     public void unSaveJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
