@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByVerificationToken(String verificationToken);
 
+    Optional<User> findByResetPasswordToken(String resetPasswordToken);
+
     // Cập nhật phương thức này để thêm tham số `verified`
     @Query(QueryConstants.FIND_USERS_BY_CRITERIA)
     List<User> findUsersByCriteria(@Param("email") String email,
