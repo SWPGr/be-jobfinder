@@ -1,0 +1,16 @@
+package com.example.jobfinder.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
+
+@Configuration
+public class RestTemplateConfig {
+
+    @Bean
+    public RestTemplate restTemplate() {
+        // Bạn có thể tùy chỉnh RestTemplate ở đây, ví dụ:
+        // Set message converters, interceptors, etc.
+        return new RestTemplate();
+    }
+}

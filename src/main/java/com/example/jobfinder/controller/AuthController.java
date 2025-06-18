@@ -1,7 +1,8 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.*;
+import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) throws Exception {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) throws Exception {
         authService.register(request);
         return ResponseEntity.ok("Registration successful. Please check your email for verification.");
     }
@@ -44,9 +45,9 @@ public class AuthController {
         return ResponseEntity.ok("Email resend successfully.");
     }
 
-    @PostMapping("/forgot-passowrd")
+    @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request)throws Exception {
-        authService.forgotPassowrd(request);
+        authService.forgotPassword(request);
         return ResponseEntity.ok("Password reset email sent. Please check your email.");
     }
 

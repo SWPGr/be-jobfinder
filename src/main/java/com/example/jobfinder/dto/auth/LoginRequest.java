@@ -1,16 +1,12 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.auth;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 
-public class RegisterRequest {
+public class LoginRequest {
     private String email;
     private String password;
-
-    private String roleName;
 
     public String getEmail() {
         return email;
@@ -26,13 +22,5 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
     }
 }

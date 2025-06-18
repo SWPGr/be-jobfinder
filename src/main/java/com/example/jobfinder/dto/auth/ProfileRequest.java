@@ -1,36 +1,27 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.auth;
 
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 
-public class ProfileResponse {
-    private String email;
-    private String roleName;
+public class ProfileRequest {
     private String location;
     private String fullName;
     private String phone;
+    private Long education;
     private Integer yearsExperience;
     private String resumeUrl;
     private String companyName;
     private String description;
     private String website;
 
-    public String getEmail() {
-        return email;
+    public Long getEducation() {
+        return education;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
+    public void setEducation(Long education) {
+        this.education = education;
     }
 
     public String getLocation() {

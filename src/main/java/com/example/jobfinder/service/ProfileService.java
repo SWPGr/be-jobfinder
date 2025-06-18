@@ -1,13 +1,16 @@
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.ProfileRequest;
-import com.example.jobfinder.dto.ProfileResponse;
+import com.example.jobfinder.dto.auth.ProfileRequest;
+import com.example.jobfinder.dto.auth.ProfileResponse;
+import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetail;
+import com.example.jobfinder.repository.EducationRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -17,16 +20,19 @@ import java.util.List;
 public class ProfileService {
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
+    private final EducationRepository educationRepository;
 
-    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository) {
+    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository, EducationRepository educationRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
+        this.educationRepository = educationRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->  new UsernameNotFoundException(email));
         if (user == null) {
             throw new Exception("User not found");
         }
@@ -38,6 +44,11 @@ public class ProfileService {
 
         String roleName = user.getRole().getName();
         if (roleName.equals("JOB_SEEKER")) {
+            if (request.getEducation() != null) {
+                Education education = educationRepository.findById(request.getEducation())
+                        .orElseThrow(() -> new Exception("invalid education id"));
+                userDetail.setEducation(education);
+            }
             userDetail.setLocation(request.getLocation());
             userDetail.setFullName(request.getFullName());
             userDetail.setPhone(request.getPhone());
@@ -60,12 +71,13 @@ public class ProfileService {
     public List<ProfileResponse> listCurrentUserProfiles() throws Exception {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User currentUser = userRepository.findByEmail(email);
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() ->  new UsernameNotFoundException(email));
         if (currentUser == null) {
             throw new Exception("User not found");
         }
 
-        if (!currentUser.isVerified()) {
+        if (currentUser.getVerified() == 0) {
             throw new Exception("Please verify your email first");
         }
 
@@ -83,6 +95,7 @@ public class ProfileService {
         response.setEmail(user.getEmail());
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
+        response.setEducation(userDetail.getEducation().getId());
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
         response.setYearsExperience(userDetail.getYearsExperience());
