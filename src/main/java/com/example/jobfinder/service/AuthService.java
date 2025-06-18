@@ -122,7 +122,7 @@ public class AuthService {
     }
 
     public void resetPassword(ResetPasswordRequest request) throws Exception {
-        User user = userRepository.findByVerificationToken(request.getToken())
+        User user = userRepository.findByResetPasswordToken(request.getToken())
                 .orElseThrow(() -> new UsernameNotFoundException(request.getToken()));
         if(user == null) {
             throw new Exception("Invalid or expired reset token");
