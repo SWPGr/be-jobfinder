@@ -17,7 +17,9 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 
 import java.util.List;
@@ -31,16 +33,50 @@ public class ApplicationController {
     ApplicationService applicationService;
     UserRepository userRepository;
 
+    @GetMapping("/my-applied-jobs")
+    public ResponseEntity<List<JobResponse>> getAppliedJobsForUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    @GetMapping("/user/{userId}/jobs")
-    public ResponseEntity<List<JobResponse>> getAppliedJobsForUser(@PathVariable Long userId) {
-        List<JobResponse> appliedJobs = applicationService.getAppliedJobsByUserId(userId);
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        String userEmail = authentication.getName();
+        com.example.jobfinder.model.User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+
+        if (!currentUser.getRole().getName().equals("JOB_SEEKER") && !currentUser.getRole().getName().equals("ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+        }
+
+        List<JobResponse> appliedJobs = applicationService.getAppliedJobsByUserId(currentUser.getId());
         return ResponseEntity.ok(appliedJobs);
     }
 
-    @GetMapping("/candidates/{jobId}")
-    public ResponseEntity<List<UserResponse>> getCandidatesByJob(@PathVariable Long jobId,
-                                                                 Authentication authentication) {
+    @GetMapping("/{jobId}/candidates") // Endpoint /api/applications/{jobId}/candidates
+    public ResponseEntity<List<UserResponse>> getCandidatesByJob(@PathVariable Long jobId) { // Loại bỏ Authentication khỏi param vì đã lấy từ SecurityContextHolder
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        String userEmail = authentication.getName();
+        com.example.jobfinder.model.User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+
+        // Logic phân quyền: Chỉ EMPLOYER (chủ sở hữu job) hoặc ADMIN mới được xem
+        if (currentUser.getRole().getName().equals("EMPLOYER")) {
+            // Kiểm tra xem công việc này có phải do EMPLOYER hiện tại đăng không
+            boolean isEmployerJob = applicationService.isJobOwnedByEmployer(jobId, currentUser.getId());
+            if (!isEmployerJob) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+            }
+        } else if (!currentUser.getRole().getName().equals("ADMIN")) {
+            // Nếu không phải EMPLOYER và cũng không phải ADMIN, từ chối
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+        }
+
         List<UserResponse> candidates = applicationService.getCandidatesByJobId(jobId);
         return ResponseEntity.ok(candidates);
     }

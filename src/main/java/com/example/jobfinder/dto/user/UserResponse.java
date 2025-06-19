@@ -13,12 +13,17 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
-    Long id;
-    String email;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
-    Boolean verified;
-    Boolean isPremium;
+    private Long id;
+    private String email;
+    private Boolean enabled; // Changed from Integer to Boolean for better representation
+    private Boolean isPremium; // Changed from Integer to Boolean for better representation
+    private String createdAt; // Or LocalDateTime, depending on your preference
+    private String updatedAt; // Or LocalDateTime
 
-    SimpleNameResponse role; // <-- Trả về đối tượng RoleResponse lồng nhau
+    // New fields to be mapped from Role and UserDetail
+    private String roleName;  // To hold role.name
+    private String fullName;  // To hold userDetail.fullName
+    private String phone;     // To hold userDetail.phone
+    private String location;  // To hold userDetail.location
+    private Boolean verified; ; // <-- Trả về đối tượng RoleResponse lồng nhau
 }

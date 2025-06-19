@@ -16,8 +16,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByVerificationToken(String verificationToken);
+    Boolean existsByEmail(String email);
 
-    Optional<User> findByResetPasswordToken(String resetPasswordToken);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role r LEFT JOIN FETCH u.userDetail ud WHERE r.name = :roleName")
+    List<User> findByRoleName(@Param("roleName") String roleName);
 
     // Cập nhật phương thức này để thêm tham số `verified`
     @Query(QueryConstants.FIND_USERS_BY_CRITERIA)
@@ -27,5 +30,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                    @Param("location") String location,
                                    @Param("yearsExperience") Integer yearsExperience,
                                    @Param("isPremium") Boolean isPremium,
-                                   @Param("verified") Integer verified); // <-- Thêm tham số này
+                                   @Param("verified") Integer verified,
+                                   @Param("resumeUrl") String resumeUrl,
+                                   @Param("companyName") String companyName,
+                                   @Param("website") String website);
+
 }

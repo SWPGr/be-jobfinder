@@ -22,6 +22,6 @@ public class SocialTypeController extends BaseNameController {
 
     @Override
     protected String getBasePath() {
-        return "Social Type"; // Tên hiển thị cho loại này
+        return "Social Type";
     }
 }
