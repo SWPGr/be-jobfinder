@@ -18,9 +18,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByVerificationToken(String verificationToken);
     Boolean existsByEmail(String email);
 
+    Optional<User>  findByResetPasswordToken(String resetPasswordToken);
+
 
     @Query("SELECT u FROM User u JOIN FETCH u.role r LEFT JOIN FETCH u.userDetail ud WHERE r.name = :roleName")
     List<User> findByRoleName(@Param("roleName") String roleName);
+
+    @Query("SELECT COUNT(u) FROM User u")
+    long countAllUsers();
 
     // Cập nhật phương thức này để thêm tham số `verified`
     @Query(QueryConstants.FIND_USERS_BY_CRITERIA)
