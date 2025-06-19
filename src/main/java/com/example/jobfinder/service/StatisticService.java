@@ -7,6 +7,7 @@ import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.dto.statistic.MonthlyComparisonResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -126,6 +127,96 @@ public class StatisticService {
         }
 
         return trends;
+    }
+
+    @Transactional(readOnly = true)
+    public MonthlyComparisonResponse getMonthOverMonthComparison() {
+        log.info("Service: Bắt đầu tính toán so sánh giữa tháng này và tháng trước.");
+
+        // Xác định tháng hiện tại và tháng trước
+        YearMonth currentMonth = YearMonth.now();
+        YearMonth previousMonth = currentMonth.minusMonths(1);
+
+        // Lấy số liệu của tháng hiện tại (cuối tháng hiện tại)
+        LocalDateTime endOfCurrentMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+        long currentMonthTotalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endOfCurrentMonth);
+        long currentMonthTotalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfCurrentMonth);
+        long currentMonthTotalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endOfCurrentMonth);
+        long currentMonthTotalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endOfCurrentMonth);
+
+        // Lấy số liệu của tháng trước (cuối tháng trước)
+        LocalDateTime endOfPreviousMonth = previousMonth.atEndOfMonth().atTime(23, 59, 59);
+        long previousMonthTotalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endOfPreviousMonth);
+        long previousMonthTotalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfPreviousMonth);
+        long previousMonthTotalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endOfPreviousMonth);
+        long previousMonthTotalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endOfPreviousMonth);
+
+        // --- Tính toán phần trăm thay đổi và trạng thái cho từng chỉ số ---
+        MonthlyComparisonResponse.MonthlyComparisonResponseBuilder builder = MonthlyComparisonResponse.builder()
+                .monthYear(currentMonth.toString())
+                .currentMonthTotalJobs(currentMonthTotalJobs)
+                .currentMonthTotalAppliedJobs(currentMonthTotalAppliedJobs)
+                .currentMonthTotalJobSeekers(currentMonthTotalJobSeekers)
+                .currentMonthTotalEmployers(currentMonthTotalEmployers);
+
+        // Hàm tiện ích để tính toán và trả về kết quả
+        calculateAndSetComparison(builder,
+                currentMonthTotalJobs, previousMonthTotalJobs,
+                "jobsChangePercentage", "jobsStatus");
+        calculateAndSetComparison(builder,
+                currentMonthTotalAppliedJobs, previousMonthTotalAppliedJobs,
+                "appliedJobsChangePercentage", "appliedJobsStatus");
+        calculateAndSetComparison(builder,
+                currentMonthTotalJobSeekers, previousMonthTotalJobSeekers,
+                "jobSeekersChangePercentage", "jobSeekersStatus");
+        calculateAndSetComparison(builder,
+                currentMonthTotalEmployers, previousMonthTotalEmployers,
+                "employersChangePercentage", "employersStatus");
+
+        log.info("Service: Hoàn tất tính toán so sánh tháng này với tháng trước.");
+        return builder.build();
+    }
+
+    // --- Hàm tiện ích để tính toán phần trăm thay đổi và trạng thái ---
+    // Sử dụng Reflection để set giá trị, giúp code gọn hơn.
+    // Nếu bạn không muốn dùng Reflection, bạn sẽ phải viết 4 khối if/else riêng biệt cho mỗi chỉ số.
+    private void calculateAndSetComparison(MonthlyComparisonResponse.MonthlyComparisonResponseBuilder builder,
+                                           long currentValue, long previousValue,
+                                           String percentageFieldName, String statusFieldName) {
+        double changePercentage = 0.0;
+        String status = "no_change";
+
+        if (previousValue != 0) {
+            changePercentage = ((double) (currentValue - previousValue) / previousValue) * 100;
+        } else if (currentValue > 0) {
+            // Nếu tháng trước là 0 và tháng này > 0, coi như tăng trưởng vô hạn (hoặc 100% nếu muốn)
+            // hoặc bạn có thể định nghĩa là "increase_from_zero"
+            changePercentage = 100.0; // Hoặc một giá trị tượng trưng cho sự tăng trưởng lớn
+        }
+        // else if (currentValue == 0 && previousValue == 0) -> changePercentage = 0, status = "no_change" (đã khởi tạo)
+
+        if (changePercentage > 0) {
+            status = "increase";
+        } else if (changePercentage < 0) {
+            status = "decrease";
+        }
+
+        try {
+            // Sử dụng Reflection để set giá trị vào builder
+            // Đây là cách gọn, nhưng nếu không thích Reflection, bạn có thể viết thủ công
+            // builder.jobsChangePercentage(changePercentage)
+            // builder.jobsStatus(status)
+            // ...
+            java.lang.reflect.Method setPercentageMethod = builder.getClass().getMethod(percentageFieldName, double.class);
+            setPercentageMethod.invoke(builder, changePercentage);
+
+            java.lang.reflect.Method setStatusMethod = builder.getClass().getMethod(statusFieldName, String.class);
+            setStatusMethod.invoke(builder, status);
+
+        } catch (Exception e) {
+            log.error("Lỗi khi setting giá trị bằng Reflection: {}", e.getMessage());
+            // Xử lý lỗi hoặc ném ngoại lệ tùy theo nhu cầu
+        }
     }
 
 }

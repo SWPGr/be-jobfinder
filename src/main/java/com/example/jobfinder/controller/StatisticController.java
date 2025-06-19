@@ -4,6 +4,7 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.statistic.MonthlyTrendResponse; // DTO mới
 import com.example.jobfinder.dto.statistic.DailyTrendResponse; // DTO mới
+import com.example.jobfinder.dto.statistic.MonthlyComparisonResponse;
 import com.example.jobfinder.service.StatisticService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,18 @@ public class StatisticController {
                 .code(HttpStatus.OK.value())
                 .message("Daily trends calculated and fetched successfully")
                 .result(trends)
+                .build();
+    }
+
+    @GetMapping("/month-over-month-comparison")
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xem so sánh
+    public ApiResponse<MonthlyComparisonResponse> getMonthOverMonthComparison() {
+        log.info("API: Lấy so sánh giữa tháng này và tháng trước.");
+        MonthlyComparisonResponse comparison = statisticService.getMonthOverMonthComparison();
+        return ApiResponse.<MonthlyComparisonResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Month-over-month comparison fetched successfully")
+                .result(comparison)
                 .build();
     }
 }
