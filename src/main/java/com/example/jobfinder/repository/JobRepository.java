@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -16,6 +17,12 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     List<Job> findByLocation(String location);
 
     boolean existsByIdAndEmployerId(Long jobId, Long employerId);
+
+    @Query("SELECT COUNT(j) FROM Job j WHERE j.createdAt <= :endDate")
+    long countTotalJobsPostedBeforeOrEquals(@Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(j) FROM Job j")
+    long countAllJobs();
 
     // Hàm tìm kiếm linh hoạt hơn
     @Query(QueryConstants.FIND_JOBS_BY_CRITERIA)

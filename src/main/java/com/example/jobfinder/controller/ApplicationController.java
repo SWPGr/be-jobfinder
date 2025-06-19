@@ -1,5 +1,6 @@
 package com.example.jobfinder.controller;
 
+import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
@@ -9,15 +10,19 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.ApplicationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,10 +33,12 @@ import java.util.List;
 @RequestMapping("api/apply")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class ApplicationController {
 
     ApplicationService applicationService;
     UserRepository userRepository;
+    ApplicationRepository applicationRepository;
 
     @GetMapping("/my-applied-jobs")
     public ResponseEntity<List<JobResponse>> getAppliedJobsForUser() {
@@ -99,6 +106,18 @@ public class ApplicationController {
         ApplicationResponse updatedApplication = applicationService.updateApplicationStatus(
                 applicationId, request, employerId);
         return ResponseEntity.ok(updatedApplication);
+    }
+
+    @GetMapping("/total")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Long> getTotalApplications() {
+        log.info("API: Lấy tổng số lượng ứng tuyển công việc.");
+        long totalApplications = applicationService.getTotalApplications();
+        return ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("Total applications count fetched successfully")
+                .result(totalApplications)
+                .build();
     }
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
