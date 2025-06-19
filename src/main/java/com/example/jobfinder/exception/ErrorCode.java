@@ -130,7 +130,16 @@ public enum ErrorCode {
     USER_SOCIAL_TYPE_NOT_FOUND(7100, "User social link not found"),
     USER_SOCIAL_TYPE_ALREADY_EXISTS(7101, "You already have a link for this social type"),
     UNAUTHORIZED_USER_SOCIAL_ACTION(7102, "You are not authorized to perform this action on user social link"),
-    INVALID_SOCIAL_URL(7103, "Invalid social media URL format");
+    INVALID_SOCIAL_URL(7103, "Invalid social media URL format"),
+
+    // Role & Permission Errors (Lỗi liên quan đến Vai trò & Quyền hạn)
+    PERMISSION_NOT_FOUND(2001, "Quyền không tìm thấy"),
+    USER_IS_NOT_JOB_SEEKER(2002, "Người dùng này không phải là người tìm việc"), // <-- Mới
+    USER_IS_NOT_EMPLOYER(2003, "Người dùng này không phải là nhà tuyển dụng"),
+    // <-- Mới
+
+
+    ;
 
 // ... (phần còn lại của ErrorCode enum của bạn)
     ;

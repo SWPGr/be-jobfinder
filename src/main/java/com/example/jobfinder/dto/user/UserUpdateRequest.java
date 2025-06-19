@@ -1,22 +1,31 @@
-
+// src/main/java/com/example/jobfinder/dto/user/UserUpdateRequest.java
 package com.example.jobfinder.dto.user;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@Data // Tự động tạo getters, setters, toString, equals, hashCode
+@NoArgsConstructor // Tự động tạo constructor không đối số
+@AllArgsConstructor // Tự động tạo constructor với tất cả các đối số
+@Builder // Tự động tạo builder pattern cho việc khởi tạo đối tượng dễ dàng hơn
 public class UserUpdateRequest {
-    @Email(message = "USER_EMAIL_INVALID")
-    String email; // Có thể để null nếu không muốn cập nhật email
+    private String email;
+    private String roleName;
+    private String fullName;
+    private String phone;
+    private String location;
 
-    @Size(min = 6, message = "USER_PASSWORD_MIN_LENGTH")
-    String password; // Có thể để null nếu không muốn cập nhật password
+    // Ensure these fields exist in UserUpdateRequest and are of Boolean type
+    private Boolean enabled;   // This field likely needs to be Boolean for updating
+    private Boolean isPremium; // Add this field if it's not there, type Boolean
+    private Boolean verified;  // Add this field if it's not there, type Boolean (will be mapped to Integer in User)
 
-    Long roleId; // Có thể để null nếu không muốn cập nhật role
+    // ... job seeker/employer specific fields ...
+    private Integer yearsExperience;
+    private String resumeUrl;
+    private Long educationId;
+    private String companyName;
+    private String description;
+    private String website;
 }

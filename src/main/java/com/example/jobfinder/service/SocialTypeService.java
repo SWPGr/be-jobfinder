@@ -26,7 +26,6 @@ public class SocialTypeService extends BaseNameService<SocialType> {
         this.socialTypeMapper = socialTypeMapper;
     }
 
-
     @Override
     protected SocialType createEntity(SimpleNameCreationRequest request) {
         return socialTypeMapper.toSocialType(request);

@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus; // Import HttpStatus
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException; // Import cho xử lý validation
 import org.springframework.web.bind.annotation.ExceptionHandler; // Import cho xử lý ngoại lệ
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,12 +33,28 @@ public class ChatController {
         log.info("Received chat message from frontend: {}", request.getMessage());
 
         try {
-            // chatbotService.getChatResponse đã trả về ChatResponse rồi
-            ChatResponse chatbotResponse = chatbotService.getChatResponse(request.getMessage());
+            // Lấy đối tượng Authentication từ SecurityContextHolder
+            // Đây là nơi Spring Security lưu trữ thông tin về người dùng đã được xác thực
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            // Kiểm tra xem người dùng đã được xác thực chưa
+            // Mặc dù SecurityConfig thường chặn các request chưa xác thực,
+            // việc kiểm tra rõ ràng ở đây là một lớp bảo vệ tốt
+            if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+                log.warn("Unauthorized chat access attempt.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ChatResponse("You must be logged in to use the chatbot."));
+            }
+
+            // Gọi phương thức getChatResponse của ChatbotService
+            // và truyền thêm đối tượng authentication
+            ChatResponse chatbotResponse = chatbotService.getChatResponse(request.getMessage(), authentication);
+
             // Trả về 200 OK với đối tượng ChatResponse
             return ResponseEntity.ok(chatbotResponse);
         } catch (Exception e) {
             log.error("An unexpected error occurred during chat processing: {}", e.getMessage(), e);
+            // Có thể dùng ErrorCode ở đây để trả về thông báo lỗi chi tiết hơn nếu bạn muốn
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ChatResponse("An unexpected error occurred. Please try again later."));
         }
