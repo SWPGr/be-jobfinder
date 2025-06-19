@@ -1,10 +1,15 @@
 package com.example.jobfinder.controller;
 
+import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.service.AuthService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -13,6 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
@@ -30,6 +36,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @GetMapping("google/success")
+    public ApiResponse<LoginResponse> googleLoginSuccess(@AuthenticationPrincipal OidcUser oidcUser) {
+        log.debug("Google login callback received for user: {}", oidcUser.getEmail());
+        LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
+        return new ApiResponse<>(200, "Google login successful", loginResponse);
+    }
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String token)throws Exception {
         authService.verifyEmail(token);
