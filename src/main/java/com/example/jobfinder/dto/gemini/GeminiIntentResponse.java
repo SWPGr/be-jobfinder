@@ -80,18 +80,41 @@ public class GeminiIntentResponse {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UserSearchParams {
+    public static class UserSearchParams { // static class nếu nó là inner class
+
+        // Tiêu chí tìm kiếm chung từ User entity
         private String email;
+
+        // Tiêu chí tìm kiếm từ UserDetail entity (áp dụng cho cả JobSeeker và Employer)
         @JsonProperty("full_name")
         private String fullName;
-        private String role; // Role name, ví dụ: JOB_SEEKER, EMPLOYER
         private String location;
-        @JsonProperty("years_experience")
-        private Integer yearsExperience;
+
+        // Tiêu chí tìm kiếm từ User entity
         @JsonProperty("is_premium")
         private Boolean isPremium;
         @JsonProperty("is_verified")
-        private Integer isVerified;
+        private Integer isVerified; // 0: chưa xác minh, 1: đã xác minh
+
+        // Tiêu chí tìm kiếm theo vai trò (từ Role entity)
+        private String role; // Tên vai trò, ví dụ: "JOB_SEEKER", "EMPLOYER", "ADMIN"
+
+        // --- Bổ sung các tiêu chí tìm kiếm chuyên biệt cho từng vai trò ---
+
+        // Các tiêu chí tìm kiếm chuyên biệt cho JOB_SEEKER
+        @JsonProperty("years_experience")
+        private Integer yearsExperience; // Lọc theo số năm kinh nghiệm chính xác
+        @JsonProperty("resume")
+        private String resumeUrl;       // Lọc JobSeeker CÓ resume (true) hoặc KHÔNG CÓ resume (false)
+        // Sẽ ánh xạ tới `ud.resumeUrl IS NOT NULL` hoặc `ud.resumeUrl IS NULL`
+
+        // Các tiêu chí tìm kiếm chuyên biệt cho EMPLOYER
+        @JsonProperty("company_name")
+        private String companyName;      // Tìm kiếm gần đúng theo tên công ty
+        @JsonProperty("website")
+        private String website;      // Lọc Employer CÓ website (true) hoặc KHÔNG CÓ website (false)
+
+        // Sẽ ánh xạ tới `ud.website IS NOT NULL` hoặc `ud.website IS NULL`
     }
 
     @Data

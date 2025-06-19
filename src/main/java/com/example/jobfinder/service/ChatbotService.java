@@ -209,7 +209,10 @@ public class ChatbotService {
                                 userSearchParams.getLocation(),
                                 userSearchParams.getYearsExperience(),
                                 userSearchParams.getIsPremium(),
-                                userSearchParams.getIsVerified()
+                                userSearchParams.getIsVerified(),
+                                userSearchParams.getResumeUrl(),
+                                userSearchParams.getCompanyName(),
+                                userSearchParams.getWebsite()
                         );
 
                         if (!foundUsers.isEmpty()) {
