@@ -38,7 +38,8 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/total")
+    @GetMapping("/total-users")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Long> getTotalUsers() {
         log.info("API: Lấy tổng số lượng người dùng.");
         long totalUsers = userService.getTotalUsers();
@@ -46,6 +47,30 @@ public class UserController {
                 .code(HttpStatus.OK.value())
                 .message("Total users fetched successfully")
                 .result(totalUsers)
+                .build();
+    }
+
+    @GetMapping("/total-jobseekers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Long> getTotalJobSeekers() {
+        log.info("API: Lấy tổng số lượng JobSeekers.");
+        long totalJobSeekers = userService.getTotalJobSeekers();
+        return ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("Total Job Seekers fetched successfully")
+                .result(totalJobSeekers)
+                .build();
+    }
+
+    @GetMapping("/total-employers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<Long> getTotalEmployers() {
+        log.info("API: Lấy tổng số lượng Employers.");
+        long totalEmployers = userService.getTotalEmployers();
+        return ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("Total Employers fetched successfully")
+                .result(totalEmployers)
                 .build();
     }
 

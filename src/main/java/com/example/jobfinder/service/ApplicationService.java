@@ -104,6 +104,12 @@ public class ApplicationService {
         return jobRepository.existsByIdAndEmployerId(jobId, employerId); // Cần phương thức này trong JobRepository
     }
 
+    @Transactional(readOnly = true)
+    public long getTotalApplications() {
+        log.info("Service: Đếm tổng số ứng tuyển công việc.");
+        return applicationRepository.countAllApplications();
+    }
+
     @Transactional
     public ApplicationResponse updateApplicationStatus(Long applicationId,
                                                        ApplicationStatusUpdateRequest request,

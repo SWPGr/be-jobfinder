@@ -280,9 +280,21 @@ public class UserService {
         return employerMapper.toEmployerResponse(userDetail);
     }
 
-    @Transactional(readOnly = true) // Đánh dấu là giao dịch chỉ đọc
+    @Transactional(readOnly = true)
     public long getTotalUsers() {
         log.info("Service: Đếm tổng số người dùng.");
         return userRepository.countAllUsers();
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalJobSeekers() {
+        log.info("Service: Đếm tổng số JobSeekers.");
+        return userRepository.countUsersByRoleName("JOB_SEEKER");
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalEmployers() {
+        log.info("Service: Đếm tổng số Employers.");
+        return userRepository.countUsersByRoleName("EMPLOYER");
     }
 }

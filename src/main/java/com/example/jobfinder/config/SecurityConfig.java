@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/api/chat",
                                 "/api/job",
                                 "/api/job-types",
+                                "/api/statistics",
                                 "/error"
                         ).permitAll()
 
