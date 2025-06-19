@@ -38,6 +38,17 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/total")
+    public ApiResponse<Long> getTotalUsers() {
+        log.info("API: Lấy tổng số lượng người dùng.");
+        long totalUsers = userService.getTotalUsers();
+        return ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("Total users fetched successfully")
+                .result(totalUsers)
+                .build();
+    }
+
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('READ_USER_PROFILE') or #userId == authentication.principal.id")
     public ApiResponse<UserResponse> getUserById(@PathVariable Long userId) {

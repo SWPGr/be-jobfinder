@@ -20,6 +20,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserService {
 
     // Dependencies (các Repository và Mapper cần thiết)
@@ -43,12 +45,6 @@ public class UserService {
 
     // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
 
-    /**
-     * Lấy danh sách tất cả người dùng.
-     * Thường được gọi bởi Admin để xem tổng quan.
-     *
-     * @return Danh sách {@link UserResponse} của tất cả người dùng.
-     */
     public List<UserResponse> getAllUsers() {
         // Gọi findAll() từ UserRepository để lấy tất cả User entities
         List<User> users = userRepository.findAll();
@@ -56,13 +52,6 @@ public class UserService {
         return userMapper.toUserResponseList(users);
     }
 
-    /**
-     * Lấy thông tin chi tiết một người dùng theo ID.
-     *
-     * @param userId ID của người dùng cần lấy.
-     * @return {@link UserResponse} của người dùng tìm thấy.
-     * @throws AppException Nếu người dùng không tìm thấy (ErrorCode.USER_NOT_FOUND).
-     */
     public UserResponse getUserById(Long userId) {
         // Tìm người dùng theo ID. Nếu không tìm thấy, ném ngoại lệ USER_NOT_FOUND.
         User user = userRepository.findById(userId)
@@ -71,16 +60,6 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    /**
-     * Tạo người dùng mới.
-     * Phương thức này sẽ tạo cả {@link User} và {@link UserDetail} liên quan.
-     * Các trường dành riêng cho vai trò (JobSeeker/Employer) trong UserDetail sẽ được gán
-     * dựa trên {@code roleName} trong request, các trường còn lại sẽ là null.
-     *
-     * @param request {@link UserCreationRequest} chứa thông tin tạo người dùng.
-     * @return {@link UserResponse} của người dùng đã tạo.
-     * @throws AppException Nếu email đã tồn tại (ErrorCode.USER_EXISTED) hoặc vai trò không tìm thấy (ErrorCode.ROLE_NOT_FOUND).
-     */
     @Transactional // Đảm bảo các thao tác với User và UserDetail được thực hiện trong cùng một transaction.
     public UserResponse createUser(UserCreationRequest request) {
         // 1. Kiểm tra xem email đã tồn tại chưa để tránh trùng lặp.
@@ -147,18 +126,6 @@ public class UserService {
         return userMapper.toUserResponse(savedUser);
     }
 
-    /**
-     * Cập nhật thông tin người dùng.
-     * Cập nhật cả User và UserDetail. Xử lý các trường chuyên biệt của vai trò.
-     *
-     * @param userId  ID của người dùng cần cập nhật.
-     * @param request {@link UserUpdateRequest} chứa thông tin cập nhật.
-     * @return {@link UserResponse} của người dùng đã cập nhật.
-     * @throws AppException Nếu người dùng không tìm thấy (ErrorCode.USER_NOT_FOUND),
-     * email mới đã tồn tại (ErrorCode.USER_EXISTED),
-     * vai trò không tìm thấy (ErrorCode.ROLE_NOT_FOUND),
-     * hoặc profile không tìm thấy (ErrorCode.PROFILE_NOT_FOUND).
-     */
     @Transactional // Đảm bảo các thao tác được thực hiện trong cùng một transaction.
     public UserResponse updateUser(Long userId, UserUpdateRequest request) {
         // 1. Tìm User hiện có.
@@ -256,13 +223,6 @@ public class UserService {
         return userMapper.toUserResponseList(users);
     }
 
-    /**
-     * Lấy danh sách người dùng theo tên vai trò.
-     *
-     * @param roleName Tên vai trò (ví dụ: "JOB_SEEKER", "EMPLOYER", "ADMIN").
-     * @return Danh sách {@link UserResponse} của những người dùng thuộc vai trò đó.
-     * @throws AppException Nếu {@code roleName} không tồn tại trong hệ thống.
-     */
     public List<UserResponse> getUsersByRole(String roleName) {
         // Tùy chọn: Kiểm tra xem roleName có tồn tại trong hệ thống không
         // Điều này giúp tránh lỗi nếu roleName được truyền vào không hợp lệ.
@@ -318,5 +278,11 @@ public class UserService {
 
         // 4. Chuyển đổi UserDetail entity sang EmployerResponse DTO.
         return employerMapper.toEmployerResponse(userDetail);
+    }
+
+    @Transactional(readOnly = true) // Đánh dấu là giao dịch chỉ đọc
+    public long getTotalUsers() {
+        log.info("Service: Đếm tổng số người dùng.");
+        return userRepository.countAllUsers();
     }
 }
