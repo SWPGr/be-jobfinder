@@ -52,4 +52,16 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("jobTitle") String jobTitle,
             @Param("status") String status
     );
+
+    // THÊM PHƯƠNG THỨC NÀY (cho Employer)
+    @Query("SELECT a FROM Application a " +
+            "LEFT JOIN a.job j " +
+            "WHERE j.id IN :jobIds " +
+            "AND (:jobTitle IS NULL OR j.title LIKE %:jobTitle%) " +
+            "AND (:status IS NULL OR a.status = :status)")
+    List<Application> findApplicationsByJobIdsAndJobTitleAndStatus(
+            @Param("jobIds") List<Long> jobIds,
+            @Param("jobTitle") String jobTitle,
+            @Param("status") String status
+    );
 }

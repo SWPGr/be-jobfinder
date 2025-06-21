@@ -248,7 +248,8 @@ public class UserService {
 
         // 3. Lấy UserDetail liên quan đến User. Phương thức findByUserId trong UserDetailsRepository
         //    được thiết kế để tải eager User và Education để tránh LazyInitializationException.
-        UserDetail userDetail = userDetailRepository.findByUserId(userId);
+        UserDetail userDetail = userDetailRepository.findByUserId(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
 
         // 4. Chuyển đổi UserDetail entity sang JobSeekerResponse DTO.
         return jobSeekerMapper.toJobSeekerResponse(userDetail);
@@ -274,7 +275,8 @@ public class UserService {
         }
 
         // 3. Lấy UserDetail liên quan đến User. findByUserId sẽ tải eager User.
-        UserDetail userDetail = userDetailRepository.findByUserId(userId);
+        UserDetail userDetail = userDetailRepository.findByUserId(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
 
         // 4. Chuyển đổi UserDetail entity sang EmployerResponse DTO.
         return employerMapper.toEmployerResponse(userDetail);

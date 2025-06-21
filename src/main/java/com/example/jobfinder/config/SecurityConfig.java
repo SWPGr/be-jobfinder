@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/api/job",
                                 "/api/job-types",
                                 "/api/statistics",
+                                "/api/chatbot",
                                 "/error"
                         ).permitAll()
 

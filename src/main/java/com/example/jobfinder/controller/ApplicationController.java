@@ -73,13 +73,13 @@ public class ApplicationController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         // Logic phân quyền: Chỉ EMPLOYER (chủ sở hữu job) hoặc ADMIN mới được xem
-        if (currentUser.getRole().getName().equals("EMPLOYER")) {
+        if (currentUser.getRole().getName().equals("EMPLOYER") ||  currentUser.getRole().getName().equals("ADMIN")) {
             // Kiểm tra xem công việc này có phải do EMPLOYER hiện tại đăng không
             boolean isEmployerJob = applicationService.isJobOwnedByEmployer(jobId, currentUser.getId());
             if (!isEmployerJob) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
             }
-        } else if (!currentUser.getRole().getName().equals("ADMIN")) {
+        } else {
             // Nếu không phải EMPLOYER và cũng không phải ADMIN, từ chối
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
