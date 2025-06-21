@@ -42,6 +42,7 @@ public class AuthController {
         LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
         return new ApiResponse<>(200, "Google login successful", loginResponse);
     }
+
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String token)throws Exception {
         authService.verifyEmail(token);
@@ -64,8 +65,14 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) throws Exception {
+    public ResponseEntity<ApiResponse<String>> resetPassword(@RequestBody ResetPasswordRequest request) throws Exception {
         authService.resetPassword(request);
-        return ResponseEntity.ok("Password reset successfully.");
+        ApiResponse<String> response = ApiResponse.<String>builder()
+                .code(200)
+                .message("Password reset successfully")
+                .result("OK")
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }

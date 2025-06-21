@@ -130,7 +130,9 @@ public enum ErrorCode {
     USER_SOCIAL_TYPE_NOT_FOUND(7100, "User social link not found"),
     USER_SOCIAL_TYPE_ALREADY_EXISTS(7101, "You already have a link for this social type"),
     UNAUTHORIZED_USER_SOCIAL_ACTION(7102, "You are not authorized to perform this action on user social link"),
-    INVALID_SOCIAL_URL(7103, "Invalid social media URL format");
+    INVALID_SOCIAL_URL(7103, "Invalid social media URL format"),
+    INVALID_EMAIL(7104, "Email not found or invalid" ),
+    WRONG_PASSWORD(7105, "Wrong password or email");
 
 // ... (phần còn lại của ErrorCode enum của bạn)
     ;
