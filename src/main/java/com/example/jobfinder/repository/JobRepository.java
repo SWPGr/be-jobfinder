@@ -18,6 +18,10 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     boolean existsByIdAndEmployerId(Long jobId, Long employerId);
 
+    List<Job> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+
+
     List<Job> findByEmployerId(Long employerId);
 
     @Query("SELECT COUNT(j) FROM Job j WHERE j.createdAt <= :endDate")
@@ -36,5 +40,14 @@ public interface JobRepository extends JpaRepository<Job, Long> {
                                  @Param("jobLevelName") String jobLevelName,
                                  @Param("jobTypeName") String jobTypeName,
                                  @Param("employerName") String employerName);
+
+    @Query("SELECT j.category.name, COUNT(j.id) " +
+            "FROM Job j " +
+            "WHERE j.createdAt BETWEEN :startOfDay AND :endOfDay " +
+            "GROUP BY j.category.name " +
+            "ORDER BY COUNT(j.id) DESC") // Sắp xếp theo số lượng giảm dần
+    List<Object[]> countJobsByCategoryForDay(@Param("startOfDay") LocalDateTime startOfDay,
+                                             @Param("endOfDay") LocalDateTime endOfDay);
+
 
 }

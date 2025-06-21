@@ -1,13 +1,13 @@
 // src/main/java/com/example/jobfinder/service/StatisticService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.statistic.MonthlyTrendResponse;
-import com.example.jobfinder.dto.statistic.DailyTrendResponse; // DTO mới
+import com.example.jobfinder.dto.statistic.*;
+import com.example.jobfinder.model.Application;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.UserRepository;
-import com.example.jobfinder.dto.statistic.MonthlyComparisonResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -17,10 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -217,6 +220,67 @@ public class StatisticService {
             log.error("Lỗi khi setting giá trị bằng Reflection: {}", e.getMessage());
             // Xử lý lỗi hoặc ném ngoại lệ tùy theo nhu cầu
         }
+    }
+
+    public List<HourlyActivityResponse> getTodayHourlyActivities() {
+        log.info("Calculating hourly activities for today on the fly.");
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay(); // Bắt đầu từ 00:00:00 của hôm nay
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX); // Kết thúc vào 23:59:59.999999999 của hôm nay
+
+        // Lấy tất cả người dùng được tạo trong ngày hôm nay
+        List<User> usersToday = userRepository.findByCreatedAtBetween(startOfDay, endOfDay);
+        // Lấy tất cả công việc được tạo trong ngày hôm nay
+        List<Job> jobsToday = jobRepository.findByCreatedAtBetween(startOfDay, endOfDay);
+        // Lấy tất cả đơn ứng tuyển được tạo trong ngày hôm nay
+        List<Application> applicationsToday = applicationRepository.findByAppliedAtBetween(startOfDay, endOfDay);
+
+
+        // Nhóm người dùng theo giờ tạo
+        Map<Integer, Long> usersByHour = usersToday.stream()
+                .collect(Collectors.groupingBy(user -> user.getCreatedAt().getHour(), Collectors.counting()));
+
+        // Nhóm công việc theo giờ tạo
+        Map<Integer, Long> jobsByHour = jobsToday.stream()
+                .collect(Collectors.groupingBy(job -> job.getCreatedAt().getHour(), Collectors.counting()));
+
+        // Nhóm đơn ứng tuyển theo giờ tạo
+        Map<Integer, Long> applicationsByHour = applicationsToday.stream()
+                .collect(Collectors.groupingBy(application -> application.getAppliedAt().getHour(), Collectors.counting()));
+
+        List<HourlyActivityResponse> hourlyActivities = new ArrayList<>();
+
+        // Tạo danh sách kết quả cho 24 giờ trong ngày
+        for (int hour = 0; hour < 24; hour++) {
+            hourlyActivities.add(HourlyActivityResponse.builder()
+                    .hourOfDay(hour)
+                    .newUsers(usersByHour.getOrDefault(hour, 0L))
+                    .newJobs(jobsByHour.getOrDefault(hour, 0L))
+                    .newApplications(applicationsByHour.getOrDefault(hour, 0L))
+                    .build());
+        }
+
+        log.debug("Generated hourly activities: {}", hourlyActivities);
+        return hourlyActivities;
+    }
+
+    public List<JobPostCountByCategoryAndDateResponse> getJobPostCountByCategoryForDate(LocalDate date) {
+        log.info("Calculating job post count by category for date: {}", date);
+
+        LocalDateTime startOfDay = date.atStartOfDay(); // 00:00:00 của ngày được truyền vào
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX); // 23:59:59.999999999 của ngày được truyền vào
+
+        // Gọi phương thức từ JobRepository để lấy kết quả dạng List<Object[]>
+        List<Object[]> rawResults = jobRepository.countJobsByCategoryForDay(startOfDay, endOfDay);
+
+        // Chuyển đổi List<Object[]> sang List<JobPostCountByCategoryAndDateResponse>
+        return rawResults.stream()
+                .map(result -> JobPostCountByCategoryAndDateResponse.builder()
+                        .categoryName((String) result[0]) // result[0] là tên category
+                        .jobCount((Long) result[1])       // result[1] là số lượng
+                        .build())
+                .collect(Collectors.toList());
     }
 
 }

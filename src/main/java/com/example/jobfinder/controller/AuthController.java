@@ -32,8 +32,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
+        LoginResponse loginResponse = authService.login(request);
+
+        ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
+                .code(200)
+                .message("Login successful")
+                .result(loginResponse)
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("google/success")
