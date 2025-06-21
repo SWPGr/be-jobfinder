@@ -136,15 +136,15 @@ public enum ErrorCode {
     PERMISSION_NOT_FOUND(2001, "Quyền không tìm thấy"),
     USER_IS_NOT_JOB_SEEKER(2002, "Người dùng này không phải là người tìm việc"), // <-- Mới
     USER_IS_NOT_EMPLOYER(2003, "Người dùng này không phải là nhà tuyển dụng"),
-    // <-- Mới
 
+    RESOURCE_NOT_FOUND(2004, "Resource not found"),
 
+    GEMINI_API_ERROR(2005, "GEMINI_API_ERROR"),
+    UNEXPECTED_ERROR(2006, "Unexpected error"),
+
+    CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
+    FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
     ;
-
-// ... (phần còn lại của ErrorCode enum của bạn)
-    ;
-    ;
-
 
 
     ErrorCode(int errorCode, String errorMessage) {
