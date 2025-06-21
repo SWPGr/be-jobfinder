@@ -12,10 +12,12 @@ import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class JobService {
     JobRepository jobRepository;
     JobMapper jobMapper;
@@ -111,6 +114,12 @@ public class JobService {
                 .stream()
                 .map(jobMapper::toJobResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalJobs() {
+        log.info("Service: Đếm tổng số công việc.");
+        return jobRepository.countAllJobs();
     }
 
     public JobResponse getJobById(Long jobId) {

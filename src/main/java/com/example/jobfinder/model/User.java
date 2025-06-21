@@ -21,7 +21,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User implements UserDetails { // Implement UserDetails cho Spring Security
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -110,6 +110,10 @@ public class User implements UserDetails { // Implement UserDetails cho Spring S
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("user-notifications")
     private Set<Notification> notifications = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("user-chatbotHistories") // <-- THÊM DÒNG NÀY
+    private Set<ChatbotHistory> chatbotHistories = new HashSet<>();
 
 
     // --- Implement UserDetails cho Spring Security ---

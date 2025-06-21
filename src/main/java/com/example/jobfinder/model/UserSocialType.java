@@ -27,11 +27,10 @@ public class UserSocialType {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // --- Mối quan hệ ---
 
     // Một UserSocialType thuộc về một UserDetail
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_detail_id") // Có thể NULL theo DB schema nếu bạn cho phép, nhưng thường thì không
+    @JoinColumn(name = "user_detail_id", nullable = false)
     @JsonManagedReference("userDetail-userSocialTypes")
     private UserDetail userDetail;
 

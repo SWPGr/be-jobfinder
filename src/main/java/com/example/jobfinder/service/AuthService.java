@@ -43,7 +43,6 @@ public class AuthService {
     JwtUtil jwtUtil;
     EmailService emailService;
 
-
     public void register(RegisterRequest request) throws Exception {
         if(userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new Exception("Email already exists");

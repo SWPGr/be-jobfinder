@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto.social_type;
+package com.example.jobfinder.dto.user_social_type;
 
 // import com.example.jobfinder.dto.user_detail.UserDetailResponse; // Tùy chọn nếu muốn trả về UserDetail đầy đủ
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
@@ -18,6 +18,7 @@ public class UserSocialTypeResponse {
     Long id;
     SimpleNameResponse socialType; // Loại mạng xã hội (id, name)
     String url;
+    String socialTypeName;   // <--- Đảm bảo trường này tồn tại
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     // Bỏ qua UserDetailResponse để tránh lặp hoặc dữ liệu thừa
