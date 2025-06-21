@@ -1,44 +1,61 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "subscriptions")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class Subscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true) // user_id là UNIQUE trong SQL
-    User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plan_id")
-    SubscriptionPlan plan;
+    private Long id;
 
     @Column(name = "start_date")
-    LocalDateTime startDate;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    LocalDateTime endDate;
+    private LocalDateTime endDate;
 
     @Column(name = "is_active")
-    Boolean isActive; // Dùng Boolean để có thể null, hoặc boolean với default FALSE
+    private Boolean isActive;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    // --- Mối quan hệ ---
+
+    // Một Subscription thuộc về một User
+    // user_id UNIQUE trong DB, nên có thể cân nhắc là OneToOne, nhưng ở đây vẫn dùng ManyToOne
+    // vì User có thể có nhiều subscriptions trong lịch sử (isActive = FALSE)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true) // Cần đảm bảo rằng chỉ có một subscription active cho mỗi user.
+    @JsonManagedReference("user-subscriptions")
+    private User user;
+
+    // Một Subscription thuộc về một SubscriptionPlan
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    @JsonManagedReference("plan-subscriptions")
+    private SubscriptionPlan plan;
+
+    // Một Subscription có một Payment
+    // Mối quan hệ OneToOne với Payment, Payment sở hữu khóa ngoại subscription_id
+    @OneToOne(mappedBy = "subscription", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("subscription-payment")
+    private Payment payment;
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

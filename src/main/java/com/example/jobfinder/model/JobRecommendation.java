@@ -1,38 +1,46 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "job_recommendations")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class JobRecommendation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_seeker_id", nullable = false)
-    User jobSeeker;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_id", nullable = false)
-    Job job;
+    private Long id;
 
     @Column(nullable = false)
-    Float score;
+    private Float score;
 
-    @CreatedDate
     @Column(name = "recommended_at", nullable = false, updatable = false)
-    LocalDateTime recommendedAt;
+    private LocalDateTime recommendedAt;
+
+    // --- Mối quan hệ ---
+
+    // Một JobRecommendation thuộc về một Job Seeker (User)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_seeker_id", nullable = false)
+    @JsonManagedReference("jobseeker-recommendations")
+    private User jobSeeker;
+
+    // Một JobRecommendation liên quan đến một Job
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_id", nullable = false)
+    @JsonManagedReference("job-recommendations")
+    private Job job;
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.recommendedAt = LocalDateTime.now();
+    }
 }

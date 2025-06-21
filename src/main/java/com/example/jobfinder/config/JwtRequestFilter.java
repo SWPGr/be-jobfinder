@@ -30,7 +30,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        if (isPublicEndpoint(requestURI)) {
+        if (isPublicEndpoint(requestURI) || requestURI.startsWith("/oauth2/") ||
+                requestURI.startsWith("/login/oauth2/")) {
             chain.doFilter(request, response);
             return;
         }

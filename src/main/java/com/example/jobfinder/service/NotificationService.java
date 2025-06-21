@@ -65,7 +65,7 @@ public class NotificationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        notification.setRead(true);
+        notification.setIsRead(true);
         return notificationMapper.toNotificationResponse(notificationRepository.save(notification));
     }
 

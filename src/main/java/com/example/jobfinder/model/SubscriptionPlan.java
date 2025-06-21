@@ -1,45 +1,53 @@
 package com.example.jobfinder.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "subscription_plans")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class SubscriptionPlan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    String name;
+    @Column(name = "subscription_plan_name", unique = true, length = 100)
+    private String subscriptionPlanName;
 
-    @Column(nullable = false)
-    Float price;
+    private Float price;
 
     @Column(name = "duration_days")
-    Integer durationDays;
+    private Integer durationDays;
 
     @Column(name = "max_jobs_post")
-    Integer maxJobsPost;
+    private Integer maxJobsPost;
 
     @Column(name = "max_applications_view")
-    Integer maxApplicationsView;
+    private Integer maxApplicationsView;
 
     @Column(name = "highlight_jobs")
-    Boolean highlightJobs;
+    private Boolean highlightJobs;
 
-    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    // Một SubscriptionPlan có thể có nhiều Subscription
+    @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("plan-subscriptions")
+    private Set<Subscription> subscriptions = new HashSet<>();
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

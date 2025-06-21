@@ -1,42 +1,49 @@
 package com.example.jobfinder.model;
 
-
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payments")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@EntityListeners(AuditingEntityListener.class)
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id")
-    Subscription subscription;
-
-    @Column(nullable = false)
-    Float amount;
+    private Float amount;
 
     @Column(name = "payment_method", length = 50)
-    String paymentMethod;
+    private String paymentMethod;
 
-    @CreatedDate
     @Column(name = "paid_at", nullable = false, updatable = false)
-    LocalDateTime paidAt;
+    private LocalDateTime paidAt;
+
+    // --- Mối quan hệ ---
+
+    // Một Payment thuộc về một User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id") // user_id có thể NULL trong DB schema của bạn nếu free plan
+    @JsonManagedReference("user-payments") // Đặt reference name khác nếu User có nhiều loại payments
+    private User user;
+
+    // Một Payment liên quan đến một Subscription (OneToOne)
+    // Payment sở hữu khóa ngoại subscription_id
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id") // subscription_id có thể NULL trong DB
+    @JsonManagedReference("subscription-payment")
+    private Subscription subscription;
+
+    // Lifecycle callbacks
+    @PrePersist
+    protected void onCreate() {
+        this.paidAt = LocalDateTime.now();
+    }
 }

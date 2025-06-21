@@ -12,9 +12,12 @@ import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class JobService {
     JobRepository jobRepository;
     JobMapper jobMapper;
@@ -36,7 +40,8 @@ public class JobService {
         String currentUsername = authentication.getName();
 
 
-        User employer = userRepository.findByEmail(currentUsername);
+        User employer = userRepository.findByEmail(currentUsername)
+                .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
         if (employer == null) {
             throw new AppException(ErrorCode.USER_NOT_FOUND); // Thay vì USER_EXIST
@@ -49,9 +54,9 @@ public class JobService {
 
 
         if (employer.getRole() == null ||
-                (!employer.getRole().getName().equals("JOB_SEEKER") &&
+                (!employer.getRole().getName().equals("EMPLOYER") &&
                         !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
-            throw new AppException(ErrorCode.UNAUTHORIZED); // <-- CHÍNH LÀ DÒNG LỖI CỦA BẠN!
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
@@ -75,7 +80,6 @@ public class JobService {
         newJob.setJobLevel(jobLevel);
         newJob.setJobType(jobType);
 
-
         return jobRepository.save(newJob);
     }
 
@@ -95,9 +99,6 @@ public class JobService {
 
             job.setEmployer(newEmployer);
         }
-
-
-
         return jobMapper.toJobResponse(jobRepository.save(job));
     }
 
@@ -113,6 +114,12 @@ public class JobService {
                 .stream()
                 .map(jobMapper::toJobResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalJobs() {
+        log.info("Service: Đếm tổng số công việc.");
+        return jobRepository.countAllJobs();
     }
 
     public JobResponse getJobById(Long jobId) {

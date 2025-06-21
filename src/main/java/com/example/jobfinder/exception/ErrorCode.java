@@ -101,8 +101,54 @@ public enum ErrorCode {
     NOTIFICATION_NOT_FOUND(8000, "Notification not found"),
     NOTIFICATION_MARK_READ_FAILED(8001, "Failed to mark notification as read"),
     NOTIFICATION_DELETE_FAILED(8002, "Failed to delete notification"),
-    ;
 
+    APPLICATION_DENIED(8003, "Application has been denied"),
+    APPLICATION_WITHDRAWN(8004, "Application has been withdrawn"),
+    APPLICATION_LIMIT_EXCEEDED(8005, "Application limit exceeded for this user or job"),
+    APPLICATION_UPDATE_NOT_ALLOWED(8006, "You are not allowed to update this application"),
+    // Thêm các lỗi sau:
+    UNAUTHORIZED_APPLICATION_UPDATE(8007, "You are not authorized to update this application's status"),
+    INVALID_APPLICATION_STATUS(8008, "Invalid application status provided"),
+
+    REVIEW_NOT_FOUND(6000, "Review not found"),
+    REVIEW_ALREADY_EXISTS(6001, "You have already submitted a review for this employer"),
+    CANNOT_REVIEW_SELF(6002, "You cannot review yourself"),
+    UNAUTHORIZED_REVIEW_ACTION(6003, "You are not authorized to perform this review action"),
+    INVALID_RATING_VALUE(6005, "Rating value must be between 1 and 5"),
+    REVIEW_UNAUTHORIZED_NO_RELATION(6006, "You can only review employers you have applied to"),
+
+    // ... (các mã lỗi hiện có của bạn)
+
+    // Nhóm lỗi liên quan đến Social Type (Mã từ 7000 đến 7099)
+// Mã 70xx
+    SOCIAL_TYPE_NOT_FOUND(7000, "Social type not found"),
+    SOCIAL_TYPE_ALREADY_EXISTS(7001, "Social type name already exists"),
+    SOCIAL_TYPE_IN_USE(7002, "Social type cannot be deleted as it is in use by user social links"),
+
+    // Nhóm lỗi liên quan đến User Social Type (Mã từ 7100 đến 7199)
+// Mã 71xx
+    USER_SOCIAL_TYPE_NOT_FOUND(7100, "User social link not found"),
+    USER_SOCIAL_TYPE_ALREADY_EXISTS(7101, "You already have a link for this social type"),
+    UNAUTHORIZED_USER_SOCIAL_ACTION(7102, "You are not authorized to perform this action on user social link"),
+    INVALID_SOCIAL_URL(7103, "Invalid social media URL format"),
+  
+    INVALID_EMAIL(7104, "Email not found or invalid" ),
+    WRONG_PASSWORD(7105, "Wrong password or email");
+
+
+    // Role & Permission Errors (Lỗi liên quan đến Vai trò & Quyền hạn)
+    PERMISSION_NOT_FOUND(2001, "Quyền không tìm thấy"),
+    USER_IS_NOT_JOB_SEEKER(2002, "Người dùng này không phải là người tìm việc"), // <-- Mới
+    USER_IS_NOT_EMPLOYER(2003, "Người dùng này không phải là nhà tuyển dụng"),
+
+    RESOURCE_NOT_FOUND(2004, "Resource not found"),
+
+    GEMINI_API_ERROR(2005, "GEMINI_API_ERROR"),
+    UNEXPECTED_ERROR(2006, "Unexpected error"),
+
+    CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
+    FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
+    ;
 
 
     ErrorCode(int errorCode, String errorMessage) {
