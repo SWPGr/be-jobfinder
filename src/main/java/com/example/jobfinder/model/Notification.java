@@ -53,7 +53,7 @@ public class Notification {
         return isRead;
     }
 
-    public void setRead(Boolean read) {
+    public void setIsRead(Boolean read) {
         isRead = read;
     }
 

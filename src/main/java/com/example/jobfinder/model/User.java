@@ -18,7 +18,6 @@ import java.util.Set;
 @Table(name = "users")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User implements UserDetails { // Implement UserDetails cho Spring Security
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
