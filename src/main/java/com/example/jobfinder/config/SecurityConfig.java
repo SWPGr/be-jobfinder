@@ -1,5 +1,7 @@
 package com.example.jobfinder.config;
 
+import com.example.jobfinder.dto.auth.LoginResponse;
+import com.example.jobfinder.service.AuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,13 +25,19 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
     private final JwtRequestFilter jwtRequestFilter;
+    private final OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
+    private final OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
 
-    public SecurityConfig(JwtRequestFilter jwtRequestFilter) {
+    public SecurityConfig(JwtRequestFilter jwtRequestFilter,
+                          OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler,
+                          OAuth2JwtFailureHandler oAuth2JwtFailureHandler) {
         this.jwtRequestFilter = jwtRequestFilter;
+        this.oAuth2JwtSuccessHandler = oAuth2JwtSuccessHandler;
+        this.oAuth2JwtFailureHandler = oAuth2JwtFailureHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService authService) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -51,6 +60,7 @@ public class SecurityConfig {
                                 "/api/job",
                                 "/api/job-types",
                                 "/api/statistics",
+                                "/api/chatbot",
                                 "/error"
                         ).permitAll()
 
@@ -58,9 +68,8 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService()))
-                        .successHandler((request, response, authentication) -> {
-                            response.sendRedirect("/api/auth/google/success");
-                        }))
+                        .successHandler(oAuth2JwtSuccessHandler)
+                        .failureHandler(oAuth2JwtFailureHandler))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );

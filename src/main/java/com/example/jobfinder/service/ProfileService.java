@@ -2,6 +2,8 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.auth.ProfileRequest;
 import com.example.jobfinder.dto.auth.ProfileResponse;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetail;
@@ -37,7 +39,8 @@ public class ProfileService {
             throw new Exception("User not found");
         }
 
-        UserDetail userDetail = userDetailsRepository.findByUserId(user.getId());
+        UserDetail userDetail = userDetailsRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
         if (userDetail == null) {
             throw new Exception("Profile not found.");
         }
@@ -81,7 +84,8 @@ public class ProfileService {
             throw new Exception("Please verify your email first");
         }
 
-        UserDetail userDetail = userDetailsRepository.findByUserId(currentUser.getId());
+        UserDetail userDetail = userDetailsRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
         if (userDetail == null) {
             return Collections.emptyList();
         }

@@ -16,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,12 +69,16 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        }catch (BadCredentialsException e) {
+            throw new AppException(ErrorCode.WRONG_PASSWORD);
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
@@ -87,22 +92,34 @@ public class AuthService {
     @Transactional
     public LoginResponse handleGoogleLogin(OidcUser oidcUser) {
         String email = oidcUser.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_EMAIL);
+        }
         log.debug("Processing Google login for email: {}", email);
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    log.debug("Creating new user for email: {}", email);
-                    User newUser = new User();
-                    newUser.setEmail(email);
-                    newUser.setPassword("");
-                    Role userRole = roleRepository.findByName("JOB_SEEKER")
-                            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-                    newUser.setRole(userRole);
-                    return userRepository.save(newUser);
-                });
+                .orElseGet(() -> createNewGoogleUser(email, oidcUser));
+
         String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
         log.debug("Generated JWT for user: {}", email);
         return new LoginResponse(jwt, user.getRole().getName());
+    }
+
+    private User createNewGoogleUser(String email, OidcUser oidcUser) {
+        log.debug("Creating new user for email: {}", email);
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword("");
+        Role userRole = roleRepository.findByName("JOB_SEEKER")
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        user.setRole(userRole);
+
+        userRepository.save(user);
+
+        UserDetail userDetail = new UserDetail();
+        userDetail.setUser(user);
+        userDetailsRepository.save(userDetail);
+        return user;
     }
 
     public void verifyEmail(String token) throws Exception {
