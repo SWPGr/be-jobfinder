@@ -2,20 +2,21 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.statistic.MonthlyTrendResponse; // DTO mới
-import com.example.jobfinder.dto.statistic.DailyTrendResponse; // DTO mới
-import com.example.jobfinder.dto.statistic.MonthlyComparisonResponse;
+import com.example.jobfinder.dto.statistic.*;
 import com.example.jobfinder.service.StatisticService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -26,6 +27,18 @@ import java.util.List;
 public class StatisticController {
 
     StatisticService statisticService;
+
+    @GetMapping("/today-hourly-activity")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<HourlyActivityResponse>> getTodayHourlyActivity() {
+        log.info("API: Lấy các hoạt động theo giờ trong ngày hôm nay (tính toán realtime).");
+        List<HourlyActivityResponse> hourlyActivities = statisticService.getTodayHourlyActivities();
+        return ApiResponse.<List<HourlyActivityResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Hourly activities for today fetched successfully")
+                .result(hourlyActivities)
+                .build();
+    }
 
     // Các API khác của StatisticController đã có...
     @GetMapping("/calculated-monthly-trends")
@@ -61,6 +74,20 @@ public class StatisticController {
                 .code(HttpStatus.OK.value())
                 .message("Month-over-month comparison fetched successfully")
                 .result(comparison)
+                .build();
+    }
+
+    @GetMapping("/job-posts-by-category/{dateString}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<List<JobPostCountByCategoryAndDateResponse>> getJobPostCountByCategoryForDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateString) {
+        log.info("API: Lấy số lượng bài đăng theo ngành nghề cho ngày: {}", dateString);
+        List<JobPostCountByCategoryAndDateResponse> categoryCounts =
+                statisticService.getJobPostCountByCategoryForDate(dateString);
+        return ApiResponse.<List<JobPostCountByCategoryAndDateResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Job post counts by category for date fetched successfully")
+                .result(categoryCounts)
                 .build();
     }
 }
