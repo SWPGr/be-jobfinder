@@ -9,6 +9,9 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -16,15 +19,28 @@ import java.util.List;
 @RequestMapping("/api/job")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class JobController {
 
-    JobService jobService; // Spring sẽ inject JobService vào đây
+    JobService jobService;
 
     @PostMapping
     public ApiResponse<Job> createJob(@RequestBody @Valid JobCreationRequest request) {
         ApiResponse<Job> response = new ApiResponse<>();
         response.setResult(jobService.createJob(request));
         return response;
+    }
+
+    @GetMapping("/total")
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xem tổng số job
+    public ApiResponse<Long> getTotalJobs() {
+        log.info("API: Lấy tổng số lượng công việc.");
+        long totalJobs = jobService.getTotalJobs();
+        return ApiResponse.<Long>builder()
+                .code(HttpStatus.OK.value())
+                .message("Total jobs fetched successfully")
+                .result(totalJobs)
+                .build();
     }
 
     @GetMapping

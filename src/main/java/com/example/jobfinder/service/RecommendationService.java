@@ -64,7 +64,8 @@ public class RecommendationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only JOB_SEEKER can view recommendations");
         }
 
-        UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId());
+        UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
         if (userDetail == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User details not found");
         }

@@ -1,7 +1,7 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.social_type.UserSocialTypeRequest;
-import com.example.jobfinder.dto.social_type.UserSocialTypeResponse;
+import com.example.jobfinder.dto.user_social_type.UserSocialTypeRequest;
+import com.example.jobfinder.dto.user_social_type.UserSocialTypeResponse;
 import com.example.jobfinder.service.UserSocialTypeService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
