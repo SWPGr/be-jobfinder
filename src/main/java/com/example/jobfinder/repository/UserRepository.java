@@ -23,6 +23,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findFirstByOrderByCreatedAtAsc();
 
+    List<User> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
     @Query("SELECT COUNT(u) FROM User u JOIN u.role r WHERE r.name = :roleName AND u.createdAt <= :endDate")
     long countUsersByRoleNameAndCreatedAtBeforeOrEquals(@Param("roleName") String roleName, @Param("endDate") LocalDateTime endDate);
 
