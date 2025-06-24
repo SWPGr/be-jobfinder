@@ -32,52 +32,71 @@ public class RecommendationService {
     private final UserDetailsRepository userDetailsRepository;
     private final JobRecommendationRepository jobRecommendationRepository;
     private final CategoryRepository categoryRepository;
+    private final ApplicationRepository applicationRepository;
     private final JobLevelRepository jobLevelRepository;
     private final JobTypeRepository jobTypeRepository;
+    private final JobViewRepository jobViewRepository;
 
-    public RecommendationService(UserRepository userRepository, JobRepository jobRepository,
-                                 UserDetailsRepository userDetailsRepository, JobRecommendationRepository jobRecommendationRepository,
-                                 CategoryRepository categoryRepository, JobLevelRepository jobLevelRepository,
-                                 JobTypeRepository jobTypeRepository) {
+    public RecommendationService(UserRepository userRepository,
+                                 JobRepository jobRepository,
+                                 UserDetailsRepository userDetailsRepository,
+                                 JobRecommendationRepository jobRecommendationRepository,
+                                 CategoryRepository categoryRepository,
+                                 ApplicationRepository applicationRepository,
+                                 JobLevelRepository jobLevelRepository,
+                                 JobTypeRepository jobTypeRepository,
+                                 JobViewRepository jobViewRepository) {
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.jobRecommendationRepository = jobRecommendationRepository;
         this.categoryRepository = categoryRepository;
+        this.applicationRepository = applicationRepository;
         this.jobLevelRepository = jobLevelRepository;
         this.jobTypeRepository = jobTypeRepository;
+        this.jobViewRepository = jobViewRepository;
     }
+
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
-    public void generateRecommendations() {
-        log.debug("Generating recommendations");
+    public void generateRecommendations(){
+        log.debug("Generating job recommendations for all JOB_SEEKER users");
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        log.debug("Authenticated email: {}", email);
-        User jobSeeker = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        String role = jobSeeker.getRole().getName();
-        if (!role.equals("JOB_SEEKER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only JOB_SEEKER can view recommendations");
+        List<User> jobSeekers = userRepository.findAll().stream()
+                .filter(user -> user.getRole() != null && "JOB_SEEKER".equalsIgnoreCase(user.getRole().getName()))
+                .collect(Collectors.toList());
+        for (User jobSeeker : jobSeekers) {
+            try {
+                generateRecommendationsForUser(jobSeeker);
+            } catch (AppException e) {
+                log.error("Application error for user {}: {}", jobSeeker.getEmail(), e.getMessage());
+            } catch (Exception e) {
+                log.error("Failed to generate recommendations for user: {}", jobSeeker.getEmail(), e);
+            }
         }
+    }
+    @Transactional
+    public void generateRecommendationsForUser(User jobSeeker) {
+        log.debug("Generating recommendations for user: {}", jobSeeker.getEmail());
 
         UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
-        if (userDetail == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User details not found");
-        }
 
-        synchronized (this.getClass()) {
             List<Job> jobs = jobRepository.findAll();
+            List<Job> viewedJobs = jobViewRepository.findByJobSeekerId(jobSeeker.getId())
+                .stream().map(jobView -> jobView.getJob()).collect(Collectors.toList());
+            List<Long> viewedJobIds = viewedJobs.stream().map(Job::getId).collect(Collectors.toList());
+            Set<Long> viewedEmployerIds = viewedJobs.stream()
+                .map(job -> job.getEmployer().getId()).collect(Collectors.toSet());
+            List<Job> appliedJobs = applicationRepository.findByJobSeekerId(jobSeeker.getId())
+                .stream().map(application -> application.getJob()).collect(Collectors.toList());
 
             jobRecommendationRepository.deleteByJobSeekerId(jobSeeker.getId());
 
             List<JobRecommendation> recommendations = new ArrayList<>();
             for (Job job : jobs) {
-                float score = calculateJobScore(userDetail, job);
+                float score = calculateJobScore(userDetail, job, viewedJobIds, appliedJobs, viewedEmployerIds);
                 if (score > 0.3) {
                     JobRecommendation recommendation = new JobRecommendation();
                     recommendation.setJobSeeker(jobSeeker);
@@ -88,29 +107,16 @@ public class RecommendationService {
                 }
             }
 
-            recommendations.stream()
-                    .sorted(Comparator.comparing(JobRecommendation::getScore).reversed())
-                    .limit(10)
-                    .forEach(recommendation -> {
-                        Optional<JobRecommendation> existing = jobRecommendationRepository
-                                .findByJobSeekerIdAndJobId(jobSeeker.getId(), recommendation.getJob().getId());
-                        if (existing.isPresent()) {
-                            log.debug("Updating existing recommendation for user: {}, job: {}",
-                                    jobSeeker.getId(), recommendation.getJob().getId());
-                            JobRecommendation r = existing.get();
-                            r.setScore(recommendation.getScore());
-                            r.setRecommendedAt(LocalDateTime.now());
-                            jobRecommendationRepository.save(r);
-                        } else {
-                            log.debug("Saving new recommendation for user: {}, job: {}",
-                                    jobSeeker.getId(), recommendation.getJob().getId());
-                            jobRecommendationRepository.save(recommendation);
-                        }
-                    });
+        List<JobRecommendation> topRecommendations = recommendations.stream()
+                .sorted(Comparator.comparing(JobRecommendation::getScore).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
+        jobRecommendationRepository.saveAll(topRecommendations);
 
-            log.debug("Generated {} recommendations for user: {}", recommendations.size(), jobSeeker.getId());
+        log.debug("Saved {} recommendations for user: {}", topRecommendations.size(), jobSeeker.getEmail());
+
         }
-    }
+
 
     public List<JobRecommendationResponse> getRecommendations() {
         log.debug("Fetching job recommendations");
@@ -130,23 +136,49 @@ public class RecommendationService {
         return recommendations.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
 
-    private float calculateJobScore(UserDetail userDetail, Job job) {
+    private float calculateJobScore(UserDetail userDetail, Job job, List<Long> viewedJobIds,
+                                    List<Job> appliedJobs, Set<Long> viewedEmployerIds) {
         float score = 0.0f;
 
         float experienceScore = calculateExperienceScore(userDetail.getYearsExperience(), job.getJobLevel().getName());
-        score += 0.4f * experienceScore;
+        score += 0.30f * experienceScore;
 
         float locationScore = userDetail.getLocation() != null && userDetail.getLocation()
                 .equalsIgnoreCase(job.getLocation()) ? 1.0f : 0.0f;
-        score += 0.3f * locationScore;
+        score += 0.20f * locationScore;
 
         float categoryScore = userDetail.getDescription() != null && userDetail.getDescription().toLowerCase()
                 .contains(job.getCategory().getName().toLowerCase()) ? 1.0f : 0.5f;
-        score += 0.2f * categoryScore;
+        score += 0.15f * categoryScore;
 
         float descriptionScore = calculateDescriptionScore(userDetail.getDescription(), job.getDescription());
-        score += 0.1f * descriptionScore;
+        score += 0.05f * descriptionScore;
 
+        float viewScore = viewedJobIds.contains(job.getId()) ? 1.0f : 0.0f;
+        score += 0.10f * viewScore;
+
+        float applicationScore = calculateApplicationScore(job, appliedJobs);
+        score += 0.10f * applicationScore;
+        
+        float employerViewScore = viewedEmployerIds.contains(job.getEmployer().getId()) ? 1.0f : 0.0f;
+        score += 0.10f * employerViewScore;
+
+        return Math.min(score, 1.0f);
+    }
+
+    private float calculateApplicationScore(Job job, List<Job> appliedJobs) {
+        if (appliedJobs.isEmpty()) {
+            return 0.0f;
+        }
+
+        boolean hasSimilarCategory = appliedJobs.stream()
+                .anyMatch(appliedJob -> appliedJob.getCategory().getName().equalsIgnoreCase(job.getCategory().getName()));
+        boolean hasSimilarLocation = appliedJobs.stream()
+                .anyMatch(appliedJob -> appliedJob.getLocation().equalsIgnoreCase(job.getLocation()));
+
+        float score = 0.0f;
+        if (hasSimilarCategory) score += 0.5f;
+        if (hasSimilarLocation) score += 0.5f;
         return Math.min(score, 1.0f);
     }
 

@@ -24,7 +24,7 @@ public class JobController {
 
     JobService jobService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ApiResponse<Job> createJob(@RequestBody @Valid JobCreationRequest request) {
         ApiResponse<Job> response = new ApiResponse<>();
         response.setResult(jobService.createJob(request));
@@ -43,7 +43,7 @@ public class JobController {
                 .build();
     }
 
-    @GetMapping
+    @GetMapping("/list")
     public List<JobResponse> getAllJobs() {
         return jobService.getAllJobs();
     }
