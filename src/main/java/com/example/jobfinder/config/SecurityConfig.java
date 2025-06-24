@@ -2,6 +2,10 @@ package com.example.jobfinder.config;
 
 import com.example.jobfinder.dto.auth.LoginResponse;
 import com.example.jobfinder.service.AuthService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,9 +16,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.messaging.Message;
+import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,30 +34,24 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+@EnableWebSocketSecurity
 public class SecurityConfig {
-    private final JwtRequestFilter jwtRequestFilter;
-    private final OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
-    private final OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
+    JwtRequestFilter jwtRequestFilter;
+    OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
+    OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
 
-    public SecurityConfig(JwtRequestFilter jwtRequestFilter,
-                          OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler,
-                          OAuth2JwtFailureHandler oAuth2JwtFailureHandler) {
-        this.jwtRequestFilter = jwtRequestFilter;
-        this.oAuth2JwtSuccessHandler = oAuth2JwtSuccessHandler;
-        this.oAuth2JwtFailureHandler = oAuth2JwtFailureHandler;
+    @Bean
+    public AuthorizationManager<Message<?>> messageAuthorizationManager() {
+        // Sử dụng builder pattern để cấu hình AuthorizationManager
+        return MessageMatcherDelegatingAuthorizationManager.builder()
+                .simpDestMatchers("/app/**").authenticated() // Tin nhắn gửi đến @MessageMapping phải được xác thực
+                .simpSubscribeDestMatchers("/user/**", "/topic/**").authenticated() // Đăng ký các topic cần xác thực
+                .anyMessage().denyAll() // Từ chối tất cả các thông điệp khác
+                .build(); // Gọi build() trên builder
     }
-
-//    @Bean
-//    public AuthorizationManager<Message<?>> messageAuthorizationManager(MessageSecurityMetadataSourceRegistry messages) {
-//        messages
-//                .nullDestMatcher().authenticated() // Mọi tin nhắn đến WebSocket phải được xác thực
-//                .simpDestMatchers("/app/**").authenticated() // Tin nhắn đến /app/** phải được xác thực
-//                .simpSubscribeDestMatchers("/user/**", "/topic/**").authenticated() // Đăng ký topic riêng tư và công khai phải được xác thực
-//                .anyMessage().denyAll(); // Từ chối tất cả các tin nhắn khác
-//        return messages.build();
-//    }
-
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService authService) throws Exception {
         http
@@ -80,10 +80,10 @@ public class SecurityConfig {
                                 "/api/chatbot",
                                 "/topic/**",
                                 "/error",
+                                "/ws/**",
+                                "/app/**",
                                 "/api/job/list"
                         ).permitAll()
-
-
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

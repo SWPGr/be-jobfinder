@@ -1,7 +1,7 @@
 // src/main/java/com/example/jobfinder/mapper/MessageMapper.java
 package com.example.jobfinder.mapper;
 
-import com.example.jobfinder.dto.response.MessageResponse;
+import com.example.jobfinder.dto.chat.MessageResponse;
 import com.example.jobfinder.model.Message;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

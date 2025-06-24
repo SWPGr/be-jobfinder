@@ -1,5 +1,5 @@
 // src/main/java/com/example/jobfinder/dto/response/ConversationResponse.java
-package com.example.jobfinder.dto.response;
+package com.example.jobfinder.dto.chat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +21,6 @@ public class ConversationResponse {
     private String participant2Email;
     private String participant2FullName;
     private LocalDateTime lastMessageAt;
-    private String lastMessageContent; // Hiển thị nội dung tin nhắn cuối cùng
-    private long unreadMessageCount;   // Số tin nhắn chưa đọc trong cuộc trò chuyện này
+    private String lastMessageContent;
+    private long unreadMessageCount;
 }

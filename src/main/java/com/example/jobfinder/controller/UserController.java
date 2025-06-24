@@ -87,11 +87,11 @@ public class UserController {
     }
 
     @GetMapping("/jobseekers")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xem danh sách JobSeekers
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<UserResponse>> getAllJobSeekers() {
         log.info("API: Lấy danh sách tất cả JobSeekers");
         UserSearchRequest searchRequest = UserSearchRequest.builder()
-                .roleName("JOB_SEEKER") // Chỉ định rõ role là JOB_SEEKER
+                .roleName("JOB_SEEKER")
                 .build();
         List<UserResponse> jobSeekers = userService.searchUsers(searchRequest);
         return ApiResponse.<List<UserResponse>>builder()
@@ -102,11 +102,11 @@ public class UserController {
     }
 
     @GetMapping("/employers")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xem danh sách Employers
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<UserResponse>> getAllEmployers() {
         log.info("API: Lấy danh sách tất cả Employers");
         UserSearchRequest searchRequest = UserSearchRequest.builder()
-                .roleName("EMPLOYER") // Chỉ định rõ role là EMPLOYER
+                .roleName("EMPLOYER")
                 .build();
         List<UserResponse> employers = userService.searchUsers(searchRequest);
         return ApiResponse.<List<UserResponse>>builder()

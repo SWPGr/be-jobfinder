@@ -25,5 +25,9 @@ public class UserResponse {
     private String fullName;  // To hold userDetail.fullName
     private String phone;     // To hold userDetail.phone
     private String location;  // To hold userDetail.location
-    private Boolean verified; ; // <-- Trả về đối tượng RoleResponse lồng nhau
+    private Integer verified;
+
+    private String companyName;
+    private String website;
+    private Long totalJobsPosted;
 }

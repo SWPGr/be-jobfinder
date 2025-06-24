@@ -3,8 +3,8 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.chat.ChatMessage;
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.response.ConversationResponse;
-import com.example.jobfinder.dto.response.MessageResponse;
+import com.example.jobfinder.dto.chat.ConversationResponse;
+import com.example.jobfinder.dto.chat.MessageResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.User;

@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ChatMessage {
-    private Long conversationId; // ID của cuộc trò chuyện (có thể null nếu là tin nhắn đầu tiên)
+    private Long conversationId;
     private Long senderId;
     private Long receiverId;
     private String content;
-    private LocalDateTime sentAt; // Có thể được set từ server
-    private Boolean isRead;       // Có thể được set từ server
+    private LocalDateTime sentAt;
+    private Boolean isRead;
 }
