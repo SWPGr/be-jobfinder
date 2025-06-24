@@ -77,16 +77,15 @@ public class StatisticController {
                 .build();
     }
 
-    @GetMapping("/job-posts-by-category/{dateString}")
+    @GetMapping("/total-job-posts-by-category")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<JobPostCountByCategoryAndDateResponse>> getJobPostCountByCategoryForDate(
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateString) {
-        log.info("API: Lấy số lượng bài đăng theo ngành nghề cho ngày: {}", dateString);
+    public ApiResponse<List<JobPostCountByCategoryAndDateResponse>> getTotalJobPostCountByCategory() {
+        log.info("API: Lấy tổng số lượng bài đăng tuyển dụng theo ngành nghề.");
         List<JobPostCountByCategoryAndDateResponse> categoryCounts =
-                statisticService.getJobPostCountByCategoryForDate(dateString);
+                statisticService.getTotalJobPostCountByCategory();
         return ApiResponse.<List<JobPostCountByCategoryAndDateResponse>>builder()
                 .code(HttpStatus.OK.value())
-                .message("Job post counts by category for date fetched successfully")
+                .message("Total job post counts by category fetched successfully")
                 .result(categoryCounts)
                 .build();
     }

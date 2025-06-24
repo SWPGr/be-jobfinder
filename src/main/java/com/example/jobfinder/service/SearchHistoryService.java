@@ -39,11 +39,6 @@ public class SearchHistoryService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
-    /**
-     * Ghi lại một lịch sử tìm kiếm mới cho người dùng hiện tại.
-     * @param request SearchHistoryRequest chứa search query.
-     * @return SearchHistoryResponse của lịch sử tìm kiếm đã ghi.
-     */
     @Transactional
     public SearchHistoryResponse recordSearch(SearchHistoryRequest request) {
         User authenticatedUser = getAuthenticatedUser();

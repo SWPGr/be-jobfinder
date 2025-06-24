@@ -43,11 +43,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     @Query("SELECT j.category.name, COUNT(j.id) " +
             "FROM Job j " +
-            "WHERE j.createdAt BETWEEN :startOfDay AND :endOfDay " +
             "GROUP BY j.category.name " +
             "ORDER BY COUNT(j.id) DESC") // Sắp xếp theo số lượng giảm dần
-    List<Object[]> countJobsByCategoryForDay(@Param("startOfDay") LocalDateTime startOfDay,
-                                             @Param("endOfDay") LocalDateTime endOfDay);
+    List<Object[]> countTotalJobsByCategory();
 
 
 }

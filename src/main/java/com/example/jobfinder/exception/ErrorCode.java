@@ -133,7 +133,7 @@ public enum ErrorCode {
     INVALID_SOCIAL_URL(7103, "Invalid social media URL format"),
   
     INVALID_EMAIL(7104, "Email not found or invalid" ),
-    WRONG_PASSWORD(7105, "Wrong password or email");
+    WRONG_PASSWORD(7105, "Wrong password or email"),
 
 
     // Role & Permission Errors (Lỗi liên quan đến Vai trò & Quyền hạn)
@@ -148,6 +148,8 @@ public enum ErrorCode {
 
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
+
+    CONVERSATION_NOT_FOUND(2009, "Conversation not found")
     ;
 
 

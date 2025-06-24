@@ -5,9 +5,13 @@ import com.example.jobfinder.service.AuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
+import org.springframework.messaging.Message;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +27,7 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     private final JwtRequestFilter jwtRequestFilter;
     private final OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
@@ -35,6 +40,17 @@ public class SecurityConfig {
         this.oAuth2JwtSuccessHandler = oAuth2JwtSuccessHandler;
         this.oAuth2JwtFailureHandler = oAuth2JwtFailureHandler;
     }
+
+//    @Bean
+//    public AuthorizationManager<Message<?>> messageAuthorizationManager(MessageSecurityMetadataSourceRegistry messages) {
+//        messages
+//                .nullDestMatcher().authenticated() // Mọi tin nhắn đến WebSocket phải được xác thực
+//                .simpDestMatchers("/app/**").authenticated() // Tin nhắn đến /app/** phải được xác thực
+//                .simpSubscribeDestMatchers("/user/**", "/topic/**").authenticated() // Đăng ký topic riêng tư và công khai phải được xác thực
+//                .anyMessage().denyAll(); // Từ chối tất cả các tin nhắn khác
+//        return messages.build();
+//    }
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService authService) throws Exception {
@@ -58,11 +74,14 @@ public class SecurityConfig {
                                 "/api/notifications",
                                 "/api/chat",
                                 "/api/job",
+                                "/api/job/list",
                                 "/api/job-types",
                                 "/api/statistics",
                                 "/api/chatbot",
+                                "/topic/**",
                                 "/error"
                         ).permitAll()
+
 
                         .anyRequest().authenticated()
                 )
