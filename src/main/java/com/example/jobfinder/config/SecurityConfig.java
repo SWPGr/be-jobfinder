@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/api/job-types",
                                 "/api/statistics",
                                 "/api/chatbot",
-                                "/error"
+                                "/error",
+                                "/api/job/list"
                         ).permitAll()
 
                         .anyRequest().authenticated()

@@ -133,7 +133,7 @@ public enum ErrorCode {
     INVALID_SOCIAL_URL(7103, "Invalid social media URL format"),
   
     INVALID_EMAIL(7104, "Email not found or invalid" ),
-    WRONG_PASSWORD(7105, "Wrong password or email");
+    WRONG_PASSWORD(7105, "Wrong password or email"),
 
 
     // Role & Permission Errors (Lỗi liên quan đến Vai trò & Quyền hạn)
