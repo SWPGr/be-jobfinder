@@ -76,11 +76,6 @@ public final class QueryConstants {
             (:minRating IS NULL OR er.rating >= :minRating) AND
             (:maxRating IS NULL OR er.rating <= :maxRating)
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - er.employer.id là chính xác để truy vấn theo ID của employer (User).
-     * - er.rating là chính xác.
-     */
 
     // --- UserDetail Queries ---
     public static final String FIND_USER_DETAILS_BY_CRITERIA = """

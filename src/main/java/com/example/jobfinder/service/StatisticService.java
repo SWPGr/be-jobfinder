@@ -265,20 +265,18 @@ public class StatisticService {
         return hourlyActivities;
     }
 
-    public List<JobPostCountByCategoryAndDateResponse> getJobPostCountByCategoryForDate(LocalDate date) {
-        log.info("Calculating job post count by category for date: {}", date);
-
-        LocalDateTime startOfDay = date.atStartOfDay(); // 00:00:00 của ngày được truyền vào
-        LocalDateTime endOfDay = date.atTime(LocalTime.MAX); // 23:59:59.999999999 của ngày được truyền vào
+    @Transactional(readOnly = true) // Chỉ đọc dữ liệu
+    public List<JobPostCountByCategoryAndDateResponse> getTotalJobPostCountByCategory() {
+        log.info("Calculating total job post count by category.");
 
         // Gọi phương thức từ JobRepository để lấy kết quả dạng List<Object[]>
-        List<Object[]> rawResults = jobRepository.countJobsByCategoryForDay(startOfDay, endOfDay);
+        List<Object[]> rawResults = jobRepository.countTotalJobsByCategory();
 
         // Chuyển đổi List<Object[]> sang List<JobPostCountByCategoryAndDateResponse>
         return rawResults.stream()
                 .map(result -> JobPostCountByCategoryAndDateResponse.builder()
                         .categoryName((String) result[0]) // result[0] là tên category
-                        .jobCount((Long) result[1])       // result[1] là số lượng
+                        .jobCount((Long) result[1])       // result[1] là tổng số lượng
                         .build())
                 .collect(Collectors.toList());
     }
