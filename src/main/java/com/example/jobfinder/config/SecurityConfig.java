@@ -79,7 +79,8 @@ public class SecurityConfig {
                                 "/api/statistics",
                                 "/api/chatbot",
                                 "/topic/**",
-                                "/error"
+                                "/error",
+                                "/api/job/list"
                         ).permitAll()
 
 
