@@ -3,13 +3,15 @@ package com.example.jobfinder.service;
 import com.example.jobfinder.dto.JobRecommendationResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Job;
-import com.example.jobfinder.model.JobRecommendation;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
+import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.data.elasticsearch.core.query.StringQuery;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -36,6 +38,7 @@ public class RecommendationService {
     private final JobLevelRepository jobLevelRepository;
     private final JobTypeRepository jobTypeRepository;
     private final JobViewRepository jobViewRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
 
     public RecommendationService(UserRepository userRepository,
                                  JobRepository jobRepository,
@@ -45,7 +48,8 @@ public class RecommendationService {
                                  ApplicationRepository applicationRepository,
                                  JobLevelRepository jobLevelRepository,
                                  JobTypeRepository jobTypeRepository,
-                                 JobViewRepository jobViewRepository) {
+                                 JobViewRepository jobViewRepository,
+                                 ElasticsearchOperations elasticsearchOperations) {
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
         this.userDetailsRepository = userDetailsRepository;
@@ -55,8 +59,8 @@ public class RecommendationService {
         this.jobLevelRepository = jobLevelRepository;
         this.jobTypeRepository = jobTypeRepository;
         this.jobViewRepository = jobViewRepository;
+        this.elasticsearchOperations = elasticsearchOperations;
     }
-
 
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
@@ -91,6 +95,21 @@ public class RecommendationService {
                 .map(job -> job.getEmployer().getId()).collect(Collectors.toSet());
             List<Job> appliedJobs = applicationRepository.findByJobSeekerId(jobSeeker.getId())
                 .stream().map(application -> application.getJob()).collect(Collectors.toList());
+
+            String queryString = String.format(
+                    "category:\"%s\"^2 OR location:\"%s\"^2 OR employerId:(%s)^3",
+                    userDetail.getDescription() != null ? userDetail.getDescription().toLowerCase() : "",
+                    userDetail.getLocation() != null ? userDetail.getLocation().toLowerCase() : "",
+                    viewedEmployerIds.stream().map(String::valueOf).collect(Collectors.joining(" "))
+            );
+            Query query = new StringQuery(queryString);
+        SearchHits<JobDocument> searchHits;
+        try {
+            searchHits = elasticsearchOperations.search(query, JobDocument.class);
+        } catch (Exception e) {
+            log.error("Elasticsearch query failed: {}", e.getMessage());
+            throw new AppException(ErrorCode.ELASTICSEARCH_ERROR);
+        }
 
             jobRecommendationRepository.deleteByJobSeekerId(jobSeeker.getId());
 
@@ -137,11 +156,11 @@ public class RecommendationService {
     }
 
     private float calculateJobScore(UserDetail userDetail, Job job, List<Long> viewedJobIds,
-                                    List<Job> appliedJobs, Set<Long> viewedEmployerIds) {
+                                    List<Job> appliedJobs, Set<Long> viewedEmployerIds, float esScore) {
         float score = 0.0f;
 
         float experienceScore = calculateExperienceScore(userDetail.getYearsExperience(), job.getJobLevel().getName());
-        score += 0.30f * experienceScore;
+        score += 0.25f * experienceScore;
 
         float locationScore = userDetail.getLocation() != null && userDetail.getLocation()
                 .equalsIgnoreCase(job.getLocation()) ? 1.0f : 0.0f;
@@ -162,6 +181,9 @@ public class RecommendationService {
         
         float employerViewScore = viewedEmployerIds.contains(job.getEmployer().getId()) ? 1.0f : 0.0f;
         score += 0.10f * employerViewScore;
+
+        float normalizedEsScore = Math.min(esScore / 10.0f, 1.0f);
+        score += 0.15f * normalizedEsScore;
 
         return Math.min(score, 1.0f);
     }

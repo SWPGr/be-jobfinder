@@ -63,6 +63,7 @@ public class SecurityConfig {
                                 "/api/chatbot",
                                 "/error",
                                 "/api/job/list"
+                                ,"/api/jobs/search"
                         ).permitAll()
 
                         .anyRequest().authenticated()

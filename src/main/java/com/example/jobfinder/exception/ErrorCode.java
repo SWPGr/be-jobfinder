@@ -148,7 +148,8 @@ public enum ErrorCode {
 
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
-    ;
+    ELASTICSEARCH_ERROR(2009, "elasticsearch error" ),
+    INVALID_ROLE(2010, "Role not permission");
 
 
     ErrorCode(int errorCode, String errorMessage) {
