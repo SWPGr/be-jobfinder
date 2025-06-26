@@ -43,12 +43,26 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("google/success")
-    public ApiResponse<LoginResponse> googleLoginSuccess(@AuthenticationPrincipal OidcUser oidcUser) {
-        log.debug("Google login callback received for user: {}", oidcUser.getEmail());
-        LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
-        return new ApiResponse<>(200, "Google login successful", loginResponse);
-    }
+//    @GetMapping("google/success")
+//    public ApiResponse<LoginResponse> googleLoginSuccess(@AuthenticationPrincipal OidcUser oidcUser) {
+//        log.debug("Google login callback received for user: {}", oidcUser.getEmail());
+//        LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
+//        return new ApiResponse<>(200, "Google login successful", loginResponse);
+//    }
+@PostMapping("/google")
+public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogleToken(@RequestBody Map<String, String> body) {
+    String idToken = body.get("credential");
+    LoginResponse loginResponse = authService.loginWithGoogleToken(idToken);
+
+    ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
+            .code(200)
+            .message("Google login successful")
+            .result(loginResponse)
+            .build();
+
+    return ResponseEntity.ok(response);
+}
+
 
     @GetMapping("/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String token)throws Exception {
