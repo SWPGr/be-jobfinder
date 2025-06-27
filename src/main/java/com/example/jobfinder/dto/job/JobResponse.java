@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,6 +21,9 @@ public class JobResponse {
     private String location;
     private Double salaryMin;
     private Double salaryMax;
+    private String responsibility;
+    private LocalDate expiredDate;
+    private boolean isSave;
 
     // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

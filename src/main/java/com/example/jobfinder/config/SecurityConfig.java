@@ -83,7 +83,7 @@ public class SecurityConfig {
                                 "/api/user-social-links",
                                 "/api/notifications",
                                 "/api/chat/**",
-                                "/api/job",
+                                "/api/job/**",
                                 "/api/job/list",
                                 "/api/job-types",
                                 "/api/statistics",

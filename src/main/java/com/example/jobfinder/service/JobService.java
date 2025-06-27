@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +36,7 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
+    SavedJobRepository savedJobRepository;
 
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
@@ -131,6 +133,28 @@ public class JobService {
         return jobRepository.findAll()
                 .stream()
                 .map(jobMapper::toJobResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobResponse> getAllJobsForUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = authentication.getName();
+
+        Optional<User> userOptional = userRepository.findByEmail(currentUser);
+        Long currentUserId = userOptional.map(User::getId).orElse(null);
+
+        return jobRepository.findAll().stream()
+                .map(job -> {
+                    JobResponse response = jobMapper.toJobResponse(job);
+
+                    if (currentUserId != null) {
+                        boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
+                        response.setSave(saved);
+                    } else {
+                        response.setSave(false);
+                    }
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 
