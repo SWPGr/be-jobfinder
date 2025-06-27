@@ -11,5 +11,7 @@ import java.util.Optional;
 public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
     Optional<SavedJob> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
 
+    Boolean existsByJobIdAndJobSeekerId(Long jobId, Long jobSeekerId);
+
     List<SavedJob> findByJobSeeker_Id(Long jobSeekerId);
 }

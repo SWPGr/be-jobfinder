@@ -47,6 +47,8 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String responsibility;
 
+    private boolean isSave;
+
     // --- Mối quan hệ ---
 
     // Một Job được đăng bởi một Employer (User)
