@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 public class UserResponse {
     private Long id;
     private String email;
-    private Boolean enabled; // Changed from Integer to Boolean for better representation
     private Boolean isPremium; // Changed from Integer to Boolean for better representation
     private String createdAt; // Or LocalDateTime, depending on your preference
     private String updatedAt; // Or LocalDateTime

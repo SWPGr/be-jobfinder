@@ -1,5 +1,5 @@
 // src/main/java/com/example/jobfinder/dto/response/JobPostCountByCategoryAndDateResponse.java
-package com.example.jobfinder.dto.statistic;
+package com.example.jobfinder.dto.statistic_admin;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

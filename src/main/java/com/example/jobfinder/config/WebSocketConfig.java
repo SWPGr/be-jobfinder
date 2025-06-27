@@ -1,37 +1,32 @@
 package com.example.jobfinder.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
-@EnableWebSocketMessageBroker // Kích hoạt xử lý thông điệp WebSocket được hỗ trợ bởi message broker
+@EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Cấu hình broker để gửi tin nhắn đến client
-        // "/topic" cho các tin nhắn công khai (public messages) hoặc broadcast
-        // "/user" cho các tin nhắn riêng tư (private messages) đến một người dùng cụ thể
-        config.enableSimpleBroker("/topic", "/user"); // broker sẽ forward messages với prefix này
-
-        // Cấu hình tiền tố cho các đích đến của ứng dụng
-        // "/app" là prefix cho các mapping trong @MessageMapping (controller)
-        // Ví dụ: gửi tin nhắn đến "/app/chat.sendMessage" sẽ được xử lý bởi @MessageMapping("/chat.sendMessage")
-        config.setApplicationDestinationPrefixes("/app");
-
-        // Cấu hình tiền tố cho đích đến dành riêng cho người dùng.
-        // Điều này cho phép gửi tin nhắn riêng tư đến một người dùng cụ thể.
-        config.setUserDestinationPrefix("/user");
+        config.enableSimpleBroker("/topic");
+        config.setApplicationDestinationPrefixes("/app"); // Tiền tố cho các đích đến mà client gửi tin nhắn
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Đăng ký endpoint mà client sẽ kết nối đến để bắt đầu kết nối WebSocket
-        // "/ws" là URL mà client sẽ sử dụng để kết nối.
-        // .withSockJS(): Cho phép fallback sang SockJS nếu WebSocket không khả dụng (hữu ích cho trình duyệt cũ hơn)
-        registry.addEndpoint("/ws").withSockJS();
+        registry.addEndpoint("/ws") // Endpoint WebSocket của bạn
+                // Đảm bảo rằng origin của frontend được cho phép ở đây.
+                // THAY THẾ "*" bằng "http://localhost:3000" trong môi trường production nếu bạn chỉ có một frontend.
+                .setAllowedOriginPatterns("http://localhost:3000") // <-- THAY ĐỔI TẠI ĐÂY
+                // Nếu bạn có nhiều origin, bạn có thể thêm chúng vào đây, ví dụ:
+                // .setAllowedOriginPatterns("http://localhost:3000", "https://yourproductionfrontend.com")
+                .withSockJS(); // Bật hỗ trợ SockJS
     }
+
 }
