@@ -96,7 +96,6 @@ public class JobService {
             if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"COMPANY_ADMIN".equals(newEmployer.getRole().getName())) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
-
             job.setEmployer(newEmployer);
         }
         return jobMapper.toJobResponse(jobRepository.save(job));

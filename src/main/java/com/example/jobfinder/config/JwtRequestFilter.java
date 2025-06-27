@@ -1,9 +1,11 @@
 package com.example.jobfinder.config;
 
+import com.example.jobfinder.exception.AppException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,7 @@ import java.util.Collections;
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
+
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
 
@@ -27,7 +30,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
         if (isPublicEndpoint(requestURI) || requestURI.startsWith("/oauth2/") ||
@@ -42,16 +47,25 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String jwt = null;
         String role = null;
 
-
-        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
-            role = jwtUtil.extractRole(jwt);
+
+            try {
+                username = jwtUtil.extractUsername(jwt);
+                role = jwtUtil.extractRole(jwt);
+            } catch (AppException ex) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"" + ex.getErrorCode().getErrorMessage() + "\"}"); // ✅ lấy thông báo đúng
+                response.getWriter().flush(); // 🟢 đảm bảo response gửi ra
+                return;
+            }
+
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-            if(jwtUtil.validateToken(jwt, userDetails.getUsername())){
+            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
@@ -59,6 +73,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         }
+
         chain.doFilter(request, response);
     }
 
@@ -74,5 +89,4 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
         return false;
     }
-
 }

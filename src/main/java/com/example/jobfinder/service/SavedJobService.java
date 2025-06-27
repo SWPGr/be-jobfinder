@@ -101,8 +101,8 @@ public class SavedJobService {
                 .build();
     }
 
-    public void unSaveJob(SavedJobRequest request) {
-        log.debug("Processing save job request: {}", request);
+    public void unSaveJob(Long jobId) {
+        log.debug("Processing save job request: {}", jobId);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -115,8 +115,8 @@ public class SavedJobService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unsave jobs");
         }
 
-        Job job = jobRepository.findById(request.getJobId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job not found" + request.getJobId()));
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job not found" + jobId));
 
         SavedJob savedJob = savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have not saved this job"));

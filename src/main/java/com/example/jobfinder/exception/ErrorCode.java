@@ -24,7 +24,7 @@ public enum ErrorCode {
     UNAUTHORIZED(2006, "You do not have permission to perform this action"), // Không có quyền (đã xác thực nhưng không đủ quyền)
     CREDENTIAL_INVALID(2007, "Invalid username or password"), // Dùng cho lỗi đăng nhập sai tài khoản/mật khẩu
     USER_NOT_VERIFIED(2008, "User not verified, please verify your email"), // Tài khoản chưa được xác minh
-    INVALID_TOKEN(2009, "Invalid or expired token"), // Dùng cho JWT token không hợp lệ/hết hạn
+    INVALID_TOKEN(401, "Invalid or expired token"), // Dùng cho JWT token không hợp lệ/hết hạn
     OLD_PASSWORD_NOT_MATCH(2010, "Old password is not correct"), // Khi đổi mật khẩu cũ không đúng
     USER_EXIST(2011, "User already exists"),
 
@@ -149,8 +149,8 @@ public enum ErrorCode {
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
 
-    CONVERSATION_NOT_FOUND(2009, "Conversation not found")
-    ;
+    CONVERSATION_NOT_FOUND(2009, "Conversation not found"),
+    TOKEN_EXPIRED(401, "Token has expired. Please login again");
 
 
     ErrorCode(int errorCode, String errorMessage) {
