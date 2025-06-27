@@ -46,11 +46,7 @@ public class JobService {
         User employer = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
-        String location = "";
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UserDetail userDetail) {
-            location = userDetail.getLocation();
-        }
+        String location = employer.getUserDetail().getLocation();
 
         if (employer == null ||
                 (!employer.getRole().getName().equals("EMPLOYER") &&
