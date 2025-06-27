@@ -2,15 +2,27 @@ package com.example.jobfinder.config;
 
 import com.example.jobfinder.dto.auth.LoginResponse;
 import com.example.jobfinder.service.AuthService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
+import org.springframework.messaging.Message;
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
+import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,18 +35,32 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+@EnableWebSocketSecurity
 public class SecurityConfig {
-    private final JwtRequestFilter jwtRequestFilter;
-    private final OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
-    private final OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
+    JwtRequestFilter jwtRequestFilter;
+    OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
+    OAuth2JwtFailureHandler oAuth2JwtFailureHandler;
 
-    public SecurityConfig(JwtRequestFilter jwtRequestFilter,
-                          OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler,
-                          OAuth2JwtFailureHandler oAuth2JwtFailureHandler) {
-        this.jwtRequestFilter = jwtRequestFilter;
-        this.oAuth2JwtSuccessHandler = oAuth2JwtSuccessHandler;
-        this.oAuth2JwtFailureHandler = oAuth2JwtFailureHandler;
-    }
+//    @Configuration
+//    public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+//        @Override
+//        protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+//            messages
+//                    .simpDestMatchers("/app/**").hasRole("ADMIN") // Yêu cầu ROLE_ADMIN cho tin nhắn gửi đến /app/**
+//                    .simpTypeMatchers(SimpMessageType.CONNECT, SimpMessageType.DISCONNECT).permitAll() // Cho phép CONNECT và DISCONNECT
+//                    .simpSubscribeDestMatchers("/topic/**").hasRole("ADMIN") // Yêu cầu ROLE_ADMIN để subscribe /topic/**
+//                    .anyMessage().authenticated(); // Tất cả tin nhắn khác yêu cầu xác thực
+//        }
+//
+//        @Override
+//        protected boolean sameOriginDisabled() {
+//            return true; // Tắt kiểm tra same-origin nếu cần (cho phát triển)
+//        }
+//    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService authService) throws Exception {
@@ -56,14 +82,19 @@ public class SecurityConfig {
                                 "/api/employer-reviews",
                                 "/api/user-social-links",
                                 "/api/notifications",
-                                "/api/chat",
+                                "/api/chat/**",
                                 "/api/job",
+                                "/api/job/list",
                                 "/api/job-types",
                                 "/api/statistics",
+                                "/api/statistics/employer",
                                 "/api/chatbot",
-                                "/error"
+                                "/topic/**",
+                                "/error",
+                                "/ws/**",
+                                "/app/**"
                         ).permitAll()
-
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -79,6 +110,9 @@ public class SecurityConfig {
                         })
                 );
 //        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
+                )
+
+          ;
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -87,12 +121,12 @@ public class SecurityConfig {
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3030",
                 "http://localhost:8080"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Origin"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

@@ -148,6 +148,8 @@ public enum ErrorCode {
 
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
+
+    CONVERSATION_NOT_FOUND(2009, "Conversation not found")
     ;
 
 

@@ -2,21 +2,20 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.statistic.*;
+import com.example.jobfinder.dto.statistic_admin.*;
+import com.example.jobfinder.service.ApplicationService;
 import com.example.jobfinder.service.StatisticService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,9 +23,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class StatisticController {
+public class AdminStatisticController {
 
     StatisticService statisticService;
+    ApplicationService applicationService;
 
     @GetMapping("/today-hourly-activity")
     @PreAuthorize("hasRole('ADMIN')")
@@ -77,17 +77,28 @@ public class StatisticController {
                 .build();
     }
 
-    @GetMapping("/job-posts-by-category/{dateString}")
+    @GetMapping("/total-job-posts-by-category")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<JobPostCountByCategoryAndDateResponse>> getJobPostCountByCategoryForDate(
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateString) {
-        log.info("API: Lấy số lượng bài đăng theo ngành nghề cho ngày: {}", dateString);
+    public ApiResponse<List<JobPostCountByCategoryAndDateResponse>> getTotalJobPostCountByCategory() {
+        log.info("API: Lấy tổng số lượng bài đăng tuyển dụng theo ngành nghề.");
         List<JobPostCountByCategoryAndDateResponse> categoryCounts =
-                statisticService.getJobPostCountByCategoryForDate(dateString);
+                statisticService.getTotalJobPostCountByCategory();
         return ApiResponse.<List<JobPostCountByCategoryAndDateResponse>>builder()
                 .code(HttpStatus.OK.value())
-                .message("Job post counts by category for date fetched successfully")
+                .message("Total job post counts by category fetched successfully")
                 .result(categoryCounts)
                 .build();
+    }
+
+    @GetMapping("/last-3-months-applications")
+    @PreAuthorize("hasRole('ADMIN')") // Ví dụ: chỉ ADMIN mới được xem thống kê này
+    public ResponseEntity<ApiResponse<MonthlyApplicationStatsResponse>> getApplicationsLast3Months() {
+        MonthlyApplicationStatsResponse response = applicationService.getApplicationsLast3Months();
+
+        return ResponseEntity.ok(ApiResponse.<MonthlyApplicationStatsResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Monthly application statistics fetched successfully")
+                .result(response)
+                .build());
     }
 }

@@ -1,0 +1,21 @@
+// src/main/java/com/example/jobfinder/dto/CandidateDetailResponse.java
+package com.example.jobfinder.dto.job;
+
+import com.example.jobfinder.dto.user.JobSeekerResponse;
+import com.example.jobfinder.model.UserDetail;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CandidateDetailResponse {
+    private Long userId;
+    private String fullname;
+    private String email;
+    private String role;
+    private JobSeekerResponse seekerDetail; // Thông tin chi tiết của ứng viên
+}

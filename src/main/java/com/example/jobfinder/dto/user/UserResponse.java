@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 public class UserResponse {
     private Long id;
     private String email;
-    private Boolean enabled; // Changed from Integer to Boolean for better representation
     private Boolean isPremium; // Changed from Integer to Boolean for better representation
     private String createdAt; // Or LocalDateTime, depending on your preference
     private String updatedAt; // Or LocalDateTime
@@ -25,5 +24,9 @@ public class UserResponse {
     private String fullName;  // To hold userDetail.fullName
     private String phone;     // To hold userDetail.phone
     private String location;  // To hold userDetail.location
-    private Boolean verified; ; // <-- Trả về đối tượng RoleResponse lồng nhau
+    private Integer verified;
+
+    private String companyName;
+    private String website;
+    private Long totalJobsPosted;
 }

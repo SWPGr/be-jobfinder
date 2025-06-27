@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 // Annotation @Service để Spring tự động nhận diện đây là một Service component.
 // @RequiredArgsConstructor sẽ tự động tạo constructor cho các final fields (dependency injection).
@@ -42,6 +43,7 @@ public class UserService {
     JobSeekerMapper jobSeekerMapper; // Để chuyển đổi UserDetail sang JobSeekerResponse
     EmployerMapper employerMapper; // Để chuyển đổi UserDetail sang EmployerResponse
     EducationRepository educationRepository; // Cần nếu UserDetail có Education và bạn cần lấy/lưu Education
+    JobRepository jobRepository;
 
     // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
 
@@ -207,20 +209,50 @@ public class UserService {
         userRepository.delete(userToDelete); // Xóa User.
     }
 
-    public List<UserResponse> searchUsers(UserSearchRequest searchRequest) {
-        List<User> users = userRepository.findUsersByCriteria(
-                searchRequest.getEmail(),
-                searchRequest.getFullName(),
-                searchRequest.getRoleName(),
-                searchRequest.getLocation(),
-                searchRequest.getYearsExperience(),
-                searchRequest.getIsPremium(),
-                searchRequest.getVerified(),
-                searchRequest.getResumeUrl(),
-                searchRequest.getCompanyName(),
-                searchRequest.getWebsite()
-        );
-        return userMapper.toUserResponseList(users);
+    @Transactional(readOnly = true)
+    public List<UserResponse> searchUsers(UserSearchRequest request) {
+        log.info("Searching users with role: {}", request.getRoleName());
+
+        // Lấy dữ liệu thô từ Repository (User, UserDetail, Role)
+        List<Object[]> results = userRepository.findUsersWithDetailsAndRole(request.getRoleName());
+
+        return results.stream()
+                .map(row -> {
+                    User user = (User) row[0];
+                    UserDetail userDetail = (UserDetail) row[1];
+                    Role role = (Role) row[2];
+
+                    UserResponse userResponse = UserResponse.builder()
+                            .id(user.getId())
+                            .email(user.getEmail())
+                            .isPremium(user.getIsPremium())
+                            .createdAt(String.valueOf(user.getCreatedAt()))
+                            .updatedAt(String.valueOf(user.getUpdatedAt()))
+                            .roleName(role != null ? role.getName() : null)
+                            .verified(user.getVerified())
+                            .build();
+
+                    // Map UserDetail nếu có
+                    if (userDetail != null) {
+                        userResponse.setFullName(userDetail.getFullName());
+                        userResponse.setPhone(userDetail.getPhone());
+                        userResponse.setLocation(userDetail.getLocation());
+                        userResponse.setCompanyName(userDetail.getCompanyName());
+                        userResponse.setWebsite(userDetail.getWebsite());
+                    }
+
+                    // Nếu là EMPLOYER, điền thêm totalJobsPosted
+                    if (role != null && "EMPLOYER".equals(role.getName())) {
+                        long totalJobs = jobRepository.countByEmployerId(user.getId());
+                        userResponse.setTotalJobsPosted(totalJobs);
+                    } else {
+                        // Đảm bảo trường này là null nếu không phải employer
+                        userResponse.setTotalJobsPosted(null);
+                    }
+
+                    return userResponse;
+                })
+                .collect(Collectors.toList());
     }
 
     public List<UserResponse> getUsersByRole(String roleName) {
