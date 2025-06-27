@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "job_recommendations")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -35,46 +37,6 @@ public class JobRecommendation {
     @JoinColumn(name = "job_id", nullable = false)
     @JsonManagedReference("job-recommendations")
     private Job job;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Float getScore() {
-        return score;
-    }
-
-    public void setScore(Float score) {
-        this.score = score;
-    }
-
-    public LocalDateTime getRecommendedAt() {
-        return recommendedAt;
-    }
-
-    public void setRecommendedAt(LocalDateTime recommendedAt) {
-        this.recommendedAt = recommendedAt;
-    }
-
-    public User getJobSeeker() {
-        return jobSeeker;
-    }
-
-    public void setJobSeeker(User jobSeeker) {
-        this.jobSeeker = jobSeeker;
-    }
-
-    public Job getJob() {
-        return job;
-    }
-
-    public void setJob(Job job) {
-        this.job = job;
-    }
 
     // Lifecycle callbacks
     @PrePersist

@@ -16,9 +16,12 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class User implements UserDetails { // Implement UserDetails cho Spring Security
+@Builder
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -108,174 +111,10 @@ public class User implements UserDetails { // Implement UserDetails cho Spring S
     @JsonBackReference("user-notifications")
     private Set<Notification> notifications = new HashSet<>();
 
-    public Long getId() {
-        return id;
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("user-chatbotHistories") // <-- THÊM DÒNG NÀY
+    private Set<ChatbotHistory> chatbotHistories = new HashSet<>();
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Boolean getIsPremium() {
-        return isPremium;
-    }
-
-    public void setIsPremium(Boolean premium) {
-        isPremium = premium;
-    }
-
-    public String getResetPasswordToken() {
-        return resetPasswordToken;
-    }
-
-    public void setResetPasswordToken(String resetPasswordToken) {
-        this.resetPasswordToken = resetPasswordToken;
-    }
-
-    public LocalDateTime getResetPasswordExpiry() {
-        return resetPasswordExpiry;
-    }
-
-    public void setResetPasswordExpiry(LocalDateTime resetPasswordExpiry) {
-        this.resetPasswordExpiry = resetPasswordExpiry;
-    }
-
-    public String getVerificationToken() {
-        return verificationToken;
-    }
-
-    public void setVerificationToken(String verificationToken) {
-        this.verificationToken = verificationToken;
-    }
-
-    public Integer getVerified() {
-        return verified;
-    }
-
-    public void setVerified(Integer verified) {
-        this.verified = verified;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public UserDetail getUserDetail() {
-        return userDetail;
-    }
-
-    public void setUserDetail(UserDetail userDetail) {
-        this.userDetail = userDetail;
-    }
-
-    public Set<Subscription> getSubscriptions() {
-        return subscriptions;
-    }
-
-    public void setSubscriptions(Set<Subscription> subscriptions) {
-        this.subscriptions = subscriptions;
-    }
-
-    public Set<Application> getApplications() {
-        return applications;
-    }
-
-    public void setApplications(Set<Application> applications) {
-        this.applications = applications;
-    }
-
-    public Set<Job> getPostedJobs() {
-        return postedJobs;
-    }
-
-    public void setPostedJobs(Set<Job> postedJobs) {
-        this.postedJobs = postedJobs;
-    }
-
-    public Set<JobRecommendation> getJobRecommendations() {
-        return jobRecommendations;
-    }
-
-    public void setJobRecommendations(Set<JobRecommendation> jobRecommendations) {
-        this.jobRecommendations = jobRecommendations;
-    }
-
-    public Set<SavedJob> getSavedJobs() {
-        return savedJobs;
-    }
-
-    public void setSavedJobs(Set<SavedJob> savedJobs) {
-        this.savedJobs = savedJobs;
-    }
-
-    public Set<JobView> getJobViews() {
-        return jobViews;
-    }
-
-    public void setJobViews(Set<JobView> jobViews) {
-        this.jobViews = jobViews;
-    }
-
-    public Set<EmployerReview> getReviewsGiven() {
-        return reviewsGiven;
-    }
-
-    public void setReviewsGiven(Set<EmployerReview> reviewsGiven) {
-        this.reviewsGiven = reviewsGiven;
-    }
-
-    public Set<EmployerReview> getReviewsReceived() {
-        return reviewsReceived;
-    }
-
-    public void setReviewsReceived(Set<EmployerReview> reviewsReceived) {
-        this.reviewsReceived = reviewsReceived;
-    }
-
-    public Set<Notification> getNotifications() {
-        return notifications;
-    }
-
-    public void setNotifications(Set<Notification> notifications) {
-        this.notifications = notifications;
-    }
 
     // --- Implement UserDetails cho Spring Security ---
     @Override

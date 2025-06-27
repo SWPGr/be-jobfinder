@@ -90,6 +90,17 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch</artifactId>
+			<version>8.15.0</version>
+		</dependency>
+
+
 		<!-- MapStruct Dependencies -->
 		<dependency>
 			<groupId>org.mapstruct</groupId>

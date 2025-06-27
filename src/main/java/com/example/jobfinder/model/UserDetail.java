@@ -10,6 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "user_details")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -63,100 +65,4 @@ public class UserDetail {
     @OneToMany(mappedBy = "userDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("userDetail-userSocialTypes")
     private Set<UserSocialType> userSocialTypes = new HashSet<>();
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public Integer getYearsExperience() {
-        return yearsExperience;
-    }
-
-    public void setYearsExperience(Integer yearsExperience) {
-        this.yearsExperience = yearsExperience;
-    }
-
-    public String getResumeUrl() {
-        return resumeUrl;
-    }
-
-    public void setResumeUrl(String resumeUrl) {
-        this.resumeUrl = resumeUrl;
-    }
-
-    public String getCompanyName() {
-        return companyName;
-    }
-
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getWebsite() {
-        return website;
-    }
-
-    public void setWebsite(String website) {
-        this.website = website;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Education getEducation() {
-        return education;
-    }
-
-    public void setEducation(Education education) {
-        this.education = education;
-    }
-
-    public Set<UserSocialType> getUserSocialTypes() {
-        return userSocialTypes;
-    }
-
-    public void setUserSocialTypes(Set<UserSocialType> userSocialTypes) {
-        this.userSocialTypes = userSocialTypes;
-    }
 }

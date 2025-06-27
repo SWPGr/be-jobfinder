@@ -33,6 +33,9 @@ public class JobService {
     JobTypeRepository jobTypeRepository;
     JobLevelRepository jobLevelRepository;
     CategoryRepository categoryRepository;
+    EducationRepository educationRepository;
+    ExperienceRepository experienceRepository;
+
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -43,8 +46,20 @@ public class JobService {
         User employer = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
-        if (employer == null) {
-            throw new AppException(ErrorCode.USER_NOT_FOUND); // Thay vì USER_EXIST
+        String location = "";
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetail userDetail) {
+            location = userDetail.getLocation();
+        }
+
+        if (employer == null ||
+                (!employer.getRole().getName().equals("EMPLOYER") &&
+                        !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
+            throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
+        }
+
+        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
+            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
         }
 
         // 3. Lấy Category Entity từ ID
@@ -52,16 +67,6 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         System.out.println("DEBUG: Fetched Category: ID=" + category.getId() + ", Name=" + category.getName());
 
-
-        if (employer.getRole() == null ||
-                (!employer.getRole().getName().equals("EMPLOYER") &&
-                        !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-
-        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
-            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
-        }
 
         JobLevel jobLevel = jobLevelRepository.findById(jobCreationRequest.getJobLevelId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
@@ -73,12 +78,29 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobType: ID=" + jobType.getId() + ", Name=" + jobType.getName());
 
+        Education education = educationRepository.findById(jobCreationRequest.getEducationId())
+                .orElseThrow(() -> new AppException(ErrorCode.EDUCATION_NOT_FOUND));
+
+        Experience experience = experienceRepository.findById(jobCreationRequest.getExperienceId())
+                .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+
         Job newJob = jobMapper.toJob(jobCreationRequest);
 
         newJob.setEmployer(employer);
         newJob.setCategory(category);
         newJob.setJobLevel(jobLevel);
         newJob.setJobType(jobType);
+        newJob.setEducation(education);
+        newJob.setExperience(experience);
+
+        newJob.setTitle(jobCreationRequest.getTitle());
+        newJob.setDescription(jobCreationRequest.getDescription());
+        newJob.setLocation(location);
+        newJob.setSalaryMin(jobCreationRequest.getSalaryMin());
+        newJob.setSalaryMax(jobCreationRequest.getSalaryMax());
+        newJob.setExpiredDate(jobCreationRequest.getExpiredDate());
+        newJob.setVacancy(jobCreationRequest.getVacancy());
+        newJob.setResponsibility(jobCreationRequest.getResponsibility());
 
         return jobRepository.save(newJob);
     }
