@@ -10,6 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "categories")
+@Getter
+@Setter
 @SuperBuilder
 @ToString(callSuper = true)
 @AttributeOverride(name = "name", column = @Column(name = "category_name", unique = true, nullable = false, length = 100))
@@ -22,12 +24,4 @@ public class Category extends BaseNameEntity {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("category-jobs")
     private Set<Job> jobs = new HashSet<>();
-
-    public Set<Job> getJobs() {
-        return jobs;
-    }
-
-    public void setJobs(Set<Job> jobs) {
-        this.jobs = jobs;
-    }
 }

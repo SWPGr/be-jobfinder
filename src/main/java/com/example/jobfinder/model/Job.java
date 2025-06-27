@@ -5,12 +5,15 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "jobs")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -36,6 +39,13 @@ public class Job {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDate expiredDate;
+
+    private Integer vacancy;
+
+    @Column(columnDefinition = "TEXT")
+    private String responsibility;
 
     // --- Mối quan hệ ---
 
@@ -83,125 +93,13 @@ public class Job {
     @JsonBackReference("job-jobviews")
     private Set<JobView> jobViews = new HashSet<>();
 
-    public Long getId() {
-        return id;
-    }
+    @ManyToOne
+    @JoinColumn(name = "job_education_id")
+    private Education education;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public Float getSalaryMin() {
-        return salaryMin;
-    }
-
-    public void setSalaryMin(Float salaryMin) {
-        this.salaryMin = salaryMin;
-    }
-
-    public Float getSalaryMax() {
-        return salaryMax;
-    }
-
-    public void setSalaryMax(Float salaryMax) {
-        this.salaryMax = salaryMax;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public User getEmployer() {
-        return employer;
-    }
-
-    public void setEmployer(User employer) {
-        this.employer = employer;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public void setCategory(Category category) {
-        this.category = category;
-    }
-
-    public JobLevel getJobLevel() {
-        return jobLevel;
-    }
-
-    public void setJobLevel(JobLevel jobLevel) {
-        this.jobLevel = jobLevel;
-    }
-
-    public JobType getJobType() {
-        return jobType;
-    }
-
-    public void setJobType(JobType jobType) {
-        this.jobType = jobType;
-    }
-
-    public Set<Application> getApplications() {
-        return applications;
-    }
-
-    public void setApplications(Set<Application> applications) {
-        this.applications = applications;
-    }
-
-    public Set<JobRecommendation> getJobRecommendations() {
-        return jobRecommendations;
-    }
-
-    public void setJobRecommendations(Set<JobRecommendation> jobRecommendations) {
-        this.jobRecommendations = jobRecommendations;
-    }
-
-    public Set<SavedJob> getSavedJobs() {
-        return savedJobs;
-    }
-
-    public void setSavedJobs(Set<SavedJob> savedJobs) {
-        this.savedJobs = savedJobs;
-    }
-
-    public Set<JobView> getJobViews() {
-        return jobViews;
-    }
-
-    public void setJobViews(Set<JobView> jobViews) {
-        this.jobViews = jobViews;
-    }
+    @ManyToOne
+    @JoinColumn(name = "job_experience_id")
+    private Experience experience;
 
     // Lifecycle callbacks
     @PrePersist
