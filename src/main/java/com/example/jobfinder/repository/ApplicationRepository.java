@@ -1,11 +1,13 @@
 package com.example.jobfinder.repository;
 
 import com.example.jobfinder.model.Application;
+import com.example.jobfinder.model.User;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByJobSeekerId(Long jobSeekerId);
 
+    List<Application> findByAppliedAtBetween(LocalDateTime start, LocalDateTime end);
+
     List<Application> findByJob_Id(Long jobId);
 
     boolean existsByJobSeeker_IdAndJob_Employer_Id(Long jobSeekerId, Long employerId);
@@ -22,6 +26,11 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<Application> findApplicationsByCriteria(@Param("jobSeekerEmail") String jobSeekerEmail,
                                                  @Param("jobTitle") String jobTitle,
                                                  @Param("status") String status);
+
+    @Query("SELECT ja.jobSeeker FROM Application ja " +
+            "JOIN FETCH ja.jobSeeker.userDetail sd " + // Join FETCH SeekerDetail
+            "WHERE ja.job.id = :jobId")
+    List<User> findApplicantsWithDetailsByJobId(@Param("jobId") Long jobId);
 
     @Query("SELECT COUNT(a) FROM Application a")
     long countAllApplications();
@@ -64,4 +73,24 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("jobTitle") String jobTitle,
             @Param("status") String status
     );
+
+    Long countByAppliedAt(LocalDateTime date);
+
+    @Query("SELECT FUNCTION('DATE', ja.appliedAt) AS appliedDate, COUNT(ja) AS count " +
+            "FROM Application ja " +
+            "WHERE ja.appliedAt BETWEEN :startDateTime AND :endDateTime " +
+            "GROUP BY FUNCTION('DATE', ja.appliedAt) " +
+            "ORDER BY FUNCTION('DATE', ja.appliedAt) ASC")
+    List<Object[]> countApplicationsByDateTimeRange(@Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
+
+    // Bạn cũng có thể dùng cách này nếu muốn đếm trong khoảng thời gian cụ thể:
+    Long countByAppliedAtBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
+
+    @Query("SELECT ja.job.id, ja.job.title, COUNT(ja) FROM Application ja " +
+            "WHERE ja.job.employer.id = :employerId " + // Lọc theo ID của nhà tuyển dụng
+            "GROUP BY ja.job.id, ja.job.title " +       // Nhóm theo Job ID và Title
+            "ORDER BY COUNT(ja) DESC")                   // Sắp xếp theo số lượng giảm dần
+    List<Object[]> countApplicationsPerJobByEmployerId(@Param("employerId") Long employerId);
+
 }
+

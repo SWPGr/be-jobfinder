@@ -22,9 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,6 +40,8 @@ public class AuthService {
     AuthenticationManager authenticationManager;
     JwtUtil jwtUtil;
     EmailService emailService;
+    GoogleTokenVerifierService googleTokenVerifierService;
+
 
     public void register(RegisterRequest request) throws Exception {
         if(userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -89,38 +89,57 @@ public class AuthService {
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
         return new LoginResponse(token, user.getRole().getName());
     }
-    @Transactional
-    public LoginResponse handleGoogleLogin(OidcUser oidcUser) {
-        String email = oidcUser.getEmail();
-        if (email == null || email.trim().isEmpty()) {
+
+    public LoginResponse loginWithGoogleToken(String idToken) {
+        GoogleUserInfo userInfo = googleTokenVerifierService.verify(idToken);
+        if (userInfo == null || userInfo.getEmail() == null) {
             throw new AppException(ErrorCode.INVALID_EMAIL);
         }
-        log.debug("Processing Google login for email: {}", email);
 
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createNewGoogleUser(email, oidcUser));
+        User user = userRepository.findByEmail(userInfo.getEmail())
+                .orElseGet(() -> createNewGoogleUser(userInfo.getEmail(), userInfo.getName()));
 
         String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-        log.debug("Generated JWT for user: {}", email);
+
         return new LoginResponse(jwt, user.getRole().getName());
     }
 
-    private User createNewGoogleUser(String email, OidcUser oidcUser) {
-        log.debug("Creating new user for email: {}", email);
+//    @Transactional
+//    public LoginResponse handleGoogleLogin(OidcUser oidcUser) {
+//        String email = oidcUser.getEmail();
+//        if (email == null || email.trim().isEmpty()) {
+//            throw new AppException(ErrorCode.INVALID_EMAIL);
+//        }
+//        log.debug("Processing Google login for email: {}", email);
+//
+//        User user = userRepository.findByEmail(email)
+//                .orElseGet(() -> createNewGoogleUser(email, oidcUser));
+//
+//        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
+//        log.debug("Generated JWT for user: {}", email);
+//        return new LoginResponse(jwt, user.getRole().getName());
+//    }
+
+    private User createNewGoogleUser(String email, String name) {
         User user = new User();
         user.setEmail(email);
-        user.setPassword("");
-        Role userRole = roleRepository.findByName("JOB_SEEKER")
+        user.setPassword(""); // hoặc null
+        Role role = roleRepository.findByName("JOB_SEEKER")
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRole(userRole);
+        user.setRole(role);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
 
         UserDetail userDetail = new UserDetail();
         userDetail.setUser(user);
+        userDetail.setFullName(name); // nếu bạn có field này
         userDetailsRepository.save(userDetail);
+
         return user;
     }
+
 
     public void verifyEmail(String token) throws Exception {
         User user = userRepository.findByVerificationToken(token)

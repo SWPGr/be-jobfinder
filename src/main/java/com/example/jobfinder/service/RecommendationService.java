@@ -114,8 +114,12 @@ public class RecommendationService {
             jobRecommendationRepository.deleteByJobSeekerId(jobSeeker.getId());
 
             List<JobRecommendation> recommendations = new ArrayList<>();
-            for (Job job : jobs) {
-                float score = calculateJobScore(userDetail, job, viewedJobIds, appliedJobs, viewedEmployerIds);
+            for (SearchHit<JobDocument> hit : searchHits) {
+                JobDocument jobDoc = hit.getContent();
+                Job job = jobRepository.findById(jobDoc.getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+                float score = calculateJobScore(userDetail, job, viewedJobIds, appliedJobs, viewedEmployerIds, hit.getScore());
                 if (score > 0.3) {
                     JobRecommendation recommendation = new JobRecommendation();
                     recommendation.setJobSeeker(jobSeeker);

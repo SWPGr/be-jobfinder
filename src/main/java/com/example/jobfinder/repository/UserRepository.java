@@ -1,5 +1,6 @@
 package com.example.jobfinder.repository;
 
+import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findFirstByOrderByCreatedAtAsc();
 
+    List<User> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
     @Query("SELECT COUNT(u) FROM User u JOIN u.role r WHERE r.name = :roleName AND u.createdAt <= :endDate")
     long countUsersByRoleNameAndCreatedAtBeforeOrEquals(@Param("roleName") String roleName, @Param("endDate") LocalDateTime endDate);
 
@@ -39,6 +42,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u JOIN u.role r WHERE r.name = :roleName")
     long countUsersByRoleName(@Param("roleName") String roleName);
+
+    @Query("SELECT u, ud, r " +
+            "FROM User u " +
+            "LEFT JOIN u.userDetail ud " +
+            "LEFT JOIN u.role r " +
+            "WHERE (:roleName IS NULL OR r.name = :roleName)")
+    List<Object[]> findUsersWithDetailsAndRole(@Param("roleName") String roleName);
 
     // Cập nhật phương thức này để thêm tham số `verified`
     @Query(QueryConstants.FIND_USERS_BY_CRITERIA)

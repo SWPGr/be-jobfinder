@@ -1,5 +1,5 @@
 // src/main/java/com/example/jobfinder/dto/response/MonthlyComparisonResponse.java
-package com.example.jobfinder.dto.statistic;
+package com.example.jobfinder.dto.statistic_admin;
 
 import lombok.*;
 
