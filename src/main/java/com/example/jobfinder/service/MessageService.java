@@ -58,6 +58,8 @@ public class MessageService {
         Long p1Id = Math.min(sender.getId(), receiver.getId());
         Long p2Id = Math.max(sender.getId(), receiver.getId());
 
+        log.info("p1Id: {}, p2Id: {}", p1Id, p2Id);
+
         // Tìm hoặc tạo Conversation
         Conversation conversation = conversationRepository.findByParticipants(p1Id, p2Id)
                 .orElseGet(() -> {
@@ -79,9 +81,10 @@ public class MessageService {
                 .isRead(false) // Mặc định là chưa đọc
                 .build();
 
+        System.out.println(message);
+
         Message savedMessage = messageRepository.save(message);
 
-        // Cập nhật lastMessageAt của Conversation
         conversation.setLastMessageAt(savedMessage.getSentAt());
         conversationRepository.save(conversation); // Lưu cập nhật
 
@@ -128,7 +131,6 @@ public class MessageService {
 
         log.info("Fetching conversations for user: {}", currentUserEmail);
 
-        // Lấy tất cả cuộc trò chuyện mà người dùng là participant
         List<Conversation> conversations = conversationRepository.findByParticipant1_IdOrParticipant2_IdOrderByLastMessageAtDesc(
                 currentUser.getId(), currentUser.getId());
 

@@ -4,7 +4,10 @@ import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
+import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
+import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
@@ -25,9 +28,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.LinkedHashMap;
 
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.lang.Math.log;
 
 @RestController
 @RequestMapping("api/apply")
@@ -60,8 +70,9 @@ public class ApplicationController {
         return ResponseEntity.ok(appliedJobs);
     }
 
-    @GetMapping("/{jobId}/candidates") // Endpoint /api/applications/{jobId}/candidates
-    public ResponseEntity<List<UserResponse>> getCandidatesByJob(@PathVariable Long jobId) { // Loại bỏ Authentication khỏi param vì đã lấy từ SecurityContextHolder
+    @GetMapping("/candidates/{jobId}")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')") // Chỉ EMPLOYER hoặc ADMIN được xem
+    public ResponseEntity<ApiResponse<List<CandidateDetailResponse>>> getCandidatesForEmployerJob(@PathVariable Long jobId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -69,23 +80,24 @@ public class ApplicationController {
         }
 
         String userEmail = authentication.getName();
-        com.example.jobfinder.model.User currentUser = userRepository.findByEmail(userEmail)
+        User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         // Logic phân quyền: Chỉ EMPLOYER (chủ sở hữu job) hoặc ADMIN mới được xem
-        if (currentUser.getRole().getName().equals("EMPLOYER") ||  currentUser.getRole().getName().equals("ADMIN")) {
-            // Kiểm tra xem công việc này có phải do EMPLOYER hiện tại đăng không
+        if (currentUser.getRole().getName().equals("EMPLOYER")) { // So sánh với tên enum
             boolean isEmployerJob = applicationService.isJobOwnedByEmployer(jobId, currentUser.getId());
             if (!isEmployerJob) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
             }
-        } else {
-            // Nếu không phải EMPLOYER và cũng không phải ADMIN, từ chối
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
+        // Admin sẽ bỏ qua kiểm tra isEmployerJob
 
-        List<UserResponse> candidates = applicationService.getCandidatesByJobId(jobId);
-        return ResponseEntity.ok(candidates);
+        List<CandidateDetailResponse> candidates = applicationService.getCandidatesDetailByJobId(jobId);
+        return ResponseEntity.ok(ApiResponse.<List<CandidateDetailResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Candidates for job " + jobId + " fetched successfully.")
+                .result(candidates)
+                .build());
     }
 
     @PostMapping
@@ -111,7 +123,7 @@ public class ApplicationController {
     @GetMapping("/total")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Long> getTotalApplications() {
-        log.info("API: Lấy tổng số lượng ứng tuyển công việc.");
+        ApplicationController.log.info("API: Lấy tổng số lượng ứng tuyển công việc.");
         long totalApplications = applicationService.getTotalApplications();
         return ApiResponse.<Long>builder()
                 .code(HttpStatus.OK.value())
@@ -119,6 +131,7 @@ public class ApplicationController {
                 .result(totalApplications)
                 .build();
     }
+
 
     private Long getUserIdFromAuthentication(Authentication authentication) {
         String userEmail = authentication.getName();

@@ -1,7 +1,7 @@
 // src/main/java/com/example/jobfinder/service/StatisticService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.statistic.*;
+import com.example.jobfinder.dto.statistic_admin.*;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.User;

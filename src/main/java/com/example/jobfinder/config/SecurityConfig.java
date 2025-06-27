@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -16,6 +17,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
 import org.springframework.messaging.Message;
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -43,15 +45,23 @@ public class SecurityConfig {
     OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
     OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
 
-    @Bean
-    public AuthorizationManager<Message<?>> messageAuthorizationManager() {
-        // Sử dụng builder pattern để cấu hình AuthorizationManager
-        return MessageMatcherDelegatingAuthorizationManager.builder()
-                .simpDestMatchers("/app/**").authenticated() // Tin nhắn gửi đến @MessageMapping phải được xác thực
-                .simpSubscribeDestMatchers("/user/**", "/topic/**").authenticated() // Đăng ký các topic cần xác thực
-                .anyMessage().denyAll() // Từ chối tất cả các thông điệp khác
-                .build(); // Gọi build() trên builder
-    }
+//    @Configuration
+//    public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+//        @Override
+//        protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+//            messages
+//                    .simpDestMatchers("/app/**").hasRole("ADMIN") // Yêu cầu ROLE_ADMIN cho tin nhắn gửi đến /app/**
+//                    .simpTypeMatchers(SimpMessageType.CONNECT, SimpMessageType.DISCONNECT).permitAll() // Cho phép CONNECT và DISCONNECT
+//                    .simpSubscribeDestMatchers("/topic/**").hasRole("ADMIN") // Yêu cầu ROLE_ADMIN để subscribe /topic/**
+//                    .anyMessage().authenticated(); // Tất cả tin nhắn khác yêu cầu xác thực
+//        }
+//
+//        @Override
+//        protected boolean sameOriginDisabled() {
+//            return true; // Tắt kiểm tra same-origin nếu cần (cho phát triển)
+//        }
+//    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthService authService) throws Exception {
         http
@@ -72,18 +82,19 @@ public class SecurityConfig {
                                 "/api/employer-reviews",
                                 "/api/user-social-links",
                                 "/api/notifications",
-                                "/api/chat",
+                                "/api/chat/**",
                                 "/api/job",
                                 "/api/job/list",
                                 "/api/job-types",
                                 "/api/statistics",
+                                "/api/statistics/employer",
                                 "/api/chatbot",
                                 "/topic/**",
                                 "/error",
                                 "/ws/**",
-                                "/app/**",
-                                "/api/job/list"
+                                "/app/**"
                         ).permitAll()
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -92,25 +103,28 @@ public class SecurityConfig {
                         .failureHandler(oAuth2JwtFailureHandler))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                )
+
+          ;
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    private CorsConfigurationSource corsConfigurationSource() {
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3030",
-                "http://localhost:8080"
-        ));
+        // Cho phép frontend của bạn. TRONG MÔI TRƯỜNG PRODUCTION, CHỈ ĐỊNH RÕ RÀNG DOMAIN CỦA BẠN.
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:3030")); // Thêm port React của bạn
+        // Cho phép tất cả các phương thức HTTP
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        // Cho phép tất cả các header (bao gồm Authorization header cho JWT)
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // Cho phép gửi credentials (ví dụ: Authorization header)
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Áp dụng cấu hình CORS này cho TẤT CẢ các đường dẫn API của bạn.
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

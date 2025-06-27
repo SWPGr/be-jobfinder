@@ -44,4 +44,5 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             "GROUP BY j.category.name " +
             "ORDER BY COUNT(j.id) DESC") // Sắp xếp theo số lượng giảm dần
     List<Object[]> countTotalJobsByCategory();
+
 }
