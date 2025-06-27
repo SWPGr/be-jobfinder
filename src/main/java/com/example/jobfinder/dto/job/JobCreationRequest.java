@@ -26,9 +26,6 @@ public class JobCreationRequest {
     @NotBlank(message = "DESCRIPTION_REQUIRED")
     String description;
 
-    @NotBlank(message = "LOCATION_REQUIRED")
-    String location;
-
     @Min(value = 0, message = "SALARY_MIN_INVALID")
     Float salaryMin;
 

@@ -110,7 +110,7 @@ public class SecurityConfig {
                         })
                 );
 //        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
-                )
+
 
           ;
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
