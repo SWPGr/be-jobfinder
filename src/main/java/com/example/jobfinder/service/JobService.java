@@ -39,7 +39,7 @@ public class JobService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
 
-
+gi
         User employer = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
