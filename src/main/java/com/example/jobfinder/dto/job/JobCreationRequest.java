@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
+
 // Không cần import Category và User nếu bạn chỉ dùng ID của chúng
 
 @Data
@@ -26,15 +28,15 @@ public class JobCreationRequest {
     @NotBlank(message = "DESCRIPTION_REQUIRED")
     String description;
 
-    @NotBlank(message = "LOCATION_REQUIRED")
-    String location;
-
     @Min(value = 0, message = "SALARY_MIN_INVALID")
     Float salaryMin;
 
     // Có thể thêm @NotNull nếu salaryMax là bắt buộc
     @Min(value = 0, message = "SALARY_MAX_INVALID")
     Float salaryMax;
+    LocalDate expiredDate;
+    Integer vacancy;
+    String responsibility;
 
     // Không cần trường 'createdAt' vì nó được tạo tự động khi lưu vào DB
 
@@ -44,4 +46,6 @@ public class JobCreationRequest {
     // Các trường tùy chọn (có thể là null)
     Long jobLevelId; // ID của cấp độ công việc
     Long jobTypeId;  // ID của loại công việc
+    Long educationId;
+    Long experienceId;
 }

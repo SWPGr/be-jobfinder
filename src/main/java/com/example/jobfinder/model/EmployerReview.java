@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "employer_reviews")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -38,54 +40,6 @@ public class EmployerReview {
     @JoinColumn(name = "employer_id", nullable = false)
     @JsonManagedReference("reviewed-employerreviews")
     private User employer;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Integer getRating() {
-        return rating;
-    }
-
-    public void setRating(Integer rating) {
-        this.rating = rating;
-    }
-
-    public String getComment() {
-        return comment;
-    }
-
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public User getJobSeeker() {
-        return jobSeeker;
-    }
-
-    public void setJobSeeker(User jobSeeker) {
-        this.jobSeeker = jobSeeker;
-    }
-
-    public User getEmployer() {
-        return employer;
-    }
-
-    public void setEmployer(User employer) {
-        this.employer = employer;
-    }
 
     // Lifecycle callbacks
     @PrePersist
