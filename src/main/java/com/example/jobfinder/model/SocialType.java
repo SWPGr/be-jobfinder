@@ -16,4 +16,12 @@ public class SocialType extends BaseNameEntity {
     @OneToMany(mappedBy = "socialType", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("socialType-userSocialTypes")
     private Set<UserSocialType> userSocialTypes = new HashSet<>();
+
+    public Set<UserSocialType> getUserSocialTypes() {
+        return userSocialTypes;
+    }
+
+    public void setUserSocialTypes(Set<UserSocialType> userSocialTypes) {
+        this.userSocialTypes = userSocialTypes;
+    }
 }

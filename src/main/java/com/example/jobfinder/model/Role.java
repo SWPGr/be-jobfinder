@@ -9,8 +9,6 @@ import java.util.Set;
 
 @Entity
 @Table(name = "roles")
-@Setter
-@Getter
 @SuperBuilder
 @ToString(callSuper = true)
 @AttributeOverride(name = "name", column = @Column(name = "role_name", unique = true, nullable = false, length = 50))
@@ -21,4 +19,12 @@ public class Role extends BaseNameEntity{
     @OneToMany(mappedBy = "role", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JsonBackReference("role-users")
     private Set<User> users;
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
 }

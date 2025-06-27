@@ -11,8 +11,6 @@ import java.util.Set;
 
 @Entity
 @Table(name = "job_types")
-@Setter
-@Getter
 @SuperBuilder
 @ToString(callSuper = true)
 @AttributeOverride(name = "name", column = @Column(name = "job_type_name", unique = true, nullable = false, length = 50))
@@ -24,4 +22,12 @@ public class JobType extends BaseNameEntity {
     @OneToMany(mappedBy = "jobType", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("jobType-jobs")
     private Set<Job> jobs = new HashSet<>();
+
+    public Set<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(Set<Job> jobs) {
+        this.jobs = jobs;
+    }
 }

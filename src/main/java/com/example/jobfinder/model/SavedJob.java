@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 @Table(name = "saved_jobs", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"job_seeker_id", "job_id"}) // Ánh xạ UNIQUE constraint từ DB
 })
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -36,6 +34,38 @@ public class SavedJob {
     @JoinColumn(name = "job_id", nullable = false)
     @JsonManagedReference("job-savedjobs")
     private Job job;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public LocalDateTime getSavedAt() {
+        return savedAt;
+    }
+
+    public void setSavedAt(LocalDateTime savedAt) {
+        this.savedAt = savedAt;
+    }
+
+    public User getJobSeeker() {
+        return jobSeeker;
+    }
+
+    public void setJobSeeker(User jobSeeker) {
+        this.jobSeeker = jobSeeker;
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public void setJob(Job job) {
+        this.job = job;
+    }
 
     // Lifecycle callbacks
     @PrePersist

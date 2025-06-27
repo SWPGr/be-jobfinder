@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"job_id", "job_seeker_id"})
         })
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -37,6 +35,38 @@ public class JobView {
     @JoinColumn(name = "job_seeker_id", nullable = false)
     @JsonManagedReference("jobseeker-jobviews")
     private User jobSeeker;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public LocalDateTime getViewedAt() {
+        return viewedAt;
+    }
+
+    public void setViewedAt(LocalDateTime viewedAt) {
+        this.viewedAt = viewedAt;
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public void setJob(Job job) {
+        this.job = job;
+    }
+
+    public User getJobSeeker() {
+        return jobSeeker;
+    }
+
+    public void setJobSeeker(User jobSeeker) {
+        this.jobSeeker = jobSeeker;
+    }
 
     // Lifecycle callbacks
     @PrePersist
