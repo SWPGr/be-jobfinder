@@ -23,11 +23,16 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
     private final EducationRepository educationRepository;
+    private final CloudinaryService cloudinaryService;
 
-    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository, EducationRepository educationRepository) {
+    public ProfileService(UserRepository userRepository,
+                          UserDetailsRepository userDetailsRepository,
+                          EducationRepository educationRepository,
+                          CloudinaryService cloudinaryService) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.educationRepository = educationRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
@@ -67,6 +72,10 @@ public class ProfileService {
             userDetail.setWebsite(request.getWebsite());
         }else {
             throw new Exception("Invalid role");
+        }
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            String avatarUrl = cloudinaryService.uploadFile(request.getAvatar());
+            userDetail.setAvatarUrl(avatarUrl);
         }
         userDetailsRepository.save(userDetail);
         return mapToProfileResponse(user, userDetail);
@@ -108,6 +117,7 @@ public class ProfileService {
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
+        response.setAvatarUrl(userDetail.getAvatarUrl());
         return response;
     }
 }
