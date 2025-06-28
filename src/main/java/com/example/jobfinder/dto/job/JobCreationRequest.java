@@ -17,10 +17,6 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JobCreationRequest {
 
-    // Không cần trường 'id' vì nó được tạo tự động khi lưu vào DB
-
-    @NotNull(message = "EMPLOYER_ID_REQUIRED")
-    Long employerId; // ID của người tạo Job (employer)
 
     @NotBlank(message = "TITLE_REQUIRED")
     String title;
