@@ -18,7 +18,7 @@ public class ProfileController {
     }
 
     @PutMapping
-    public ResponseEntity<ProfileResponse> updateProfile( @RequestBody ProfileRequest Request) throws Exception {
+    public ResponseEntity<ProfileResponse> updateProfile( @ModelAttribute ProfileRequest Request) throws Exception {
         ProfileResponse response = profileService.updateProfile(Request);
         return ResponseEntity.ok(response);
     }
