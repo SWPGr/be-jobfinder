@@ -56,9 +56,9 @@ public class JobService {
             throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
         }
 
-        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
-            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
-        }
+//        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
+//            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
+//        }
 
         // 3. Lấy Category Entity từ ID
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())

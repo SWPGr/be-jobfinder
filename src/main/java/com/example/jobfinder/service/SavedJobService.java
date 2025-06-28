@@ -101,8 +101,8 @@ public class SavedJobService {
                 .build();
     }
 
-    public void unSaveJob(SavedJobRequest request) {
-        log.debug("Processing save job request: {}", request);
+    public void unSaveJob(Long jobId) {
+        log.debug("Processing save job request: {}", jobId);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
@@ -112,14 +112,14 @@ public class SavedJobService {
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unsave jobs");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unSave jobs");
         }
 
-        Job job = jobRepository.findById(request.getJobId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job not found" + request.getJobId()));
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
 
         SavedJob savedJob = savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have not saved this job"));
+                .orElseThrow(() -> new AppException(ErrorCode.SAVED_JOB_NOT_FOUND));
 
         savedJobRepository.delete(savedJob);
         log.debug("unsaved job for user: {} and job: {}", jobSeeker.getId(), job.getId());

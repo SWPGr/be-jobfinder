@@ -151,7 +151,8 @@ public enum ErrorCode {
     CONVERSATION_NOT_FOUND(2009, "Conversation not found"),
     ELASTICSEARCH_ERROR(2010, "elasticsearch error" ),
     INVALID_ROLE(2011, "Role not permission"),
-    EXPERIENCE_NOT_FOUND(2012," Experience not found"),;
+    EXPERIENCE_NOT_FOUND(2012," Experience not found"),
+    SAVED_JOB_NOT_FOUND(2013, "You have not saved this job");
 
 
     ErrorCode(int errorCode, String errorMessage) {
