@@ -1,8 +1,7 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.JobViewRequest;
+import com.example.jobfinder.dto.job.JobViewRequest;
 import com.example.jobfinder.dto.job.JobViewResponse;
-import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.service.JobViewService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

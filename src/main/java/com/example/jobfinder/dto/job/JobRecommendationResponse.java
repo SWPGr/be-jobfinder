@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.job;
 
 import lombok.Getter;
 import lombok.Setter;

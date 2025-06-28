@@ -1,5 +1,6 @@
 package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
+import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.job.JobCreationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -62,5 +64,22 @@ public class JobController {
     public String deleteJob(@PathVariable Long jobId) {
         jobService.deleteJob(jobId);
         return "Job with ID " + jobId + " has been deleted successfully!";
+    }
+
+    @GetMapping("/my-employer-jobs")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<PageResponse<JobResponse>>> getAllJobsForCurrentEmployer(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        PageResponse<JobResponse> response = jobService.getAllJobsForCurrentEmployer(page, size, sortBy, sortDir);
+
+        return ResponseEntity.ok(ApiResponse.<PageResponse<JobResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Jobs for current employer fetched successfully with pagination.")
+                .result(response)
+                .build());
     }
 }

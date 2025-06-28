@@ -1,4 +1,3 @@
-// service/CategoryService.java
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;

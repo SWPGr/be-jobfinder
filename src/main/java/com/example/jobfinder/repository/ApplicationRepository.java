@@ -21,6 +21,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByJob_Id(Long jobId);
 
+    Long countByJob_Id (Long jobId);
+
     boolean existsByJobSeeker_IdAndJob_Employer_Id(Long jobSeekerId, Long employerId);
     @Query(QueryConstants.FIND_APPLICATIONS_BY_CRITERIA) // Sử dụng hằng số
     List<Application> findApplicationsByCriteria(@Param("jobSeekerEmail") String jobSeekerEmail,
@@ -83,14 +85,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             "ORDER BY FUNCTION('DATE', ja.appliedAt) ASC")
     List<Object[]> countApplicationsByDateTimeRange(@Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
 
-    // Bạn cũng có thể dùng cách này nếu muốn đếm trong khoảng thời gian cụ thể:
-    Long countByAppliedAtBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
-
-    @Query("SELECT ja.job.id, ja.job.title, COUNT(ja) FROM Application ja " +
-            "WHERE ja.job.employer.id = :employerId " + // Lọc theo ID của nhà tuyển dụng
-            "GROUP BY ja.job.id, ja.job.title " +       // Nhóm theo Job ID và Title
-            "ORDER BY COUNT(ja) DESC")                   // Sắp xếp theo số lượng giảm dần
-    List<Object[]> countApplicationsPerJobByEmployerId(@Param("employerId") Long employerId);
 
 }
 
