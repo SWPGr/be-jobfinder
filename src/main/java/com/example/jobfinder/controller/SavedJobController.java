@@ -53,8 +53,8 @@ public class SavedJobController {
         SavedJobResponse savedJob = savedJobService.savedJob(request);
         return ResponseEntity.ok(savedJob);
     }
-    @DeleteMapping("/unsaved-jobs/{jobId}")
-    public ResponseEntity<Void> unSaveJob(@Valid @PathVariable("jobId") Long jobId) {
+    @DeleteMapping("/saved-jobs/{jobId}")
+    public ResponseEntity<Void> unSaveJob(@Valid @PathVariable Long jobId) {
         savedJobService.unSaveJob(jobId);
         return ResponseEntity.ok().build();
     }

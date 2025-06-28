@@ -112,14 +112,14 @@ public class SavedJobService {
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unsave jobs");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unSave jobs");
         }
 
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job not found" + jobId));
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
 
         SavedJob savedJob = savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have not saved this job"));
+                .orElseThrow(() -> new AppException(ErrorCode.SAVED_JOB_NOT_FOUND));
 
         savedJobRepository.delete(savedJob);
         log.debug("unsaved job for user: {} and job: {}", jobSeeker.getId(), job.getId());

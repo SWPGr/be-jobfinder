@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,35 +34,37 @@ public class JobService {
     JobTypeRepository jobTypeRepository;
     JobLevelRepository jobLevelRepository;
     CategoryRepository categoryRepository;
+    EducationRepository educationRepository;
+    ExperienceRepository experienceRepository;
+    SavedJobRepository savedJobRepository;
+
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
 
-gi
+
         User employer = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
-        if (employer == null) {
-            throw new AppException(ErrorCode.USER_NOT_FOUND); // Thay vì USER_EXIST
+        String location = employer.getUserDetail().getLocation();
+
+        if (employer == null ||
+                (!employer.getRole().getName().equals("EMPLOYER") &&
+                        !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
+            throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
         }
+
+//        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
+//            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
+//        }
 
         // 3. Lấy Category Entity từ ID
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         System.out.println("DEBUG: Fetched Category: ID=" + category.getId() + ", Name=" + category.getName());
 
-
-        if (employer.getRole() == null ||
-                (!employer.getRole().getName().equals("EMPLOYER") &&
-                        !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-
-        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
-            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
-        }
 
         JobLevel jobLevel = jobLevelRepository.findById(jobCreationRequest.getJobLevelId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
@@ -73,12 +76,29 @@ gi
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobType: ID=" + jobType.getId() + ", Name=" + jobType.getName());
 
+        Education education = educationRepository.findById(jobCreationRequest.getEducationId())
+                .orElseThrow(() -> new AppException(ErrorCode.EDUCATION_NOT_FOUND));
+
+        Experience experience = experienceRepository.findById(jobCreationRequest.getExperienceId())
+                .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+
         Job newJob = jobMapper.toJob(jobCreationRequest);
 
         newJob.setEmployer(employer);
         newJob.setCategory(category);
         newJob.setJobLevel(jobLevel);
         newJob.setJobType(jobType);
+        newJob.setEducation(education);
+        newJob.setExperience(experience);
+
+        newJob.setTitle(jobCreationRequest.getTitle());
+        newJob.setDescription(jobCreationRequest.getDescription());
+        newJob.setLocation(location);
+        newJob.setSalaryMin(jobCreationRequest.getSalaryMin());
+        newJob.setSalaryMax(jobCreationRequest.getSalaryMax());
+        newJob.setExpiredDate(jobCreationRequest.getExpiredDate());
+        newJob.setVacancy(jobCreationRequest.getVacancy());
+        newJob.setResponsibility(jobCreationRequest.getResponsibility());
 
         return jobRepository.save(newJob);
     }
@@ -96,6 +116,7 @@ gi
             if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"COMPANY_ADMIN".equals(newEmployer.getRole().getName())) {
                 throw new AppException(ErrorCode.UNAUTHORIZED);
             }
+
             job.setEmployer(newEmployer);
         }
         return jobMapper.toJobResponse(jobRepository.save(job));
@@ -112,6 +133,28 @@ gi
         return jobRepository.findAll()
                 .stream()
                 .map(jobMapper::toJobResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<JobResponse> getAllJobsForUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUser = authentication.getName();
+
+        Optional<User> userOptional = userRepository.findByEmail(currentUser);
+        Long currentUserId = userOptional.map(User::getId).orElse(null);
+
+        return jobRepository.findAll().stream()
+                .map(job -> {
+                    JobResponse response = jobMapper.toJobResponse(job);
+
+                    if (currentUserId != null) {
+                        boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
+                        response.setSave(saved);
+                    } else {
+                        response.setSave(false);
+                    }
+                    return response;
+                })
                 .collect(Collectors.toList());
     }
 
