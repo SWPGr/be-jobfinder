@@ -43,7 +43,7 @@ import java.util.Arrays;
 public class SecurityConfig {
     JwtRequestFilter jwtRequestFilter;
     OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
-    OAuth2JwtFailureHandler oAuth2JwtFailureHandler;;
+    OAuth2JwtFailureHandler oAuth2JwtFailureHandler;
 
 //    @Configuration
 //    public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
@@ -76,15 +76,15 @@ public class SecurityConfig {
                                 "/api/profiles/me",
                                 "/api/apply/**",
                                 "/api/save/",
-                                "/api/saved-jobs",
-                                "/api/social-types",
-                                "/api/job-levels",
+                                "/api/saved-jobs/**",
+                                "/api/social-types/**",
+                                "/api/job-levels/**",
+                                "/api/categories/**",
                                 "/api/employer-reviews",
                                 "/api/user-social-links",
                                 "/api/notifications",
                                 "/api/chat/**",
                                 "/api/job/**",
-                                "/api/categories",
                                 "/api/job/list",
                                 "/api/job-types",
                                 "/api/statistics",
@@ -93,7 +93,8 @@ public class SecurityConfig {
                                 "/topic/**",
                                 "/error",
                                 "/ws/**",
-                                "/app/**"
+                                "/app/**",
+                                "api/options/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
@@ -104,28 +105,30 @@ public class SecurityConfig {
                         .failureHandler(oAuth2JwtFailureHandler))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-
-          ;
+                ).headers(headers -> headers
+                        .addHeaderWriter((request, response) ->{
+                            response.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+                            response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+                        })
+                );
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Cho phép frontend của bạn. TRONG MÔI TRƯỜNG PRODUCTION, CHỈ ĐỊNH RÕ RÀNG DOMAIN CỦA BẠN.
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:3030")); // Thêm port React của bạn
-        // Cho phép tất cả các phương thức HTTP
+
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3030",
+                "http://localhost:8080"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Cho phép tất cả các header (bao gồm Authorization header cho JWT)
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        // Cho phép gửi credentials (ví dụ: Authorization header)
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Áp dụng cấu hình CORS này cho TẤT CẢ các đường dẫn API của bạn.
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

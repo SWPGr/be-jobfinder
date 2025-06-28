@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +39,15 @@ public class Job {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDate expiredDate;
+
+    private Integer vacancy;
+
+    @Column(columnDefinition = "TEXT")
+    private String responsibility;
+
+    private boolean isSave;
 
     // --- Mối quan hệ ---
 
@@ -84,6 +94,14 @@ public class Job {
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("job-jobviews")
     private Set<JobView> jobViews = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(name = "job_education_id")
+    private Education education;
+
+    @ManyToOne
+    @JoinColumn(name = "job_experience_id")
+    private Experience experience;
 
     // Lifecycle callbacks
     @PrePersist

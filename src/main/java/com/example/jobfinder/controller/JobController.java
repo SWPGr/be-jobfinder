@@ -49,6 +49,11 @@ public class JobController {
     public List<JobResponse> getAllJobs() {
         return jobService.getAllJobs();
     }
+    @GetMapping("/user")
+    public ResponseEntity<List<JobResponse>> getUserJobs() {
+        List<JobResponse> jobs = jobService.getAllJobsForUser();
+        return ResponseEntity.ok(jobs);
+    }
 
     @GetMapping("/{jobId}")
     public JobResponse getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long

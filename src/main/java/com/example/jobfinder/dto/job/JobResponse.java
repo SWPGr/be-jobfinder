@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,17 +21,20 @@ public class JobResponse {
     private String location;
     private Float salaryMin;
     private Float salaryMax;
+    private String responsibility;
+    private LocalDate expiredDate;
+    private boolean isSave;
 
+    // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // <-- PHẢI CÓ TRƯỜNG NÀY VỚI KIỂU NÀY
 
-    UserResponse employer;
-    SimpleNameResponse category;
-    SimpleNameResponse jobLevel;
-    SimpleNameResponse jobType;
+    UserResponse employer; // <-- Phải là EmployerDto, không phải Long employerId
+    SimpleNameResponse category; // <-- Phải là CategoryDto, không phải Long categoryId, String categoryName
+    SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
+    SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
 
-    private Long jobApplicationCounts;
-    private Long totalApplicationsAcrossJobs;
+    Long jobApplicationCounts;
 }

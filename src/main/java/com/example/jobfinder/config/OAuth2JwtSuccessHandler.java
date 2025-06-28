@@ -33,22 +33,22 @@ public class OAuth2JwtSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
-        try {
-            OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
-
-            AuthService authService = applicationContext.getBean(AuthService.class);
-            LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
-
-            String redirectUrl = String.format("%s/oauth2/success?token=%s&role=%s",
-                    frontEndUrl,
-                    loginResponse.getToken(),
-                    loginResponse.getRole());
-
-            log.debug("Redirecting to: {} " + frontEndUrl + "/oauth2/success");
-            response.sendRedirect(redirectUrl);
-        } catch (Exception e) {
-            log.error("OAuth2 success handler error", e);
-            response.sendRedirect(frontEndUrl + "/login?error=oauth2_failed");
-        }
+//        try {
+//            OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
+//
+//            AuthService authService = applicationContext.getBean(AuthService.class);
+//            LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
+//
+//            String redirectUrl = String.format("%s/oauth2/success?token=%s&role=%s",
+//                    frontEndUrl,
+//                    loginResponse.getToken(),
+//                    loginResponse.getRole());
+//
+//            log.debug("Redirecting to: {} " + frontEndUrl + "/oauth2/success");
+//            response.sendRedirect(redirectUrl);
+//        } catch (Exception e) {
+//            log.error("OAuth2 success handler error", e);
+//            response.sendRedirect(frontEndUrl + "/login?error=oauth2_failed");
+//        }
     }
 }
