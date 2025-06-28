@@ -92,7 +92,8 @@ public class SecurityConfig {
                                 "/topic/**",
                                 "/error",
                                 "/ws/**",
-                                "/app/**"
+                                "/app/**",
+                                "api/options/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()

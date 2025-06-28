@@ -62,6 +62,7 @@ public class ProfileService {
                 throw new Exception("Company name is required for employer");
             }
             userDetail.setCompanyName(request.getCompanyName());
+            userDetail.setLocation(request.getLocation());
             userDetail.setDescription(request.getDescription());
             userDetail.setWebsite(request.getWebsite());
         }else {
