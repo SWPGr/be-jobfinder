@@ -44,6 +44,9 @@ public class UserDetail {
     @Column(length = 255)
     private String website;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     // --- Mối quan hệ ---
 
     // Một UserDetail thuộc về một User (OneToOne)
