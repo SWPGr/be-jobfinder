@@ -95,6 +95,7 @@ public class SavedJobService {
         return SavedJobResponse.builder()
                 .id(saved.getId())
                 .jobId(saved.getJob().getId())
+                .jobSeekerId(saved.getJobSeeker().getId())
                 .jobTitle(saved.getJob().getTitle())
                 .jobSeekerEmail(saved.getJobSeeker().getEmail())
                 .savedAt(saved.getSavedAt())

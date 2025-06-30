@@ -220,7 +220,6 @@ public class ChatbotService {
                                 userSearchParams.getFullName(),
                                 userSearchParams.getRole(),
                                 userSearchParams.getLocation(),
-                                userSearchParams.getYearsExperience(),
                                 userSearchParams.getIsPremium(),
                                 userSearchParams.getIsVerified(),
                                 userSearchParams.getResumeUrl(),
@@ -633,7 +632,7 @@ public class ChatbotService {
                         List<User> foundUsers = userRepository.findUsersByCriteria(
                                 userSearchParams.getEmail(), userSearchParams.getFullName(),
                                 userSearchParams.getRole(), userSearchParams.getLocation(),
-                                userSearchParams.getYearsExperience(), userSearchParams.getIsPremium(),
+                                userSearchParams.getIsPremium(),
                                 userSearchParams.getIsVerified(), userSearchParams.getResumeUrl(),
                                 userSearchParams.getCompanyName(), userSearchParams.getWebsite());
                         if (!foundUsers.isEmpty()) {

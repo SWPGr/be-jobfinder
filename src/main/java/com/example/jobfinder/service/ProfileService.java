@@ -5,9 +5,11 @@ import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Education;
+import com.example.jobfinder.model.Experience;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.repository.EducationRepository;
+import com.example.jobfinder.repository.ExperienceRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -24,15 +26,16 @@ public class ProfileService {
     private final UserDetailsRepository userDetailsRepository;
     private final EducationRepository educationRepository;
     private final CloudinaryService cloudinaryService;
+    private final ExperienceRepository experienceRepository;
 
-    public ProfileService(UserRepository userRepository,
-                          UserDetailsRepository userDetailsRepository,
-                          EducationRepository educationRepository,
-                          CloudinaryService cloudinaryService) {
+    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository,
+                          EducationRepository educationRepository, CloudinaryService cloudinaryService,
+                          ExperienceRepository experienceRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.educationRepository = educationRepository;
         this.cloudinaryService = cloudinaryService;
+        this.experienceRepository = experienceRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
@@ -53,14 +56,18 @@ public class ProfileService {
         String roleName = user.getRole().getName();
         if (roleName.equals("JOB_SEEKER")) {
             if (request.getEducation() != null) {
-                Education education = educationRepository.findById(request.getEducation())
+                Education education = educationRepository.findById(request.getEducation().getId())
                         .orElseThrow(() -> new Exception("invalid education id"));
                 userDetail.setEducation(education);
             }
             userDetail.setLocation(request.getLocation());
             userDetail.setFullName(request.getFullName());
             userDetail.setPhone(request.getPhone());
-            userDetail.setYearsExperience(request.getYearsExperience());
+            if (request.getUserExperience() != null) {
+                Experience experience = experienceRepository.findById(request.getUserExperience().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+                userDetail.setExperience(experience);
+            }
             userDetail.setResumeUrl(request.getResumeUrl());
         }else if(roleName.equals("EMPLOYER")) {
             if(request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
@@ -109,10 +116,16 @@ public class ProfileService {
         response.setEmail(user.getEmail());
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
-        response.setEducation(userDetail.getEducation().getId());
+        if (userDetail.getEducation() != null) {
+            response.setEducationId(userDetail.getEducation().getId());
+            response.setEducationName(userDetail.getEducation().getName());
+        }
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
-        response.setYearsExperience(userDetail.getYearsExperience());
+        if (userDetail.getExperience() != null) {
+            response.setExperienceId(userDetail.getExperience().getId());
+            response.setExperienceName(userDetail.getExperience().getName()); // hoặc getExperienceName()
+        }
         response.setResumeUrl(userDetail.getResumeUrl());
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());

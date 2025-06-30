@@ -29,9 +29,6 @@ public class UserDetail {
     @Column(length = 50)
     private String phone;
 
-    @Column(name = "years_experience")
-    private Integer yearsExperience;
-
     @Column(name = "resume_url", columnDefinition = "TEXT")
     private String resumeUrl;
 
@@ -68,4 +65,8 @@ public class UserDetail {
     @OneToMany(mappedBy = "userDetail", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("userDetail-userSocialTypes")
     private Set<UserSocialType> userSocialTypes = new HashSet<>();
+
+    @ManyToOne
+    @JoinColumn(name = "user_experience_id")
+    private Experience experience;
 }
