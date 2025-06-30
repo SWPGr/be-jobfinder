@@ -15,7 +15,9 @@ public class JobSeekerResponse {
     private String location;  // Từ UserDetail
 
     // Các trường dành riêng cho JobSeeker từ UserDetail
-    private Integer yearsExperience;
+    private Long experienceId;
+    private String experienceName;
+    
     private String resumeUrl;
 
     // Có thể thêm Education nếu muốn hiển thị

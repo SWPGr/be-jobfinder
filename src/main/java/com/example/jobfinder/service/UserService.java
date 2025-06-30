@@ -44,6 +44,7 @@ public class UserService {
     EmployerMapper employerMapper; // Để chuyển đổi UserDetail sang EmployerResponse
     EducationRepository educationRepository; // Cần nếu UserDetail có Education và bạn cần lấy/lưu Education
     JobRepository jobRepository;
+    ExperienceRepository experienceRepository;
 
     // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
 
@@ -92,7 +93,11 @@ public class UserService {
 
         // 5. Gán các thuộc tính chuyên biệt trong UserDetail dựa trên vai trò của người dùng.
         if (role.getName().equals("JOB_SEEKER")) {
-            userDetail.setYearsExperience(request.getYearsExperience());
+            if (request.getUserExperience() != null) {
+                Experience experience = experienceRepository.findById(request.getUserExperience())
+                        .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+                userDetail.setExperience(experience);
+            }
             userDetail.setResumeUrl(request.getResumeUrl());
             if (request.getEducationId() != null) {
                 // Nếu có educationId trong request, tìm và gán Education entity.
@@ -109,12 +114,12 @@ public class UserService {
             userDetail.setDescription(request.getDescription());
             userDetail.setWebsite(request.getWebsite());
             // Đảm bảo các trường của JobSeeker là null khi tạo Employer.
-            userDetail.setYearsExperience(null);
+            userDetail.setExperience(null);
             userDetail.setResumeUrl(null);
             userDetail.setEducation(null);
         } else {
             // Đối với các vai trò khác (như ADMIN), tất cả các trường chuyên biệt sẽ là null.
-            userDetail.setYearsExperience(null);
+            userDetail.setExperience(null);
             userDetail.setResumeUrl(null);
             userDetail.setCompanyName(null);
             userDetail.setDescription(null);
@@ -167,7 +172,13 @@ public class UserService {
         String currentRoleName = updatedUser.getRole().getName(); // Lấy vai trò sau khi update
 
         if (currentRoleName.equals("JOB_SEEKER")) {
-            userDetail.setYearsExperience(request.getYearsExperience());
+            if (request.getUserExperience() != null) {
+                Experience experience = experienceRepository.findById(request.getUserExperience())
+                        .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+                userDetail.setExperience(experience);
+            } else {
+                userDetail.setExperience(null);
+            }
             userDetail.setResumeUrl(request.getResumeUrl());
             if (request.getEducationId() != null) {
                 Education education = educationRepository.findById(request.getEducationId())
@@ -185,12 +196,12 @@ public class UserService {
             userDetail.setDescription(request.getDescription());
             userDetail.setWebsite(request.getWebsite());
             // Đảm bảo các trường JobSeeker là null khi vai trò là Employer.
-            userDetail.setYearsExperience(null);
+            userDetail.setExperience(null);
             userDetail.setResumeUrl(null);
             userDetail.setEducation(null);
         } else {
             // Nếu là ADMIN hoặc vai trò khác, đảm bảo tất cả các trường chuyên biệt là null.
-            userDetail.setYearsExperience(null);
+            userDetail.setExperience(null);
             userDetail.setResumeUrl(null);
             userDetail.setCompanyName(null);
             userDetail.setDescription(null);
