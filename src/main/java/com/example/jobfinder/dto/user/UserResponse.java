@@ -25,6 +25,7 @@ public class UserResponse {
     private String phone;     // To hold userDetail.phone
     private String location;  // To hold userDetail.location
     private Integer verified;
+    private String avatarUrl;
 
     private String companyName;
     private String website;
