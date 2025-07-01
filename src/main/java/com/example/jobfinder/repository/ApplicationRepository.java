@@ -3,6 +3,8 @@ package com.example.jobfinder.repository;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.util.QueryConstants;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -86,5 +88,26 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<Object[]> countApplicationsByDateTimeRange(@Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
 
 
+    @Query("SELECT ja FROM Application ja " +
+            "JOIN FETCH ja.job j " + // Tham gia Job
+            "JOIN FETCH j.employer e " + // Tham gia Employer của Job để lọc
+            "JOIN FETCH ja.jobSeeker a " + // Tham gia User (applicant)
+            "LEFT JOIN FETCH a.userDetail ud " + // Tham gia UserDetail của applicant (LEFT JOIN để không loại trừ nếu userDetail null)
+            "LEFT JOIN FETCH ud.education edu " + // Tham gia Education của userDetail
+            "WHERE e.id = :employerId " + // Lọc theo ID của nhà tuyển dụng
+            "AND (:fullName IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))) " +
+            "AND (:email IS NULL OR LOWER(a.email) LIKE LOWER(CONCAT('%', :email, '%'))) " +
+            "AND (:location IS NULL OR LOWER(ud.location) LIKE LOWER(CONCAT('%', :location, '%'))) " +
+            "AND (:minYearsExperience IS NULL OR ud.experience >= :minYearsExperience) " +
+            "AND (:educationId IS NULL OR edu.id = :educationId)")
+    Page<Application> findApplicationsForEmployerWithFilters(
+            @Param("employerId") Long employerId,
+            @Param("fullName") String fullName,
+            @Param("email") String email,
+            @Param("location") String location,
+            @Param("minYearsExperience") Integer minYearsExperience,
+            @Param("educationId") Long educationId,
+            Pageable pageable
+    );
 }
 

@@ -2,6 +2,7 @@ package com.example.jobfinder.dto.application;
 
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.user.UserResponse;
+import com.example.jobfinder.model.enums.ApplicationStatus;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,6 +18,6 @@ public class ApplicationResponse {
     private Long id;
     private UserResponse jobSeeker;
     private JobResponse job;
-    private String status;
+    private ApplicationStatus status;
     private LocalDateTime appliedAt;
 }
