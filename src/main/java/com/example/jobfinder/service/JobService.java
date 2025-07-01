@@ -179,6 +179,15 @@ public class JobService {
         return jobMapper.toJobResponse(job);
     }
 
+    public List<JobResponse> getLatestJob(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Job> jobs = jobRepository.findTopNJobs(pageable);
+
+        return jobs.stream()
+                .map(jobMapper::toJobResponse)
+                .toList();
+    }
+
     public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
