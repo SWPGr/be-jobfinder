@@ -20,10 +20,10 @@ public class UserResponse {
     private String updatedAt; // Or LocalDateTime
 
     // New fields to be mapped from Role and UserDetail
-    private String roleName;  // To hold role.name
-    private String fullName;  // To hold userDetail.fullName
-    private String phone;     // To hold userDetail.phone
-    private String location;  // To hold userDetail.location
+    private String roleName;
+    private String fullName;
+    private String phone;
+    private String location;
     private Integer verified;
     private String avatarUrl;
 

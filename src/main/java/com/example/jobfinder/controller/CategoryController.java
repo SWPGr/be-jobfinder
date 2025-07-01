@@ -23,6 +23,6 @@ public class CategoryController extends BaseNameController {
 
     @Override
     protected String getBasePath() {
-        return "Category"; // Tên để hiển thị trong message/log
+        return "Category";
     }
 }

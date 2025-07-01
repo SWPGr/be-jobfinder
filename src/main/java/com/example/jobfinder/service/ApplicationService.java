@@ -7,10 +7,7 @@ import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
 import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
-import com.example.jobfinder.dto.statistic_employer.EmployerJobApplicationStatsResponse;
-import com.example.jobfinder.dto.statistic_employer.JobApplicationCountDto;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;
@@ -28,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -256,55 +252,4 @@ public class ApplicationService {
                 .build();
     }
 
-    public EmployerJobApplicationStatsResponse getApplicationsPerJobForCurrentEmployer() {
-        // 1. Lấy thông tin người dùng hiện tại từ SecurityContextHolder
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new IllegalStateException("User not authenticated.");
-        }
-
-        // Tên người dùng (thường là email) từ JWT token
-        String currentUserName = authentication.getName();
-
-        // 2. Tìm User (Employer) từ database
-        User currentEmployer = userRepository.findByEmail(currentUserName)
-                .orElseThrow(() -> new IllegalStateException("Employer not found for authenticated user: " + currentUserName));
-
-        // Kiểm tra vai trò của người dùng (đảm bảo là EMPLOYER)
-        // Nếu bạn dùng Role enum:
-        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) { // Hoặc "EMPLOYER", tùy thuộc vào tên role của bạn
-            throw new IllegalStateException("Access denied: User is not an employer.");
-        }
-        // Nếu bạn dùng String role:
-        // if (!currentEmployer.getRoleName().equals("EMPLOYER")) { ... }
-
-
-        Long employerId = currentEmployer.getId();
-        String employerName = currentEmployer.getUsername(); // Hoặc lấy từ tên công ty
-
-        // 3. Gọi Repository để lấy dữ liệu thô
-        List<Object[]> rawCounts = applicationRepository.countApplicationsPerJobByEmployerId(employerId);
-
-        // 4. Chuyển đổi dữ liệu thô sang DTOs
-        List<JobApplicationCountDto> jobApplicationCounts = rawCounts.stream()
-                .map(arr -> JobApplicationCountDto.builder()
-                        .jobId((Long) arr[0])
-                        .jobTitle((String) arr[1])
-                        .applicationCount((Long) arr[2])
-                        .build())
-                .collect(Collectors.toList());
-
-        // 5. Tính tổng số đơn ứng tuyển
-        Long totalApplications = jobApplicationCounts.stream()
-                .mapToLong(JobApplicationCountDto::getApplicationCount)
-                .sum();
-
-        // 6. Trả về Response DTO tổng hợp
-        return EmployerJobApplicationStatsResponse.builder()
-                .employerId(employerId)
-                .employerName(employerName)
-                .jobApplicationCounts(jobApplicationCounts)
-                .totalApplicationsAcrossJobs(totalApplications)
-                .build();
-    }
 }
