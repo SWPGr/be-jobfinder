@@ -137,12 +137,20 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
+    @Transactional(readOnly = true) // Đảm bảo giao dịch chỉ đọc
     public List<JobResponse> getAllJobs() {
         return jobRepository.findAll()
                 .stream()
-                .map(jobMapper::toJobResponse)
+                .map(job -> {
+                    JobResponse jobResponse = jobMapper.toJobResponse(job);
+                    // Lấy số lượng đơn ứng tuyển cho công việc này
+                    long applicationCount = applicationRepository.countByJob_Id(job.getId());
+                    jobResponse.setJobApplicationCounts(applicationCount);
+                    return jobResponse;
+                })
                 .collect(Collectors.toList());
     }
+
 
     public List<JobResponse> getAllJobsForUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

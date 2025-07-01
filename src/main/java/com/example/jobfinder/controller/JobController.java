@@ -49,6 +49,7 @@ public class JobController {
     public List<JobResponse> getAllJobs() {
         return jobService.getAllJobs();
     }
+
     @GetMapping("/user")
     public ResponseEntity<List<JobResponse>> getUserJobs() {
         List<JobResponse> jobs = jobService.getAllJobsForUser();
