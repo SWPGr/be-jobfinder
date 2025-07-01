@@ -1,10 +1,13 @@
 package com.example.jobfinder.service;
 
+import com.example.jobfinder.dto.PageResponse;
+import com.example.jobfinder.dto.application.ApplicantResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
 import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
@@ -22,6 +25,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -249,6 +256,96 @@ public class ApplicationService {
         return DailyApplicationCountResponse.builder()
                 .date(date)
                 .count(count)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ApplicationResponse> getEmployerJobApplications(
+            int page, int size, String sortBy, String sortDir,
+            String fullName, String email, String location,
+            Integer minYearsExperience, Long educationId) {
+
+        // 1. Xác thực và lấy thông tin nhà tuyển dụng
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new IllegalStateException("User not authenticated.");
+        }
+
+        String userEmail = authentication.getName();
+        User currentEmployer = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalStateException("Employer not found for authenticated user: " + userEmail));
+
+        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) {
+            throw new IllegalStateException("Access denied: User is not an employer.");
+        }
+
+        Long employerId = currentEmployer.getId();
+
+        // 2. Chuẩn bị phân trang
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // 3. Gọi Repository để lấy dữ liệu đã được lọc và phân trang
+        Page<Application> applicationsPage = applicationRepository.findApplicationsForEmployerWithFilters(
+                employerId, fullName, email, location, minYearsExperience, educationId, pageable);
+
+        // 4. Ánh xạ từ Entity sang DTO
+        List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
+                .map(application -> {
+                    // Mapping Job Simple Response
+                    JobResponse jobSimpleResponse = null;
+                    if (application.getJob() != null) {
+                        jobSimpleResponse = JobResponse.builder()
+                                .id(application.getJob().getId())
+                                .title(application.getJob().getTitle())
+                                .location(application.getJob().getLocation())
+                                .salaryMin(application.getJob().getSalaryMin())
+                                .salaryMax(application.getJob().getSalaryMax())
+                                .build();
+                    }
+
+                    // Mapping Applicant Response (User và UserDetail)
+                    ApplicantResponse applicantResponse = null;
+                    User applicantUser = application.getJobSeeker();
+                    if (applicantUser != null) {
+                        UserDetail applicantDetail = applicantUser.getUserDetail(); // Lấy UserDetail
+                        SimpleNameResponse educationResponse = null;
+                        if (applicantDetail != null && applicantDetail.getEducation() != null) {
+                            educationResponse = SimpleNameResponse.builder()
+                                    .id(applicantDetail.getEducation().getId())
+                                    .name(applicantDetail.getEducation().getName())
+                                    .build();
+                        }
+
+                        applicantResponse = ApplicantResponse.builder()
+                                .id(applicantUser.getId())
+                                .email(applicantUser.getEmail())
+                                .fullName(applicantDetail != null ? applicantDetail.getFullName() : null)
+                                .location(applicantDetail != null ? applicantDetail.getLocation() : null)
+                                .experience(applicantDetail != null ? applicantDetail.getExperience() : null)
+                                .phone(applicantDetail != null ? applicantDetail.getPhone() : null)
+                                .education(educationResponse)
+                                .build();
+                    }
+
+                    return ApplicationResponse.builder()
+                            .id(application.getId())
+                            .appliedAt(application.getAppliedAt())
+                            .status(application.getStatus())
+                            .job(jobSimpleResponse)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 5. Xây dựng PageResponse
+        return PageResponse.<ApplicationResponse>builder()
+                .pageNumber(applicationsPage.getNumber())
+                .pageSize(applicationsPage.getSize())
+                .totalElements(applicationsPage.getTotalElements())
+                .totalPages(applicationsPage.getTotalPages())
+                .isLast(applicationsPage.isLast())
+                .isFirst(applicationsPage.isFirst())
+                .content(applicationResponses)
                 .build();
     }
 
