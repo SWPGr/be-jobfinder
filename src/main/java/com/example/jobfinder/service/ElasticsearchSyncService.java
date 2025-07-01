@@ -3,6 +3,7 @@ package com.example.jobfinder.service;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.repository.ApplicationRepository;
+import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.JobViewRepository;
 import org.slf4j.Logger;
@@ -19,41 +20,36 @@ public class ElasticsearchSyncService {
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchSyncService.class);
 
     private final JobRepository jobRepository;
-    private final JobViewRepository jobViewRepository;
-    private final ApplicationRepository applicationRepository;
-    private final ElasticsearchOperations elasticsearchOperations;
+    private final JobDocumentRepository jobDocumentRepository;
 
-    public ElasticsearchSyncService(JobRepository jobRepository, JobViewRepository jobViewRepository,
-                                    ApplicationRepository applicationRepository, ElasticsearchOperations elasticsearchOperations) {
+    public ElasticsearchSyncService(JobRepository jobRepository, JobDocumentRepository jobDocumentRepository) {
         this.jobRepository = jobRepository;
-        this.jobViewRepository = jobViewRepository;
-        this.applicationRepository = applicationRepository;
-        this.elasticsearchOperations = elasticsearchOperations;
+        this.jobDocumentRepository = jobDocumentRepository;
     }
 
-    @Scheduled(cron = "0 0 1 * * ?")
-    public void syncJobsToElasticsearch() {
-        log.info("Starting job data sync to Elasticsearch");
-
+    @Scheduled(cron = "0 0 0 * * *")
+    public void syncAllJobs() {
         List<Job> jobs = jobRepository.findAll();
-        for (Job job : jobs) {
-            JobDocument jobDocument = new JobDocument();
-            jobDocument.setId(job.getId());
-            jobDocument.setTitle(job.getTitle());
-            jobDocument.setDescription(job.getDescription());
-            jobDocument.setLocation(job.getLocation());
-            jobDocument.setEmployerId(job.getEmployer().getId());
-            jobDocument.setCategory(job.getCategory().getName());
-            jobDocument.setJobLevel(job.getJobLevel().getName());
-            jobDocument.setJobType(job.getJobType().getName());
+        List<JobDocument> jobDocuments = jobs.stream()
+                .map(this::mapToDocument)
+                .toList();
 
-            jobDocument.setViewCount(0);
-            jobDocument.setApplicantCount(0);
+        jobDocumentRepository.saveAll(jobDocuments);
+    log.info("Completed job data sync to Elasticsearch, indexed {} jobs", jobs.size());
+    }
 
-            elasticsearchOperations.save(jobDocument, IndexCoordinates.of("jobs"));
-            log.debug("Indexed job: {}", job.getId());
-        }
+    private JobDocument mapToDocument(Job job) {
+        JobDocument doc = new JobDocument();
+        doc.setId(job.getId());
+        doc.setTitle(job.getTitle());
+        doc.setDescription(job.getDescription());
+        doc.setLocation(job.getLocation());
+        doc.setEmployerId(job.getEmployer().getId());
+        doc.setCategory(job.getCategory().getName());
+        doc.setJobLevel(job.getJobLevel().getName());
+        doc.setJobType(job.getJobType().getName());
 
-        log.info("Completed job data sync to Elasticsearch, indexed {} jobs", jobs.size());
+
+        return doc;
     }
 }

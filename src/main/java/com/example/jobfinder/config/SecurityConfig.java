@@ -93,7 +93,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/ws/**",
                                 "/app/**",
-                                "api/options/**"
+                                "api/options/**",
+                                "api/admin/jobs/**",
+                                "/api/jobs/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
