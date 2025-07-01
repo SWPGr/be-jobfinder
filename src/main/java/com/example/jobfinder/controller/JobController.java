@@ -59,6 +59,12 @@ public class JobController {
         return jobService.getJobById(jobId);
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<List<JobResponse>> getLatestJobs() {
+        List<JobResponse> jobs = jobService.getLatestJob(10);
+        return ResponseEntity.ok(jobs);
+    }
+
     @PutMapping("/{jobId}")
     public JobResponse updateJob(@PathVariable Long jobId, @RequestBody JobUpdateRequest request) {
         return jobService.updateJob(jobId, request);

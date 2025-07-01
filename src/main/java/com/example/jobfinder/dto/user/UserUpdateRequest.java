@@ -22,7 +22,7 @@ public class UserUpdateRequest {
     private Boolean verified;  // Add this field if it's not there, type Boolean (will be mapped to Integer in User)
 
     // ... job seeker/employer specific fields ...
-    private Integer yearsExperience;
+    private Long userExperience;
     private String resumeUrl;
     private Long educationId;
     private String companyName;

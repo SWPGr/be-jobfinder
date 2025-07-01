@@ -114,13 +114,13 @@ public class RecommendationService {
             jobRecommendationRepository.deleteByJobSeekerId(jobSeeker.getId());
 
             List<JobRecommendation> recommendations = new ArrayList<>();
-            for (SearchHit<JobDocument> hit : searchHits) {
-                JobDocument jobDoc = hit.getContent();
-                Job job = jobRepository.findById(jobDoc.getId())
-                        .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+        for (Job job : jobRepository.findAll()) {
+            float score = calculateJobScore(userDetail, job, viewedJobIds, appliedJobs, viewedEmployerIds, 0.5f);
+            log.info("Manual Score for job '{}': {}", job.getTitle(), score);
 
-                float score = calculateJobScore(userDetail, job, viewedJobIds, appliedJobs, viewedEmployerIds, hit.getScore());
-                if (score > 0.3) {
+
+                log.info("Job: {}, Score: {}", job.getTitle(), score);
+                if (score >= 0.3) {
                     JobRecommendation recommendation = new JobRecommendation();
                     recommendation.setJobSeeker(jobSeeker);
                     recommendation.setJob(job);
@@ -163,7 +163,7 @@ public class RecommendationService {
                                     List<Job> appliedJobs, Set<Long> viewedEmployerIds, float esScore) {
         float score = 0.0f;
 
-        float experienceScore = calculateExperienceScore(userDetail.getYearsExperience(), job.getJobLevel().getName());
+        float experienceScore = calculateExperienceScore(userDetail.getExperience().getId().intValue(), job.getJobLevel().getName());
         score += 0.25f * experienceScore;
 
         float locationScore = userDetail.getLocation() != null && userDetail.getLocation()

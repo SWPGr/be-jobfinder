@@ -13,6 +13,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -169,5 +171,14 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
 
         return jobMapper.toJobResponse(job);
+    }
+
+    public List<JobResponse> getLatestJob(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Job> jobs = jobRepository.findTopNJobs(pageable);
+
+        return jobs.stream()
+                .map(jobMapper::toJobResponse)
+                .toList();
     }
 }

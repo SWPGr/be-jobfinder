@@ -15,7 +15,8 @@ public interface JobSeekerMapper {
     @Mapping(source = "location", target = "location")
 
     // Các trường riêng cho JobSeeker từ UserDetail
-    @Mapping(source = "yearsExperience", target = "yearsExperience")
+    @Mapping(source = "experience.id", target = "experienceId")
+    @Mapping(source = "experience.name", target = "experienceName")
     @Mapping(source = "resumeUrl", target = "resumeUrl")
 
     // Ánh xạ thông tin Education (nếu có)

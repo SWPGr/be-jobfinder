@@ -2,6 +2,7 @@ package com.example.jobfinder.repository;
 
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.util.QueryConstants;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -44,5 +45,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             "GROUP BY j.category.name " +
             "ORDER BY COUNT(j.id) DESC") // Sắp xếp theo số lượng giảm dần
     List<Object[]> countTotalJobsByCategory();
+
+    @Query("SELECT j FROM Job j ORDER BY j.createdAt DESC")
+    List<Job> findTopNJobs(Pageable pageable);
 
 }

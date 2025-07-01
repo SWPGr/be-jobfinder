@@ -35,7 +35,6 @@ public final class QueryConstants {
             (:fullName IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))) AND
             (:roleName IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :roleName, '%'))) AND
             (:location IS NULL OR LOWER(ud.location) LIKE LOWER(CONCAT('%', :location, '%'))) AND
-            (:yearsExperience IS NULL OR ud.yearsExperience >= :yearsExperience) AND
             (:isPremium IS NULL OR u.isPremium = :isPremium) AND
             (:verified IS NULL OR u.verified = :verified)
             """;
@@ -84,7 +83,6 @@ public final class QueryConstants {
             LEFT JOIN FETCH ud.education e
             WHERE (:fullName IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))) AND
             (:location IS NULL OR LOWER(ud.location) LIKE LOWER(CONCAT('%', :location, '%'))) AND
-            (:yearsExperience IS NULL OR ud.yearsExperience >= :yearsExperience) AND
             (:educationType IS NULL OR LOWER(e.name) LIKE LOWER(CONCAT('%', :educationType, '%'))) AND
             (:companyName IS NULL OR LOWER(ud.companyName) LIKE LOWER(CONCAT('%', :companyName, '%')))
             """;

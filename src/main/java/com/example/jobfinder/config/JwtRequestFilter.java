@@ -1,11 +1,13 @@
 package com.example.jobfinder.config;
 
 import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,7 +22,6 @@ import java.util.Collections;
 
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
-
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
 
@@ -30,9 +31,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
         if (isPublicEndpoint(requestURI) || requestURI.startsWith("/oauth2/") ||
@@ -47,25 +46,23 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String jwt = null;
         String role = null;
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
-
-            try {
+        try {
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                jwt = authorizationHeader.substring(7);
                 username = jwtUtil.extractUsername(jwt);
                 role = jwtUtil.extractRole(jwt);
-            } catch (AppException ex) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"" + ex.getErrorCode().getErrorMessage() + "\"}"); // ✅ lấy thông báo đúng
-                response.getWriter().flush(); // 🟢 đảm bảo response gửi ra
-                return;
             }
-
+        } catch (ExpiredJwtException e) {
+            setErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ErrorCode.TOKEN_EXPIRED);
+            return;
+        } catch (JwtException e) {
+            setErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ErrorCode.INVALID_TOKEN);
+            return;
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+            if(jwtUtil.validateToken(jwt, userDetails.getUsername())){
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
@@ -73,8 +70,19 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         }
-
         chain.doFilter(request, response);
+    }
+
+    private void setErrorResponse(HttpServletResponse response, int status, ErrorCode errorCode) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String json = String.format("{\"error\": \"%s\", \"message\": \"%s\"}",
+                errorCode.getErrorCode(),
+                errorCode.getErrorMessage());
+
+        response.getWriter().write(json);
     }
 
     private boolean isPublicEndpoint(String requestURI) {
@@ -89,4 +97,5 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
         return false;
     }
+
 }

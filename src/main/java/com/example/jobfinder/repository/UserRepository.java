@@ -56,7 +56,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                    @Param("fullName") String fullName,
                                    @Param("roleName") String roleName,
                                    @Param("location") String location,
-                                   @Param("yearsExperience") Integer yearsExperience,
                                    @Param("isPremium") Boolean isPremium,
                                    @Param("verified") Integer verified,
                                    @Param("resumeUrl") String resumeUrl,
