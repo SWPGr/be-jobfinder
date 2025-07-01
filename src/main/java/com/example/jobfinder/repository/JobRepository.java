@@ -49,4 +49,7 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             "ORDER BY COUNT(j.id) DESC") // Sắp xếp theo số lượng giảm dần
     List<Object[]> countTotalJobsByCategory();
 
+    @Query("SELECT j FROM Job j ORDER BY j.createdAt DESC")
+    List<Job> findTopNJobs(Pageable pageable);
+
 }

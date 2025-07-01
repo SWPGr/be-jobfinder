@@ -49,6 +49,7 @@ public interface UserMapper {
     @Mapping(source = "verified", target = "verified") // Will use default map(Integer value)
     // Make sure 'enabled' and 'isPremium' also have direct mappings or setters if they are in UserResponse
     @Mapping(source = "isPremium", target = "isPremium")
+    @Mapping(source = "userDetail.avatarUrl", target = "avatarUrl")
     UserResponse toUserResponse(User user);
 
     // --- Mapper để cập nhật User Entity từ Update Request DTO ---

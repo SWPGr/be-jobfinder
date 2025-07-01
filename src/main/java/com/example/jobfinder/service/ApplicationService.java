@@ -13,10 +13,7 @@ import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;
 import com.example.jobfinder.mapper.JobMapper;
 import com.example.jobfinder.mapper.UserMapper;
-import com.example.jobfinder.model.Application;
-import com.example.jobfinder.model.Education;
-import com.example.jobfinder.model.Job;
-import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobRepository;
@@ -175,6 +172,7 @@ public class ApplicationService {
         return applicants.stream().map(user -> {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
+            Experience experience = user.getUserDetail().getExperience();
             if (user.getUserDetail() != null) {
                 jobSeekerResponse = JobSeekerResponse.builder()
                         .userId(user.getUserDetail().getId())
@@ -184,7 +182,7 @@ public class ApplicationService {
                         .userEmail(user.getEmail())
                         .fullName(user.getUserDetail().getFullName())
                         .educationName(education != null ? education.getName() : null)
-                        .yearsExperience(user.getUserDetail().getYearsExperience())
+                        .experienceName(experience != null ? experience.getName() : null)
                         .build();
             }
 

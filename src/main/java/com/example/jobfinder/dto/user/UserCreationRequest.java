@@ -41,7 +41,7 @@ public class UserCreationRequest {
     private String location;
 
     // --- Thông tin chuyên biệt cho vai trò JOB_SEEKER (sẽ là null nếu roleName không phải JOB_SEEKER) ---
-    private Integer yearsExperience; // Số năm kinh nghiệm, có thể null nếu không phải JobSeeker hoặc chưa có
+    private Long userExperience; // Số năm kinh nghiệm, có thể null nếu không phải JobSeeker hoặc chưa có
     private String resumeUrl; // URL của CV, có thể null nếu không phải JobSeeker hoặc chưa có
     private Long educationId; // ID của thông tin giáo dục liên quan, có thể null nếu không có hoặc không phải JobSeeker
 

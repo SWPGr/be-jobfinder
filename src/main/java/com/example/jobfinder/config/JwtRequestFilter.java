@@ -1,5 +1,9 @@
 package com.example.jobfinder.config;
 
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,11 +46,18 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String jwt = null;
         String role = null;
 
-
-        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            jwt = authorizationHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
-            role = jwtUtil.extractRole(jwt);
+        try {
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                jwt = authorizationHeader.substring(7);
+                username = jwtUtil.extractUsername(jwt);
+                role = jwtUtil.extractRole(jwt);
+            }
+        } catch (ExpiredJwtException e) {
+            setErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ErrorCode.TOKEN_EXPIRED);
+            return;
+        } catch (JwtException e) {
+            setErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, ErrorCode.INVALID_TOKEN);
+            return;
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -60,6 +71,18 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private void setErrorResponse(HttpServletResponse response, int status, ErrorCode errorCode) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String json = String.format("{\"error\": \"%s\", \"message\": \"%s\"}",
+                errorCode.getErrorCode(),
+                errorCode.getErrorMessage());
+
+        response.getWriter().write(json);
     }
 
     private boolean isPublicEndpoint(String requestURI) {
