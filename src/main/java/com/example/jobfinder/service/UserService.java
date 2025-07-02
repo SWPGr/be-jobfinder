@@ -45,6 +45,7 @@ public class UserService {
     EducationRepository educationRepository; // Cần nếu UserDetail có Education và bạn cần lấy/lưu Education
     JobRepository jobRepository;
     ExperienceRepository experienceRepository;
+    ApplicationRepository applicationRepository;
 
     // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
 
@@ -223,8 +224,6 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserResponse> searchUsers(UserSearchRequest request) {
         log.info("Searching users with role: {}", request.getRoleName());
-
-        // Lấy dữ liệu thô từ Repository (User, UserDetail, Role)
         List<Object[]> results = userRepository.findUsersWithDetailsAndRole(request.getRoleName());
 
         return results.stream()
@@ -237,10 +236,12 @@ public class UserService {
                             .id(user.getId())
                             .email(user.getEmail())
                             .isPremium(user.getIsPremium())
-                            .createdAt(String.valueOf(user.getCreatedAt()))
-                            .updatedAt(String.valueOf(user.getUpdatedAt()))
+                            .createdAt(String.valueOf(user.getCreatedAt())) // Chuyển đổi LocalDateTime sang String
+                            .updatedAt(String.valueOf(user.getUpdatedAt())) // Chuyển đổi LocalDateTime sang String
                             .roleName(role != null ? role.getName() : null)
                             .verified(user.getVerified())
+                            .totalApplications(null) // Khởi tạo là null
+                            .totalJobsPosted(null)   // Khởi tạo là null
                             .build();
 
                     // Map UserDetail nếu có
@@ -252,13 +253,15 @@ public class UserService {
                         userResponse.setWebsite(userDetail.getWebsite());
                     }
 
-                    // Nếu là EMPLOYER, điền thêm totalJobsPosted
+                    // Điền totalJobsPosted cho EMPLOYER
                     if (role != null && "EMPLOYER".equals(role.getName())) {
                         long totalJobs = jobRepository.countByEmployerId(user.getId());
                         userResponse.setTotalJobsPosted(totalJobs);
-                    } else {
-                        // Đảm bảo trường này là null nếu không phải employer
-                        userResponse.setTotalJobsPosted(null);
+                    }
+                    // Điền totalApplications cho JOB_SEEKER
+                    else if (role != null && "JOB_SEEKER".equals(role.getName())) {
+                        long totalApplicationsCount = applicationRepository.countByApplicantId(user.getId());
+                        userResponse.setTotalApplications(totalApplicationsCount);
                     }
 
                     return userResponse;
@@ -279,23 +282,27 @@ public class UserService {
         return userMapper.toUserResponseList(users);
     }
 
+    @Transactional(readOnly = true)
     public JobSeekerResponse getJobSeekerInfo(Long userId) {
-        // 1. Tìm User entity theo ID.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. Kiểm tra xem vai trò của User có phải là JOB_SEEKER hay không.
         if (!user.getRole().getName().equals("JOB_SEEKER")) {
-            throw new AppException(ErrorCode.USER_IS_NOT_JOB_SEEKER); // Cần định nghĩa ErrorCode này.
+            throw new AppException(ErrorCode.USER_IS_NOT_JOB_SEEKER);
         }
 
-        // 3. Lấy UserDetail liên quan đến User. Phương thức findByUserId trong UserDetailsRepository
-        //    được thiết kế để tải eager User và Education để tránh LazyInitializationException.
         UserDetail userDetail = userDetailRepository.findByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
 
-        // 4. Chuyển đổi UserDetail entity sang JobSeekerResponse DTO.
-        return jobSeekerMapper.toJobSeekerResponse(userDetail);
+        long totalApplications = applicationRepository.countByApplicantId(userId);
+        JobSeekerResponse jobSeekerResponse = jobSeekerMapper.toJobSeekerResponse(userDetail);
+
+        // Gán thông tin từ User Entity
+        jobSeekerResponse.setUserId(user.getId());
+        jobSeekerResponse.setUserEmail(user.getEmail());
+        jobSeekerResponse.setResumeUrl(userDetail.getResumeUrl());
+        jobSeekerResponse.setTotalApplications(totalApplications); // <-- Gán giá trị vào DTO
+
+        return jobSeekerResponse;
     }
 
     /**
