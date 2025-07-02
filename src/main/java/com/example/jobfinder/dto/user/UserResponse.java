@@ -30,4 +30,6 @@ public class UserResponse {
     private String companyName;
     private String website;
     private Long totalJobsPosted;
+
+    private Long totalApplications;
 }

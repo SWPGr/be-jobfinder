@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Builder // Đảm bảo bạn có constructor hoặc @Builder để dễ tạo
 public class ApplicationResponse {
     private Long id;
-    private UserResponse jobSeeker;
+    private ApplicantResponse jobSeeker;
     private JobResponse job;
     private ApplicationStatus status;
     private LocalDateTime appliedAt;

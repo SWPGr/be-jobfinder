@@ -25,6 +25,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     Long countByJob_Id (Long jobId);
 
+    @Query("SELECT COUNT(ja) FROM Application ja WHERE ja.jobSeeker.id = :applicantId")
+    long countByApplicantId(Long applicantId);
+
     boolean existsByJobSeeker_IdAndJob_Employer_Id(Long jobSeekerId, Long employerId);
     @Query(QueryConstants.FIND_APPLICATIONS_BY_CRITERIA) // Sử dụng hằng số
     List<Application> findApplicationsByCriteria(@Param("jobSeekerEmail") String jobSeekerEmail,
@@ -107,6 +110,59 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("location") String location,
             @Param("minYearsExperience") Integer minYearsExperience,
             @Param("educationId") Long educationId,
+            Pageable pageable
+    );
+
+
+    @Query("SELECT ja FROM Application ja " +
+            "JOIN FETCH ja.job j " +
+            "JOIN FETCH j.employer e " +
+            "JOIN FETCH ja.jobSeeker a " +
+            "LEFT JOIN FETCH a.userDetail ud " +
+            "LEFT JOIN FETCH ud.education edu " +
+            "WHERE e.id = :employerId " +
+            "AND j.id = :jobId " +
+            // Thêm các điều kiện lọc mới cho JobApplication
+            "AND (:status IS NULL OR ja.status = :status) " + // Lọc theo trạng thái đơn ứng tuyển
+            "AND (:resumeUrl IS NULL OR ja.jobSeeker.userDetail.resumeUrl LIKE %:resumeUrl%) " + // Lọc theo một phần của resumeUrl
+
+            // Thêm các điều kiện lọc mới cho Applicant (User/UserDetail)
+            "AND (:fullName IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))) " +
+            "AND (:email IS NULL OR LOWER(a.email) LIKE LOWER(CONCAT('%', :email, '%'))) " +
+            "AND (:applicantLocation IS NULL OR LOWER(ud.location) LIKE LOWER(CONCAT('%', :applicantLocation, '%'))) " +
+            "AND (:educationId IS NULL OR edu.id = :educationId) " +
+            "AND (:phone IS NULL OR ud.phone LIKE %:phone%) " + // Lọc theo số điện thoại
+
+            // Thêm các điều kiện lọc mới cho Job
+            "AND (:jobTitle IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', :jobTitle, '%'))) " +
+            "AND (:jobLocation IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', :jobLocation, '%'))) " +
+            "AND (:minSalary IS NULL OR j.salaryMax >= :minSalary) " + // Lọc theo mức lương tối thiểu của job
+            "AND (:maxSalary IS NULL OR j.salaryMin <= :maxSalary) " + // Lọc theo mức lương tối đa của job
+            "AND (:jobCategoryId IS NULL OR j.category.id = :jobCategoryId) " +
+            "AND (:jobLevelId IS NULL OR j.jobLevel.id = :jobLevelId) " +
+            "AND (:jobTypeId IS NULL OR j.jobType.id = :jobTypeId)")
+    Page<Application> findApplicationsForEmployerJobWithFilters(
+            @Param("employerId") Long employerId,
+            @Param("jobId") Long jobId,
+            // JobApplication filters
+            @Param("status") String status,
+            @Param("resumeUrl") String resumeUrl,
+
+            // Applicant (User/UserDetail) filters
+            @Param("fullName") String fullName,
+            @Param("email") String email,
+            @Param("applicantLocation") String applicantLocation, // Đổi tên để tránh nhầm lẫn với jobLocation
+            @Param("educationId") Long educationId,
+            @Param("phone") String phone,
+
+            // Job filters
+            @Param("jobTitle") String jobTitle,
+            @Param("jobLocation") String jobLocation, // Đổi tên để tránh nhầm lẫn với applicantLocation
+            @Param("minSalary") Double minSalary, // Dùng Double hoặc Float hoặc BigDecimal tùy thuộc Entity
+            @Param("maxSalary") Double maxSalary, // Dùng Double hoặc Float hoặc BigDecimal tùy thuộc Entity
+            @Param("jobCategoryId") Long jobCategoryId,
+            @Param("jobLevelId") Long jobLevelId,
+            @Param("jobTypeId") Long jobTypeId,
             Pageable pageable
     );
 }

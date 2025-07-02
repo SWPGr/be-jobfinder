@@ -16,4 +16,6 @@ public class EmployerResponse {
     private String companyName;
     private String description; // Mô tả công ty
     private String website;
+
+    private Long totalJobsPosted;
 }

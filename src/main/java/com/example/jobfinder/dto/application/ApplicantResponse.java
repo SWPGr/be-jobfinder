@@ -15,5 +15,6 @@ public class ApplicantResponse {
     private Experience experience; // Từ UserDetail
     private String phone; // Từ UserDetail
     private SimpleNameResponse education; // Nếu có entity Education
+    private String resumeUrl;
     // Thêm các trường khác từ UserDetail nếu cần
 }
