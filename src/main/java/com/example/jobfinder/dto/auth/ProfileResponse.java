@@ -2,6 +2,7 @@ package com.example.jobfinder.dto.auth;
 
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.Experience;
+import com.example.jobfinder.model.enums.OrganizationType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,4 +24,5 @@ public class ProfileResponse {
     private String description;
     private String website;
     private String avatarUrl;
+    private OrganizationType organizationType;
 }

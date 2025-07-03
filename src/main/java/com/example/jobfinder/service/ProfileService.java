@@ -77,6 +77,7 @@ public class ProfileService {
             userDetail.setLocation(request.getLocation());
             userDetail.setDescription(request.getDescription());
             userDetail.setWebsite(request.getWebsite());
+            userDetail.setOrganizationType(request.getOrganizationType());
         }else {
             throw new Exception("Invalid role");
         }
@@ -131,6 +132,7 @@ public class ProfileService {
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
         response.setAvatarUrl(userDetail.getAvatarUrl());
+        response.setOrganizationType(userDetail.getOrganizationType());
         return response;
     }
 }

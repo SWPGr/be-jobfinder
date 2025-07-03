@@ -95,7 +95,8 @@ public class SecurityConfig {
                                 "/app/**",
                                 "api/options/**",
                                 "api/admin/jobs/**",
-                                "/api/jobs/**"
+                                "/api/jobs/**",
+                                "/api/categories/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()

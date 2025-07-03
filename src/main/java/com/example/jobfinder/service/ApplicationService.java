@@ -20,6 +20,7 @@ import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobRepository;
+import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +60,7 @@ public class ApplicationService {
      final UserMapper userMapper;
      final NotificationService notificationService;
      final ApplicationMapper applicationMapper;
+     final UserDetailsRepository userDetailsRepository;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) {
@@ -79,6 +81,8 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
         // Hoặc nếu bạn muốn chi tiết hơn với UsernameNotFoundException,
         // GlobalExceptionHandler của bạn cần handle nó để trả về USER_NOT_FOUND.
+        UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
@@ -102,6 +106,14 @@ public class ApplicationService {
         application.setJobSeeker(jobSeeker);
         application.setJob(job);
         application.setStatus(ApplicationStatus.PENDING);
+        application.setEmail(request.getEmail());
+        application.setPhone(request.getPhone());
+        String resume = request.getResume();
+        if (resume == null || resume.trim().isEmpty()) {
+            resume = userDetail.getResumeUrl();
+        }
+        application.setResume(resume);
+        application.setCoverLetter(request.getCoverLetter());
         application.setAppliedAt(LocalDateTime.now());
 
         // 5. Lưu Application vào database

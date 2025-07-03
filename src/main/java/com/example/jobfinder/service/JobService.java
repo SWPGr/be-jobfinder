@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -138,26 +139,25 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    public List<JobResponse> getAllJobsForUser() {
+    public Page<JobResponse> getAllJobsForUser(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUser = authentication.getName();
 
         Optional<User> userOptional = userRepository.findByEmail(currentUser);
         Long currentUserId = userOptional.map(User::getId).orElse(null);
 
-        return jobRepository.findAll().stream()
-                .map(job -> {
-                    JobResponse response = jobMapper.toJobResponse(job);
+        Page<Job> jobPage = jobRepository.findAll(pageable);
 
-                    if (currentUserId != null) {
-                        boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
-                        response.setSave(saved);
-                    } else {
-                        response.setSave(false);
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return jobPage.map(job -> {
+            JobResponse response = jobMapper.toJobResponse(job);
+            if (currentUserId != null) {
+                boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
+                response.setSave(saved);
+            } else {
+                response.setSave(false);
+            }
+            return response;
+        });
     }
 
     @Transactional(readOnly = true)

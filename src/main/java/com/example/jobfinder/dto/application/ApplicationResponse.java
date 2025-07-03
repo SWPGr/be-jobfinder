@@ -18,5 +18,9 @@ public class ApplicationResponse {
     private UserResponse jobSeeker;
     private JobResponse job;
     private String status;
+    private String email;
+    private String phone;
+    private String resume;
+    private String coverLetter;
     private LocalDateTime appliedAt;
 }

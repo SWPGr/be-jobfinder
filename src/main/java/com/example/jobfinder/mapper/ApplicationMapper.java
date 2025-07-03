@@ -16,12 +16,20 @@ public interface ApplicationMapper {
     @Mapping(target = "job", ignore = true)
     @Mapping(target = "status", ignore = true) // Sẽ được set thủ công
     @Mapping(target = "appliedAt", ignore = true) // Sẽ được set thủ công
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "phone", ignore = true)
+    @Mapping(target = "resume", ignore = true)
+    @Mapping(target = "coverLetter", ignore = true)
     Application toApplication(ApplicationRequest request);
 
     // Ánh xạ từ Entity sang Response DTO
     @Mapping(source = "jobSeeker", target = "jobSeeker")
     @Mapping(source = "job", target = "job")
     @Mapping(source = "status", target = "status")
+    @Mapping(source = "email", target = "email")
+    @Mapping(source = "phone", target = "phone")
+    @Mapping(source = "resume", target = "resume")
+    @Mapping(source = "coverLetter", target = "coverLetter")
     ApplicationResponse toApplicationResponse(Application application);
 
     // Thêm phương thức ánh xạ list nếu cần
