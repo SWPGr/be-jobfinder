@@ -16,7 +16,7 @@ public class ProfileRequest {
     private String phone;
     private Education education;
     private Experience userExperience;
-    private String resumeUrl;
+    private MultipartFile resumeUrl;
     private String companyName;
     private String description;
     private String website;

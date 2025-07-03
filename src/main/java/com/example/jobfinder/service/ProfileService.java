@@ -68,7 +68,10 @@ public class ProfileService {
                         .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
                 userDetail.setExperience(experience);
             }
-            userDetail.setResumeUrl(request.getResumeUrl());
+            if (request.getResumeUrl() != null && !request.getResumeUrl().isEmpty()) {
+                String resume = cloudinaryService.uploadFile(request.getResumeUrl());
+                userDetail.setResumeUrl(resume);
+            }
         }else if(roleName.equals("EMPLOYER")) {
             if(request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
                 throw new Exception("Company name is required for employer");
