@@ -4,8 +4,10 @@ package com.example.jobfinder.mapper;
 import com.example.jobfinder.dto.job.JobCreationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.model.Job;
 
+import com.example.jobfinder.model.JobDocument;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -27,5 +29,11 @@ public interface JobMapper {
 
     JobResponse toJobResponse(Job job);
 
+    JobResponse toJobResponse(JobDocument jobDocument);
+
     List<JobResponse> toJobResponseList(List<Job> jobs);
+
+    default SimpleNameResponse map(String name) {
+        return name == null ? null : new SimpleNameResponse(null, name);
+    }
 }

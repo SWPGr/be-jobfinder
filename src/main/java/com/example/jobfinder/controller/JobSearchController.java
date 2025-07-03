@@ -1,7 +1,11 @@
 package com.example.jobfinder.controller;
 
+import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.mapper.JobMapper;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.repository.JobDocumentRepository;
+import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.service.JobService;
 import com.example.jobfinder.service.JobSuggestionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,23 +24,33 @@ public class JobSearchController {
     private final JobDocumentRepository jobDocumentRepository;
     private final JobSuggestionService jobSuggestionService;
     private final JobService jobService;
+    private final JobRepository jobRepository;
+    private final JobMapper jobMapper;
 
-    public JobSearchController(JobDocumentRepository jobDocumentRepository,
-                               JobSuggestionService jobSuggestionService,
-                               JobService jobService) {
+    public JobSearchController(JobDocumentRepository jobDocumentRepository, JobSuggestionService jobSuggestionService,
+                               JobService jobService, JobRepository jobRepository, JobMapper jobMapper) {
         this.jobDocumentRepository = jobDocumentRepository;
         this.jobSuggestionService = jobSuggestionService;
         this.jobService = jobService;
+        this.jobRepository = jobRepository;
+        this.jobMapper = jobMapper;
     }
 
     @GetMapping("/search")
-    public List<JobDocument> searchJobs(@RequestParam(required = false) String keyword) {
+    public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            Iterable<JobDocument> allJobs = jobDocumentRepository.findAll();
-            return StreamSupport.stream(allJobs.spliterator(), false)
+            // Không có keyword → lấy từ DB, ánh xạ sang JobResponse
+            List<Job> allJobs = jobRepository.findAll();
+            return allJobs.stream()
+                    .map(jobMapper::toJobResponse)
                     .collect(Collectors.toList());
         }
-        return jobDocumentRepository.findByTitleContainingIgnoreCase(keyword);
+
+        // Có keyword → tìm từ Elasticsearch (JobDocument), ánh xạ sang JobResponse nếu cần
+        List<JobDocument> documents = jobDocumentRepository.findByTitleContainingIgnoreCase(keyword);
+        return documents.stream()
+                .map(jobMapper::toJobResponse) // ánh xạ JobDocument → JobResponse
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/suggest")
