@@ -1,6 +1,7 @@
 package com.example.jobfinder.service;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +16,15 @@ public class CloudinaryService {
         this.cloudinary = cloudinary;
     }
     public String uploadFile(MultipartFile file) throws IOException {
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
-        return uploadResult.get("secure_url").toString();
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "resource_type", "raw", // để cho phép PDF, DOCX
+                    "folder", "resumes"
+            ));
+            return uploadResult.get("secure_url").toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Upload failed", e);
+        }
     }
 }
+

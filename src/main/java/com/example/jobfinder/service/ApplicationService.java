@@ -34,8 +34,10 @@ import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -61,9 +63,10 @@ public class ApplicationService {
      final NotificationService notificationService;
      final ApplicationMapper applicationMapper;
      final UserDetailsRepository userDetailsRepository;
+     final CloudinaryService cloudinaryService;
 
     @Transactional
-    public ApplicationResponse applyJob(ApplicationRequest request) {
+    public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
         log.debug("Processing apply job request: {}", request);
 
         // 1. Xác thực người dùng và vai trò
@@ -101,6 +104,9 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ErrorCode.APPLICATION_ALREADY_SUBMITTED.getErrorMessage());
         }
 
+        MultipartFile resumeFile = request.getResume();
+        String resumeUrl;
+
         // 4. Tạo đối tượng Application
         Application application = new Application();
         application.setJobSeeker(jobSeeker);
@@ -108,11 +114,12 @@ public class ApplicationService {
         application.setStatus(ApplicationStatus.PENDING);
         application.setEmail(request.getEmail());
         application.setPhone(request.getPhone());
-        String resume = request.getResume();
-        if (resume == null || resume.trim().isEmpty()) {
-            resume = userDetail.getResumeUrl();
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            resumeUrl = cloudinaryService.uploadFile(resumeFile); // bạn cần triển khai service này
+        } else {
+            resumeUrl = userDetail.getResumeUrl();
         }
-        application.setResume(resume);
+        application.setResume(resumeUrl);
         application.setCoverLetter(request.getCoverLetter());
         application.setAppliedAt(LocalDateTime.now());
 
