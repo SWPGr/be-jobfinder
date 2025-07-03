@@ -132,33 +132,35 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
-    public List<JobResponse> getAllJobs() {
-        return jobRepository.findAll()
-                .stream()
-                .map(jobMapper::toJobResponse)
-                .collect(Collectors.toList());
-    }
-
-    public Page<JobResponse> getAllJobsForUser(Pageable pageable) {
+    public Page<JobResponse> getAllJobs(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUser = authentication.getName();
+        boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal());
 
-        Optional<User> userOptional = userRepository.findByEmail(currentUser);
-        Long currentUserId = userOptional.map(User::getId).orElse(null);
+        Long currentUserId = null;
+        if (isAuthenticated) {
+            String currentUserEmail = authentication.getName();
+            Optional<User> userOptional = userRepository.findByEmail(currentUserEmail);
+            currentUserId = userOptional.map(User::getId).orElse(null);
+        }
 
         Page<Job> jobPage = jobRepository.findAll(pageable);
 
+        Long finalUserId = currentUserId; // cần biến final để dùng trong lambda
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
-            if (currentUserId != null) {
-                boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
+
+            if (finalUserId != null) {
+                boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), finalUserId);
                 response.setSave(saved);
             } else {
                 response.setSave(false);
             }
+
             return response;
         });
     }
+
 
     @Transactional(readOnly = true)
     public long getTotalJobs() {

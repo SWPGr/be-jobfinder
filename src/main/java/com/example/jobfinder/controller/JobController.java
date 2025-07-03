@@ -48,18 +48,14 @@ public class JobController {
     }
 
     @GetMapping("/list")
-    public List<JobResponse> getAllJobs() {
-        return jobService.getAllJobs();
-    }
-    @GetMapping("/user")
-    public ResponseEntity<Page<JobResponse>> getUserJobs(
+    public ResponseEntity<Page<JobResponse>> getAllJobs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<JobResponse> responses = jobService.getAllJobsForUser(pageable);
-        return ResponseEntity.ok(responses);
+        Page<JobResponse> jobs = jobService.getAllJobs(pageable);
+        return ResponseEntity.ok(jobs);
     }
+
 
     @GetMapping("/{jobId}")
     public JobResponse getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long
