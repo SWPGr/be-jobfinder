@@ -17,72 +17,37 @@ public class EmployerAnalyticsController {
 
     private final ApplicationService applicationService;
 
-    @GetMapping("/job-applications")
-    @PreAuthorize("hasRole('Employer')")
-    public ApiResponse<PageResponse<ApplicationResponse>> getEmployerJobApplications(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "appliedAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) Integer minYearsExperience,
-            @RequestParam(required = false) Long educationId
-    ) {
-        PageResponse<ApplicationResponse> response = applicationService.getEmployerJobApplications(
-                page, size, sortBy, sortDir, fullName, email, location, minYearsExperience, educationId);
-
-        return ApiResponse.<PageResponse<ApplicationResponse>>builder()
-                .code(HttpStatus.OK.value())
-                .message("Job applications retrieved successfully")
-                .result(response)
-                .build();
-    }
-
-
-    @GetMapping("/jobs/{jobId}/applications")
-    @PreAuthorize("hasRole('EMPLOYER')")
+    @GetMapping("/{jobId}/applications")
+    @PreAuthorize("hasRole('EMPLOYER')") // Ensures only users with 'EMPLOYER' role can access
     public ApiResponse<PageResponse<ApplicationResponse>> getEmployerJobApplicationsForSpecificJob(
-            @PathVariable Long jobId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "appliedAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir,
+            @PathVariable Long jobId, // Job ID from the URL path
+            @RequestParam(defaultValue = "0") int page, // Page number, default 0
+            @RequestParam(defaultValue = "10") int size, // Page size, default 10
+            @RequestParam(defaultValue = "newest") String sortOrder, // Sort order, default "newest"
 
-            // New filters for JobApplication
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String resumeUrl, // If you store resume URL in JobApplication
+            // Applicant-related filters
+            @RequestParam(required = false) String name, // Optional filter by applicant's name
+            @RequestParam(required = false) Integer minExperience, // Optional filter by min experience
+            @RequestParam(required = false) Integer maxExperience, // Optional filter by max experience
 
-            // New filters for Applicant (User/UserDetail)
-            @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String applicantLocation, // Changed name
-            @RequestParam(required = false) Long educationId,
-            @RequestParam(required = false) String phone, // New filter
-
-            // New filters for Job
-            @RequestParam(required = false) String jobTitle,
-            @RequestParam(required = false) String jobLocation, // Changed name
-            @RequestParam(required = false) Double minSalary, // Changed to Double, adjust if using Float/BigDecimal
-            @RequestParam(required = false) Double maxSalary, // Changed to Double, adjust if using Float/BigDecimal
-            @RequestParam(required = false) Long jobCategoryId,
-            @RequestParam(required = false) Long jobLevelId,
-            @RequestParam(required = false) Long jobTypeId
+            // Job-related filters (applied to the job associated with the application)
+            @RequestParam(required = false) Long jobTypeId, // Optional filter by job type ID
+            @RequestParam(required = false) Long educationId, // Optional filter by applicant's education ID
+            @RequestParam(required = false) Long jobLevelId // Optional filter by job level ID
     ) {
+        // Delegate the actual business logic to the ApplicationService
         PageResponse<ApplicationResponse> response = applicationService.getEmployerJobApplicationsForSpecificJob(
-                jobId, page, size, sortBy, sortDir,
-                status, resumeUrl,
-                fullName, email, applicantLocation,
-                educationId, phone,
-                jobTitle, jobLocation, minSalary, maxSalary,
-                jobCategoryId, jobLevelId, jobTypeId
+                jobId, page, size, sortOrder,
+                name, minExperience, maxExperience,
+                jobTypeId, educationId, jobLevelId // Passing all relevant filter parameters
         );
 
+        // Construct and return a standardized API response
         return ApiResponse.<PageResponse<ApplicationResponse>>builder()
-                .code(HttpStatus.OK.value())
-                .message("Job applications for specific job retrieved successfully")
-                .result(response)
+                .code(HttpStatus.OK.value()) // HTTP status code for success
+                .message("Job applications for specific job retrieved successfully") // Success message
+                .result(response) // The actual paginated data
                 .build();
     }
+
 }
