@@ -19,7 +19,7 @@ public class CloudinaryService {
         try {
             // Lấy đuôi file để xác định loại
             String contentType = file.getContentType();
-            String resourceType = "auto";
+            String resourceType = determineResourceType(contentType);
 
             Map<?, ?> uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
@@ -54,9 +54,12 @@ public class CloudinaryService {
 
         if (contentType.startsWith("image/")) {
             return "image";  // jpg, png, etc.
-        } else if (contentType.equals("application/pdf")
-                || contentType.equals("application/msword")
-                || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
+        } else if (contentType.equals("application/pdf") ||
+                contentType.equals("application/msword") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
+                contentType.equals("text/plain") ||
+                contentType.equals("application/vnd.ms-excel") ||
+                contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
             return "raw";  // pdf, doc, docx
         }
 

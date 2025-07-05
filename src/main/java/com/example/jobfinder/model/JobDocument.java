@@ -29,21 +29,25 @@ public class JobDocument {
     private String location;
 
     @Field(type = FieldType.Long)
-    private long EmployerId;
+    private Long employerId;
 
     @Field(type = FieldType.Keyword)
-    private String Category;
+    private String jobLevel;
 
     @Field(type = FieldType.Keyword)
-    private String JobLevel;
+    private String jobType;
 
     @Field(type = FieldType.Keyword)
-    private String JobType;
+    private String education;
+
+    @Field(type = FieldType.Keyword)
+    private String category;
 
     @Field(type = FieldType.Integer)
-    private int ViewCount = 0;
+    private Integer viewCount;
 
     @Field(type = FieldType.Integer)
-    private int applicantCount = 0;
+    private Integer applicantCount;
+
 
 }

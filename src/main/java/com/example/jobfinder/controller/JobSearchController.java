@@ -1,11 +1,13 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobSearchRequest;
 import com.example.jobfinder.mapper.JobMapper;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
+import com.example.jobfinder.service.JobSearchService;
 import com.example.jobfinder.service.JobService;
 import com.example.jobfinder.service.JobSuggestionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,35 +23,47 @@ import java.util.stream.StreamSupport;
 @RestController
 @RequestMapping("api/jobs/")
 public class JobSearchController {
-    private final JobDocumentRepository jobDocumentRepository;
     private final JobSuggestionService jobSuggestionService;
-    private final JobService jobService;
+    private final JobSearchService jobSearchService;
     private final JobRepository jobRepository;
     private final JobMapper jobMapper;
 
-    public JobSearchController(JobDocumentRepository jobDocumentRepository, JobSuggestionService jobSuggestionService,
-                               JobService jobService, JobRepository jobRepository, JobMapper jobMapper) {
-        this.jobDocumentRepository = jobDocumentRepository;
+    public JobSearchController(JobSuggestionService jobSuggestionService, JobSearchService jobSearchService,
+                               JobRepository jobRepository, JobMapper jobMapper) {
         this.jobSuggestionService = jobSuggestionService;
-        this.jobService = jobService;
+        this.jobSearchService = jobSearchService;
         this.jobRepository = jobRepository;
         this.jobMapper = jobMapper;
     }
 
     @GetMapping("/search")
-    public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            // Không có keyword → lấy từ DB, ánh xạ sang JobResponse
+    public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword,
+                                        @RequestParam(required = false) String location,
+                                        @RequestParam(required = false) String category,
+                                        @RequestParam(required = false) String jobLevel,
+                                        @RequestParam(required = false) String jobType,
+                                        @RequestParam(required = false) String education) throws IOException {
+        boolean isEmptySearch = (keyword == null || keyword.isEmpty()) && location == null && category == null
+                && jobLevel == null && jobType == null && education == null;
+
+        if (isEmptySearch) {
             List<Job> allJobs = jobRepository.findAll();
             return allJobs.stream()
                     .map(jobMapper::toJobResponse)
                     .collect(Collectors.toList());
         }
 
-        // Có keyword → tìm từ Elasticsearch (JobDocument), ánh xạ sang JobResponse nếu cần
-        List<JobDocument> documents = jobDocumentRepository.findByTitleContainingIgnoreCase(keyword);
+        JobSearchRequest request = new JobSearchRequest();
+        request.setKeyword(keyword);
+        request.setLocation(location);
+        request.setCategory(category);
+        request.setJobLevel(jobLevel);
+        request.setJobType(jobType);
+        request.setEducation(education);
+
+        List<JobDocument> documents = jobSearchService.search(request);
         return documents.stream()
-                .map(jobMapper::toJobResponse) // ánh xạ JobDocument → JobResponse
+                .map(jobMapper::toJobResponse)
                 .collect(Collectors.toList());
     }
 

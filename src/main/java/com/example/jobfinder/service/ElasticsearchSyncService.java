@@ -48,6 +48,7 @@ public class ElasticsearchSyncService {
         doc.setCategory(job.getCategory().getName());
         doc.setJobLevel(job.getJobLevel().getName());
         doc.setJobType(job.getJobType().getName());
+        doc.setEducation(job.getEducation().getName());
 
 
         return doc;
