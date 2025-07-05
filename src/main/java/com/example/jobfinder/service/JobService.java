@@ -144,19 +144,17 @@ public class JobService {
             currentUserId = userOptional.map(User::getId).orElse(null);
         }
 
-        Page<Job> jobPage = jobRepository.findAll(pageable);
+        Page<Job> jobPage;
+        if (currentUserId != null) {
+            jobPage = jobRepository.findAllJobsNotSavedByUser(currentUserId, pageable);
+        } else {
+            jobPage = jobRepository.findAll(pageable);
+        }
 
-        Long finalUserId = currentUserId; // cần biến final để dùng trong lambda
+        Long finalUserId = currentUserId;
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
-
-            if (finalUserId != null) {
-                boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), finalUserId);
-                response.setSave(saved);
-            } else {
-                response.setSave(false);
-            }
-
+            response.setSave(false);
             return response;
         });
     }
