@@ -1,7 +1,6 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobOptionsResponse;
-import com.example.jobfinder.model.enums.OrganizationType;
 import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -9,8 +8,6 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("api/options")
@@ -22,6 +19,7 @@ public class OptionController {
     EducationRepository educationRepository;
     CategoryRepository categoryRepository;
     ExperienceRepository experienceRepository;
+    OrganizationRepository organizationRepository;
 
     @GetMapping("/all")
     public JobOptionsResponse getAllOptions() {
@@ -31,7 +29,7 @@ public class OptionController {
                 educationRepository.findAll(),
                 categoryRepository.findAll(),
                 experienceRepository.findAll(),
-                List.of(OrganizationType.values())
+                organizationRepository.findAll()
         );
     }
 }

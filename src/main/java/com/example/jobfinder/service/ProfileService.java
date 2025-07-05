@@ -4,14 +4,8 @@ import com.example.jobfinder.dto.auth.ProfileRequest;
 import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Education;
-import com.example.jobfinder.model.Experience;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.ExperienceRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,15 +21,17 @@ public class ProfileService {
     private final EducationRepository educationRepository;
     private final CloudinaryService cloudinaryService;
     private final ExperienceRepository experienceRepository;
+    private final OrganizationRepository organizationRepository;
 
     public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository,
                           EducationRepository educationRepository, CloudinaryService cloudinaryService,
-                          ExperienceRepository experienceRepository) {
+                          ExperienceRepository experienceRepository, OrganizationRepository organizationRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.educationRepository = educationRepository;
         this.cloudinaryService = cloudinaryService;
         this.experienceRepository = experienceRepository;
+        this.organizationRepository = organizationRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception{
@@ -80,7 +76,12 @@ public class ProfileService {
             userDetail.setLocation(request.getLocation());
             userDetail.setDescription(request.getDescription());
             userDetail.setWebsite(request.getWebsite());
-            userDetail.setOrganizationType(request.getOrganizationType());
+            if (request.getOrganization() != null) {
+                Organization organization = organizationRepository.findById(request.getOrganization().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
+                userDetail.setOrganization(organization);
+            }
+
         }else {
             throw new Exception("Invalid role");
         }
@@ -135,7 +136,10 @@ public class ProfileService {
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
         response.setAvatarUrl(userDetail.getAvatarUrl());
-        response.setOrganizationType(userDetail.getOrganizationType());
+        if (userDetail.getOrganization() != null) {
+            response.setOrganizationId(userDetail.getOrganization().getId());
+            response.setOrganizationType(userDetail.getOrganization().getName());
+        }
         return response;
     }
 }

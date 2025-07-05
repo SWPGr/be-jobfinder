@@ -153,7 +153,8 @@ public enum ErrorCode {
     INVALID_ROLE(2011, "Role not permission"),
     EXPERIENCE_NOT_FOUND(2012," Experience not found"),
     SAVED_JOB_NOT_FOUND(2013, "You have not saved this job"),
-    TOKEN_EXPIRED(2014, "Token has expired");
+    TOKEN_EXPIRED(2014, "Token has expired"),
+    ORGANIZATION_NOT_FOUND(2015, "Organization not found"),;
 
 
     ErrorCode(int errorCode, String errorMessage) {

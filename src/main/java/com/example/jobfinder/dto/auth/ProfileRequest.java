@@ -2,8 +2,7 @@ package com.example.jobfinder.dto.auth;
 
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.Experience;
-import com.example.jobfinder.model.enums.OrganizationType;
-import lombok.Data;
+import com.example.jobfinder.model.Organization;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +20,6 @@ public class ProfileRequest {
     private String description;
     private String website;
     private MultipartFile avatar;
-    private OrganizationType organizationType;
+    private Organization organization;
 
 }

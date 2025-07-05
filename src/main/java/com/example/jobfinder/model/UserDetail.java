@@ -1,6 +1,5 @@
 package com.example.jobfinder.model;
 
-import com.example.jobfinder.model.enums.OrganizationType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -45,9 +44,6 @@ public class UserDetail {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "organization_type", columnDefinition = "ENUM('STARTUP', 'ENTERPRISE', 'NON_PROFIT', 'GOVERNMENT', 'FREELANCE', 'OTHER')")
-    private OrganizationType organizationType;
 
     // --- Mối quan hệ ---
 
@@ -74,4 +70,9 @@ public class UserDetail {
     @ManyToOne
     @JoinColumn(name = "user_experience_id")
     private Experience experience;
+
+    @ManyToOne
+    @JoinColumn(name = "user_organization_type")
+    @JsonBackReference("organization-userDetails")
+    private Organization organization;
 }
