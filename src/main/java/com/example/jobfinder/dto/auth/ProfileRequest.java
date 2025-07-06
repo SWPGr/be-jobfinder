@@ -21,4 +21,10 @@ public class ProfileRequest {
     private String website;
     private MultipartFile avatar;
 
+    private MultipartFile banner; // Để nhận URL banner nếu không gửi file mới
+    private String teamSize;
+    private Integer yearOfEstablishment; // Năm thành lập
+    private String mapLocation;
+    private String organizationType;
+
 }
