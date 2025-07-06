@@ -89,6 +89,7 @@ public class SecurityConfig {
                                 "/api/job-types",
                                 "/api/statistics",
                                 "/api/statistics/employer",
+                                "/api/experiences/**",
                                 "/api/chatbot",
                                 "/topic/**",
                                 "/error",

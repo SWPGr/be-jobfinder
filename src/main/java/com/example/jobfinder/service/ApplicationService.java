@@ -260,163 +260,80 @@ public class ApplicationService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
-    public PageResponse<ApplicationResponse> getEmployerJobApplications(
-            int page, int size, String sortBy, String sortDir,
-            String fullName, String email, String location,
-            Integer minYearsExperience, Long educationId) {
-
-        // 1. Xác thực và lấy thông tin nhà tuyển dụng
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new IllegalStateException("User not authenticated.");
-        }
-
-        String userEmail = authentication.getName();
-        User currentEmployer = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalStateException("Employer not found for authenticated user: " + userEmail));
-
-        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) {
-            throw new IllegalStateException("Access denied: User is not an employer.");
-        }
-
-        Long employerId = currentEmployer.getId();
-
-        // 2. Chuẩn bị phân trang
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        // 3. Gọi Repository để lấy dữ liệu đã được lọc và phân trang
-        Page<Application> applicationsPage = applicationRepository.findApplicationsForEmployerWithFilters(
-                employerId, fullName, email, location, minYearsExperience, educationId, pageable);
-
-        // 4. Ánh xạ từ Entity sang DTO
-        List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
-                .map(application -> {
-                    // Mapping Job Simple Response
-                    JobResponse jobSimpleResponse = null;
-                    if (application.getJob() != null) {
-                        jobSimpleResponse = JobResponse.builder()
-                                .id(application.getJob().getId())
-                                .title(application.getJob().getTitle())
-                                .location(application.getJob().getLocation())
-                                .salaryMin(application.getJob().getSalaryMin())
-                                .salaryMax(application.getJob().getSalaryMax())
-                                .build();
-                    }
-
-                    // Mapping Applicant Response (User và UserDetail)
-                    ApplicantResponse applicantResponse = null;
-                    User applicantUser = application.getJobSeeker();
-                    if (applicantUser != null) {
-                        UserDetail applicantDetail = applicantUser.getUserDetail(); // Lấy UserDetail
-                        SimpleNameResponse educationResponse = null;
-                        if (applicantDetail != null && applicantDetail.getEducation() != null) {
-                            educationResponse = SimpleNameResponse.builder()
-                                    .id(applicantDetail.getEducation().getId())
-                                    .name(applicantDetail.getEducation().getName())
-                                    .build();
-                        }
-
-                        applicantResponse = ApplicantResponse.builder()
-                                .id(applicantUser.getId())
-                                .email(applicantUser.getEmail())
-                                .fullName(applicantDetail != null ? applicantDetail.getFullName() : null)
-                                .location(applicantDetail != null ? applicantDetail.getLocation() : null)
-                                .experience(applicantDetail != null ? applicantDetail.getExperience() : null)
-                                .phone(applicantDetail != null ? applicantDetail.getPhone() : null)
-                                .education(educationResponse)
-                                .build();
-                    }
-
-                        return ApplicationResponse.builder()
-                                .id(application.getId())
-                                .appliedAt(application.getAppliedAt())
-                                .status(application.getStatus())
-                                .job(jobSimpleResponse)
-                                .jobSeeker(applicantResponse)
-                                .build();
-                })
-                .collect(Collectors.toList());
-
-        // 5. Xây dựng PageResponse
-        return PageResponse.<ApplicationResponse>builder()
-                .pageNumber(applicationsPage.getNumber())
-                .pageSize(applicationsPage.getSize())
-                .totalElements(applicationsPage.getTotalElements())
-                .totalPages(applicationsPage.getTotalPages())
-                .isLast(applicationsPage.isLast())
-                .isFirst(applicationsPage.isFirst())
-                .content(applicationResponses)
-                .build();
-    }
-
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true) // Optimize read operations, no data modification
     public PageResponse<ApplicationResponse> getEmployerJobApplicationsForSpecificJob(
-            Long jobId, int page, int size, String sortBy, String sortDir,
-            // Thêm các tham số filter mới
-            String status, String resumeUrl,
-            String fullName, String email, String applicantLocation,
-            Long educationId, String phone,
-            String jobTitle, String jobLocation, Double minSalary, Double maxSalary,
-            Long jobCategoryId, Long jobLevelId, Long jobTypeId) throws AppException {
-
-        // 1. Xác thực và lấy thông tin nhà tuyển dụng
+            Long jobId, int page, int size, String sortOrder,
+            String name, Integer minExperience, Integer maxExperience,
+            Long jobTypeId, Long educationId, Long jobLevelId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new IllegalStateException("User not authenticated.");
+            throw new IllegalStateException("User not authenticated."); // User must be logged in
         }
 
+        // Get the email (principal name) of the authenticated user
         String userEmail = authentication.getName();
         User currentEmployer = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalStateException("Employer not found for authenticated user: " + userEmail));
 
-        // Kiểm tra vai trò của người dùng (đảm bảo là EMPLOYER)
-        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) { // Hoặc "USER_EMPLOYER"
-            throw new IllegalStateException("Access denied: User is not an employer.");
+        // Verify that the authenticated user has the 'EMPLOYER' role
+        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) {
+            throw new IllegalStateException("Access denied: User is not an employer."); // Only employers can access
         }
 
         Long employerId = currentEmployer.getId();
 
-        // 2. Xác thực quyền sở hữu Job: Đảm bảo Job này thuộc về Employer hiện tại
+        // --- 2. Job Ownership Verification ---
+        // Ensure that the job being queried belongs to the authenticated employer
         boolean isJobOwnedByEmployer = jobRepository.existsByIdAndEmployerId(jobId, employerId);
         if (!isJobOwnedByEmployer) {
-            throw new AppException(ErrorCode.JOB_NOT_FOUND); // Hoặc một ErrorCode phù hợp hơn
+            // Use custom AppException for specific error codes/messages
+            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS); // Job not found or access denied
         }
 
-        // 3. Chuẩn bị phân trang
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        // --- 3. Prepare Pagination and Sorting ---
+        Sort sort;
+        // Determine sorting direction based on 'sortOrder' parameter
+        if ("newest".equalsIgnoreCase(sortOrder)) {
+            // For "newest", sort by 'appliedAt' in descending order
+            sort = Sort.by("appliedAt").descending();
+        } else if ("latest".equalsIgnoreCase(sortOrder)) {
+            // For "latest", sort by 'appliedAt' in ascending order
+            sort = Sort.by("appliedAt").ascending();
+        } else {
+            // Default sort order if 'sortOrder' is neither "newest" nor "latest"
+            sort = Sort.by("appliedAt").descending(); // Default to newest if invalid input
+        }
+        // Create a Pageable object for pagination and sorting
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // 4. Gọi Repository để lấy dữ liệu đã được lọc và phân trang
-        Page<Application> applicationsPage = applicationRepository.findApplicationsForEmployerJobWithFilters(
+        // --- 4. Call Repository to Fetch Filtered and Paginated Data ---
+        // This is the call you specifically asked for, with the exact method name
+        Page<Application> applicationsPage = applicationRepository.getEmployerJobApplicationsForSpecificJob(
                 employerId, jobId,
-                status, resumeUrl,
-                fullName, email, applicantLocation,
-                educationId, phone,
-                jobTitle, jobLocation, minSalary, maxSalary,
-                jobCategoryId, jobLevelId, jobTypeId,
-                pageable
+                name, minExperience, maxExperience,
+                jobTypeId, educationId, jobLevelId,
+                pageable // Pass the Pageable object
         );
-        // 5. Ánh xạ từ Entity sang DTO và xây dựng PageResponse
+
+        // --- 5. Map Entities to DTOs and Build PageResponse ---
         return buildPageResponse(applicationsPage);
     }
+
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
                 .map(application -> {
-                    // Mapping Job Simple Response (đã có từ trước)
+                    // Map JobSimpleResponse details
                     JobResponse jobSimpleResponse = null;
-                    Job jobEntity = application.getJob();
+                    Job jobEntity = application.getJob(); // Get associated Job entity
                     if (jobEntity != null) {
-                        User employerEntity = jobEntity.getEmployer();
+                        User employerEntity = jobEntity.getEmployer(); // Get associated Employer (User)
                         UserResponse employerResponse = null;
                         if (employerEntity != null) {
                             employerResponse = UserResponse.builder()
                                     .id(employerEntity.getId())
                                     .email(employerEntity.getEmail())
-                                    // Add other employer fields if needed
-                                    .build();
+                                    .build(); // Build employer DTO
                         }
 
                         SimpleNameResponse categoryResponse = null;
@@ -424,7 +341,7 @@ public class ApplicationService {
                             categoryResponse = SimpleNameResponse.builder()
                                     .id(jobEntity.getCategory().getId())
                                     .name(jobEntity.getCategory().getName())
-                                    .build();
+                                    .build(); // Build category DTO
                         }
 
                         SimpleNameResponse jobLevelResponse = null;
@@ -432,7 +349,7 @@ public class ApplicationService {
                             jobLevelResponse = SimpleNameResponse.builder()
                                     .id(jobEntity.getJobLevel().getId())
                                     .name(jobEntity.getJobLevel().getName())
-                                    .build();
+                                    .build(); // Build job level DTO
                         }
 
                         SimpleNameResponse jobTypeResponse = null;
@@ -440,19 +357,31 @@ public class ApplicationService {
                             jobTypeResponse = SimpleNameResponse.builder()
                                     .id(jobEntity.getJobType().getId())
                                     .name(jobEntity.getJobType().getName())
-                                    .build();
+                                    .build(); // Build job type DTO
                         }
 
-                        Long jobApplicationCountForJob = null; // Can be left null or calculated if needed for JobSimpleResponse
-                        // If you need jobApplicationCounts here, you would typically inject JobApplicationRepository
-                        // and call: jobApplicationCountForJob = jobApplicationRepository.countByJobId(jobEntity.getId());
-
-
-
+                        jobSimpleResponse = JobResponse.builder()
+                                .id(jobEntity.getId())
+                                .title(jobEntity.getTitle())
+                                .description(jobEntity.getDescription())
+                                .location(jobEntity.getLocation())
+                                .salaryMin(jobEntity.getSalaryMin())
+                                .salaryMax(jobEntity.getSalaryMax())
+                                .responsibility(jobEntity.getResponsibility())
+                                .expiredDate(jobEntity.getExpiredDate())
+                                .createdAt(jobEntity.getCreatedAt())
+                                .employer(employerResponse)
+                                .category(categoryResponse)
+                                .jobLevel(jobLevelResponse)
+                                .jobType(jobTypeResponse)
+                                // .jobApplicationCounts(jobApplicationCountForJob) // Remove or calculate if needed
+                                .isSave(false) // Assuming default or determined logic
+                                .build();
                     }
 
-                    // Mapping Applicant Response (jobSeeker) (đã có từ trước)
+                    // Map ApplicantResponse (JobSeeker) details
                     ApplicantResponse applicantResponse = null;
+                    // **IMPORTANT:** Replace 'getJobSeeker()' with 'getApplicant()' if your Application entity uses 'applicant'
                     User applicantUser = application.getJobSeeker();
                     if (applicantUser != null) {
                         UserDetail applicantDetail = applicantUser.getUserDetail();
@@ -469,21 +398,25 @@ public class ApplicationService {
                                 .email(applicantUser.getEmail())
                                 .fullName(applicantDetail != null ? applicantDetail.getFullName() : null)
                                 .location(applicantDetail != null ? applicantDetail.getLocation() : null)
-                                .experience(applicantDetail != null ? applicantDetail.getExperience() : null)
                                 .phone(applicantDetail != null ? applicantDetail.getPhone() : null)
                                 .education(educationResponse)
+                                // Removed salary fields as per requirement
                                 .build();
                     }
 
+                    // Build the main ApplicationResponse DTO
                     return ApplicationResponse.builder()
                             .id(application.getId())
-                            .jobSeeker(applicantResponse) // Make sure your DTO uses 'jobSeeker' if that's the desired JSON k
+                            .jobSeeker(applicantResponse) // Assuming ApplicationResponse has a jobSeeker field
+                            .job(jobSimpleResponse)
                             .status(application.getStatus())
                             .appliedAt(application.getAppliedAt())
+
                             .build();
                 })
                 .collect(Collectors.toList());
 
+        // Build and return the PageResponse metadata and content
         return PageResponse.<ApplicationResponse>builder()
                 .pageNumber(applicationsPage.getNumber())
                 .pageSize(applicationsPage.getSize())
