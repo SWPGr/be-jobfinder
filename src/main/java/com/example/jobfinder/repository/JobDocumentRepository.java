@@ -10,9 +10,11 @@ import java.util.List;
 @Repository
 public interface JobDocumentRepository extends ElasticsearchRepository<JobDocument, Long> {
     List<JobDocument> findByTitleContainingIgnoreCase(String title);
-    List<JobDocument> findByCategoryContainingIgnoreCase(String category);
+
+    List<JobDocument> findByCategoryId(Long categoryId);
+
     List<JobDocument> findByLocationContainingIgnoreCase(String location);
 
-    @Query("{\"bool\": {\"should\": [{\"wildcard\": {\"title\": \"*?0*\"}}, {\"wildcard\": {\"category\": \"*?0*\"}}, {\"wildcard\": {\"location\": \"*?0*\"}}]}}")
-    List<JobDocument> findByKeywordInTitleCategoryOrLocation(String keyword);
+    List<JobDocument> findByEducationId(Long educationId);
+
 }

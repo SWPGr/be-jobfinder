@@ -29,9 +29,14 @@ public interface JobMapper {
 
     JobResponse toJobResponse(Job job);
 
+    @Mapping(target = "employer", ignore = true)
     JobResponse toJobResponse(JobDocument jobDocument);
 
     List<JobResponse> toJobResponseList(List<Job> jobs);
+
+    default SimpleNameResponse map(Long id) {
+        return id == null ? null : new SimpleNameResponse(id, null);
+    }
 
     default SimpleNameResponse map(String name) {
         return name == null ? null : new SimpleNameResponse(null, name);

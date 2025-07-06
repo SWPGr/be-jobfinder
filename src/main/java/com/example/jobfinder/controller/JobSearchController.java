@@ -2,6 +2,7 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
+import com.example.jobfinder.mapper.JobDocumentMapper;
 import com.example.jobfinder.mapper.JobMapper;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
@@ -27,24 +28,26 @@ public class JobSearchController {
     private final JobSearchService jobSearchService;
     private final JobRepository jobRepository;
     private final JobMapper jobMapper;
+    private final JobDocumentMapper jobDocumentMapper;
 
     public JobSearchController(JobSuggestionService jobSuggestionService, JobSearchService jobSearchService,
-                               JobRepository jobRepository, JobMapper jobMapper) {
+                               JobRepository jobRepository, JobMapper jobMapper, JobDocumentMapper jobDocumentMapper) {
         this.jobSuggestionService = jobSuggestionService;
         this.jobSearchService = jobSearchService;
         this.jobRepository = jobRepository;
         this.jobMapper = jobMapper;
+        this.jobDocumentMapper = jobDocumentMapper;
     }
 
     @GetMapping("/search")
     public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword,
                                         @RequestParam(required = false) String location,
-                                        @RequestParam(required = false) String category,
-                                        @RequestParam(required = false) String jobLevel,
-                                        @RequestParam(required = false) String jobType,
-                                        @RequestParam(required = false) String education) throws IOException {
-        boolean isEmptySearch = (keyword == null || keyword.isEmpty()) && location == null && category == null
-                && jobLevel == null && jobType == null && education == null;
+                                        @RequestParam(required = false) Long categoryId,
+                                        @RequestParam(required = false) Long jobLevelId,
+                                        @RequestParam(required = false) Long jobTypeId,
+                                        @RequestParam(required = false) Long educationId) throws IOException {
+        boolean isEmptySearch = (keyword == null || keyword.isEmpty()) && location == null && categoryId == null
+                && jobLevelId == null && jobTypeId == null && educationId == null;
 
         if (isEmptySearch) {
             List<Job> allJobs = jobRepository.findAll();
@@ -56,14 +59,14 @@ public class JobSearchController {
         JobSearchRequest request = new JobSearchRequest();
         request.setKeyword(keyword);
         request.setLocation(location);
-        request.setCategory(category);
-        request.setJobLevel(jobLevel);
-        request.setJobType(jobType);
-        request.setEducation(education);
+        request.setCategoryId(categoryId);
+        request.setJobLevelId(jobLevelId);
+        request.setJobTypeId(jobTypeId);
+        request.setEducationId(educationId);
 
         List<JobDocument> documents = jobSearchService.search(request);
         return documents.stream()
-                .map(jobMapper::toJobResponse)
+                .map(jobDocumentMapper::toJobResponse)
                 .collect(Collectors.toList());
     }
 

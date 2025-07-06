@@ -31,17 +31,17 @@ public class JobDocument {
     @Field(type = FieldType.Long)
     private Long employerId;
 
-    @Field(type = FieldType.Keyword)
-    private String jobLevel;
+    @Field(type = FieldType.Long)
+    private Long categoryId;
 
-    @Field(type = FieldType.Keyword)
-    private String jobType;
+    @Field(type = FieldType.Long)
+    private Long jobLevelId;
 
-    @Field(type = FieldType.Keyword)
-    private String education;
+    @Field(type = FieldType.Long)
+    private Long jobTypeId;
 
-    @Field(type = FieldType.Keyword)
-    private String category;
+    @Field(type = FieldType.Long)
+    private Long educationId;
 
     @Field(type = FieldType.Integer)
     private Integer viewCount;

@@ -2,7 +2,6 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
-import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.JobViewRepository;
@@ -45,10 +44,10 @@ public class ElasticsearchSyncService {
         doc.setDescription(job.getDescription());
         doc.setLocation(job.getLocation());
         doc.setEmployerId(job.getEmployer().getId());
-        doc.setCategory(job.getCategory().getName());
-        doc.setJobLevel(job.getJobLevel().getName());
-        doc.setJobType(job.getJobType().getName());
-        doc.setEducation(job.getEducation().getName());
+        doc.setCategoryId(job.getCategory().getId());
+        doc.setJobLevelId(job.getJobLevel().getId());
+        doc.setJobTypeId(job.getJobType().getId());
+        doc.setEducationId(job.getEducation().getId());
 
 
         return doc;

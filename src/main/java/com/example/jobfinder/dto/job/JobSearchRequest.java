@@ -6,9 +6,10 @@ import lombok.Data;
 public class JobSearchRequest {
     private String keyword;
     private String location;
-    private String category;
-    private String jobLevel;
-    private String jobType;
-    private String education;
+    private Long categoryId;
+    private Long jobLevelId;
+    private Long jobTypeId;
+    private Long educationId;
+
 }
 
