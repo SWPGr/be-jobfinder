@@ -23,7 +23,7 @@ public class JobResponse {
     private Double salaryMax;
     private String responsibility;
     private LocalDate expiredDate;
-    private boolean isSave;
+    private Boolean isSave;
 
     // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

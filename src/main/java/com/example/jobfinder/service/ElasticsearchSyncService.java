@@ -48,6 +48,7 @@ public class ElasticsearchSyncService {
         doc.setJobLevelId(job.getJobLevel().getId());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
+        doc.setIsSave(false);
 
 
         return doc;

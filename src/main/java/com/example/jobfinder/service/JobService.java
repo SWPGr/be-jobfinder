@@ -154,7 +154,7 @@ public class JobService {
         Long finalUserId = currentUserId;
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
-            response.setSave(false);
+            response.setIsSave(false);
             return response;
         });
     }

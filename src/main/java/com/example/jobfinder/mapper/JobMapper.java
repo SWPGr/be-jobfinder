@@ -29,7 +29,22 @@ public interface JobMapper {
 
     JobResponse toJobResponse(Job job);
 
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "title", target = "title")
+    @Mapping(source = "description", target = "description")
+    @Mapping(source = "location", target = "location")
+    @Mapping(source = "isSave", target = "isSave")
     @Mapping(target = "employer", ignore = true)
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "jobLevel", ignore = true)
+    @Mapping(target = "jobType", ignore = true)
+    @Mapping(target = "education", ignore = true)
+    @Mapping(target = "salaryMin", ignore = true)
+    @Mapping(target = "salaryMax", ignore = true)
+    @Mapping(target = "responsibility", ignore = true)
+    @Mapping(target = "expiredDate", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     JobResponse toJobResponse(JobDocument jobDocument);
 
     List<JobResponse> toJobResponseList(List<Job> jobs);

@@ -8,10 +8,12 @@ import com.example.jobfinder.repository.EducationRepository;
 import com.example.jobfinder.repository.JobLevelRepository;
 import com.example.jobfinder.repository.JobTypeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JobDocumentMapper {
 
     private final EducationRepository educationRepository;
@@ -23,6 +25,16 @@ public class JobDocumentMapper {
     public JobResponse toJobResponse(JobDocument doc) {
         JobResponse response = jobMapper.toJobResponse(doc);
 
+        // Đảm bảo isSave được map chính xác
+        Boolean isSaveValue = doc.getIsSave();
+        if (isSaveValue == null) {
+            isSaveValue = false;
+        }
+
+        log.debug("Mapping isSave from JobDocument: {} for job ID: {}", doc.getIsSave(), doc.getId());
+        response.setIsSave(isSaveValue);
+        
+        // Map các thông tin khác
         response.setEducation(getEducation(doc.getEducationId()));
         response.setCategory(getCategory(doc.getCategoryId()));
         response.setJobType(getJobType(doc.getJobTypeId()));

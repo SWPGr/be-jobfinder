@@ -1,29 +1,25 @@
 package com.example.jobfinder.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
-import com.example.jobfinder.model.Category;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
-import com.example.jobfinder.repository.CategoryRepository;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.JobLevelRepository;
-import com.example.jobfinder.repository.JobTypeRepository;
+import com.example.jobfinder.model.User;
+import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-
-
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,8 +27,13 @@ public class JobSearchService {
     private static final Logger log = LoggerFactory.getLogger(JobSearchService.class);
 
     private final ElasticsearchClient client;
+    private final UserRepository userRepository;
+    private final SavedJobRepository savedJobRepository;
+    private final JobRepository jobRepository;
 
     public List<JobDocument> search(JobSearchRequest request) throws IOException {
+
+
         List<Query> mustQueries = new ArrayList<>();
 
         if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
@@ -47,7 +48,7 @@ public class JobSearchService {
             mustQueries.add(matchQuery("location", request.getLocation()));
 
         if (request.getCategoryId() != null)
-                mustQueries.add(termQuery("categoryId", request.getCategoryId()));
+            mustQueries.add(termQuery("categoryId", request.getCategoryId()));
 
         if (request.getJobLevelId() != null)
             mustQueries.add(termQuery("jobLevelId", request.getJobLevelId()));
@@ -71,10 +72,14 @@ public class JobSearchService {
         log.info("Searching with filters: {}", mustQueries);
 
 
-        return response.hits().hits().stream()
+        List<JobDocument> jobs = response.hits().hits().stream()
                 .map(Hit::source)
                 .filter(Objects::nonNull)
                 .toList();
+
+        setIsSaveStatus(jobs);
+
+        return jobs;
     }
 
     private Query termQuery(String field, Long value) {
@@ -86,6 +91,61 @@ public class JobSearchService {
 
     private Query matchQuery(String field, String value) {
         return Query.of(q -> q.term(t -> t.field(field + ".keyword").value(value)));
+    }
+
+    private void setIsSaveStatus(List<JobDocument> jobs) {
+        // Khởi tạo tất cả jobs với isSave = false
+        jobs.forEach(job -> job.setIsSave(false));
+
+        // Kiểm tra và set isSave = true nếu user đã đăng nhập và lưu job
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            String email = auth.getName();
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                List<Long> savedJobIds = savedJobRepository.findSavedJobIdsByUserId(user.getId());
+                log.info("User {} has {} saved jobs", email, savedJobIds.size());
+                
+                for (JobDocument job : jobs) {
+                    if (job.getId() != null && savedJobIds.contains(job.getId())) {
+                        job.setIsSave(true);
+                        log.debug("Job {} marked as saved for user {}", job.getId(), email);
+                    }
+                }
+            }
+        }
+    }
+
+    public List<JobDocument> searchWithIsSaveStatus(JobSearchRequest request) throws IOException {
+        return search(request);
+    }
+
+    public List<JobDocument> getAllJobsWithIsSaveStatus() {
+        // Lấy tất cả jobs từ database và convert thành JobDocument
+        List<Job> allJobs = jobRepository.findAll();
+        List<JobDocument> jobDocuments = allJobs.stream()
+                .map(this::convertToJobDocument)
+                .toList();
+        
+        // Set isSave status
+        setIsSaveStatus(jobDocuments);
+        
+        return jobDocuments;
+    }
+
+    private JobDocument convertToJobDocument(Job job) {
+        JobDocument doc = new JobDocument();
+        doc.setId(job.getId());
+        doc.setTitle(job.getTitle());
+        doc.setDescription(job.getDescription());
+        doc.setLocation(job.getLocation());
+        doc.setEmployerId(job.getEmployer().getId());
+        doc.setCategoryId(job.getCategory().getId());
+        doc.setJobLevelId(job.getJobLevel().getId());
+        doc.setJobTypeId(job.getJobType().getId());
+        doc.setEducationId(job.getEducation().getId());
+        doc.setIsSave(false);
+        return doc;
     }
 
 }

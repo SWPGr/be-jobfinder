@@ -58,4 +58,13 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     )
 """)
     Page<Job> findAllJobsNotSavedByUser(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("""
+    SELECT j FROM Job j
+    WHERE NOT EXISTS (
+        SELECT 1 FROM SavedJob s
+        WHERE s.job.id = j.id AND s.jobSeeker.id = :userId
+    )
+""")
+    List<Long> findAllJobsNotSavedByJobSeeker(@Param("userId") Long userId);
 }

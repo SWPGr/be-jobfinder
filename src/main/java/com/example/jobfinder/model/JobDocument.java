@@ -1,13 +1,12 @@
 package com.example.jobfinder.model;
 
 
-import jakarta.persistence.Id;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import lombok.*;
-import org.springframework.data.elasticsearch.annotations.CompletionField;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
-import org.springframework.data.elasticsearch.core.suggest.Completion;
 
 @Document(indexName = "jobs")
 @Getter
@@ -49,5 +48,7 @@ public class JobDocument {
     @Field(type = FieldType.Integer)
     private Integer applicantCount;
 
-
+    @Field(type = FieldType.Boolean)
+    @Builder.Default
+    private Boolean isSave = false;
 }
