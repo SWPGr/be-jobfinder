@@ -23,7 +23,7 @@ public class JobResponse {
     private Double salaryMax;
     private String responsibility;
     private LocalDate expiredDate;
-    private boolean isSave;
+    private Boolean isSave;
 
     // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -35,4 +35,5 @@ public class JobResponse {
     SimpleNameResponse category; // <-- Phải là CategoryDto, không phải Long categoryId, String categoryName
     SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
     SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
+    SimpleNameResponse education;
 }

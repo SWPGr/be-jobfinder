@@ -3,6 +3,10 @@ package com.example.jobfinder.config;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -45,7 +49,11 @@ public class ElasticsearchConfig{
                 )
                 .build();
 
-        RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper().disable(MapperFeature.AUTO_DETECT_CREATORS,
+                        MapperFeature.AUTO_DETECT_FIELDS,
+                        MapperFeature.AUTO_DETECT_GETTERS)
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)));
         return new ElasticsearchClient(transport);
     }
 }

@@ -25,6 +25,18 @@ public class Application {
     @Column(nullable = false, length = 50)
     private ApplicationStatus status;
 
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "phone", length = 50)
+    private String phone;
+
+    @Column(name = "resume", columnDefinition = "TEXT")
+    private String resume;
+
+    @Column(name = "cover_letter", columnDefinition = "TEXT")
+    private String coverLetter;
+
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;
 

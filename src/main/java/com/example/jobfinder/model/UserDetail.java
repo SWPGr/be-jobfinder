@@ -44,6 +44,7 @@ public class UserDetail {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+
     // --- Mối quan hệ ---
 
     // Một UserDetail thuộc về một User (OneToOne)
@@ -69,4 +70,9 @@ public class UserDetail {
     @ManyToOne
     @JoinColumn(name = "user_experience_id")
     private Experience experience;
+
+    @ManyToOne
+    @JoinColumn(name = "user_organization_type")
+    @JsonBackReference("organization-userDetails")
+    private Organization organization;
 }

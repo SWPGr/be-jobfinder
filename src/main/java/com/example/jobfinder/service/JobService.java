@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -131,34 +132,33 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
-    public List<JobResponse> getAllJobs() {
-        return jobRepository.findAll()
-                .stream()
-                .map(jobMapper::toJobResponse)
-                .collect(Collectors.toList());
-    }
-
-    public List<JobResponse> getAllJobsForUser() {
+    public Page<JobResponse> getAllJobs(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUser = authentication.getName();
+        boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal());
 
-        Optional<User> userOptional = userRepository.findByEmail(currentUser);
-        Long currentUserId = userOptional.map(User::getId).orElse(null);
+        Long currentUserId = null;
+        if (isAuthenticated) {
+            String currentUserEmail = authentication.getName();
+            Optional<User> userOptional = userRepository.findByEmail(currentUserEmail);
+            currentUserId = userOptional.map(User::getId).orElse(null);
+        }
 
-        return jobRepository.findAll().stream()
-                .map(job -> {
-                    JobResponse response = jobMapper.toJobResponse(job);
+        Page<Job> jobPage;
+        if (currentUserId != null) {
+            jobPage = jobRepository.findAllJobsNotSavedByUser(currentUserId, pageable);
+        } else {
+            jobPage = jobRepository.findAll(pageable);
+        }
 
-                    if (currentUserId != null) {
-                        boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
-                        response.setSave(saved);
-                    } else {
-                        response.setSave(false);
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        Long finalUserId = currentUserId;
+        return jobPage.map(job -> {
+            JobResponse response = jobMapper.toJobResponse(job);
+            response.setIsSave(false);
+            return response;
+        });
     }
+
 
     @Transactional(readOnly = true)
     public long getTotalJobs() {
