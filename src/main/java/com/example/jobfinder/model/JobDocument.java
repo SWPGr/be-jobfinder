@@ -8,6 +8,8 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.time.LocalDate;
+
 @Document(indexName = "jobs")
 @Getter
 @Setter
@@ -44,6 +46,9 @@ public class JobDocument {
 
     @Field(type = FieldType.Integer)
     private Integer viewCount;
+
+    @Field(type = FieldType.Date, pattern = "yyyy-MM-dd")
+    private String expiredDate;
 
     @Field(type = FieldType.Integer)
     private Integer applicantCount;

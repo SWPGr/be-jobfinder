@@ -49,7 +49,7 @@ public class ElasticsearchSyncService {
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
         doc.setIsSave(false);
-
+        doc.setExpiredDate(job.getExpiredDate() != null ? job.getExpiredDate().toString() : null);
 
         return doc;
     }

@@ -42,7 +42,7 @@ public interface JobMapper {
     @Mapping(target = "salaryMin", ignore = true)
     @Mapping(target = "salaryMax", ignore = true)
     @Mapping(target = "responsibility", ignore = true)
-    @Mapping(target = "expiredDate", ignore = true)
+    @Mapping(source = "expiredDate", target = "expiredDate")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     JobResponse toJobResponse(JobDocument jobDocument);

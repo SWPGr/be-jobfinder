@@ -39,12 +39,16 @@ public class ElasticsearchConfig{
     public ElasticsearchClient elasticsearchClient() throws Exception {
         URI uri = new URI(elasticsearchUrl);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-        BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+
+        Header[] defaultHeaders = new Header[]{
+                new BasicHeader("Authorization", "Basic " + encodedAuth)
+        };
 
         RestClient restClient = RestClient.builder(host)
+                .setDefaultHeaders(defaultHeaders)
                 .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder
-                        .setDefaultCredentialsProvider(credsProvider)
                         .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 )
                 .build();

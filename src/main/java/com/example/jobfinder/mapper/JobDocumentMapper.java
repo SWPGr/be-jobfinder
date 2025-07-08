@@ -3,10 +3,7 @@ package com.example.jobfinder.mapper;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.model.JobDocument;
-import com.example.jobfinder.repository.CategoryRepository;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.JobLevelRepository;
-import com.example.jobfinder.repository.JobTypeRepository;
+import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,6 +18,8 @@ public class JobDocumentMapper {
     private final JobTypeRepository jobTypeRepository;
     private final JobLevelRepository jobLevelRepository;
     private final JobMapper jobMapper;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     public JobResponse toJobResponse(JobDocument doc) {
         JobResponse response = jobMapper.toJobResponse(doc);
@@ -33,7 +32,10 @@ public class JobDocumentMapper {
 
         log.debug("Mapping isSave from JobDocument: {} for job ID: {}", doc.getIsSave(), doc.getId());
         response.setIsSave(isSaveValue);
-        
+        userRepository.findById(doc.getEmployerId()).ifPresent(employer -> {
+            response.setEmployer(userMapper.toUserResponse(employer));
+        });
+
         // Map các thông tin khác
         response.setEducation(getEducation(doc.getEducationId()));
         response.setCategory(getCategory(doc.getCategoryId()));
