@@ -1,11 +1,10 @@
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.JobViewRequest;
+import com.example.jobfinder.dto.job.JobViewRequest;
 import com.example.jobfinder.dto.job.JobViewResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Job;
-import com.example.jobfinder.model.JobLevel;
 import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.JobRepository;

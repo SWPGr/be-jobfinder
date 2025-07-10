@@ -1,9 +1,12 @@
 package com.example.jobfinder.service;
 
 
+import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.job.JobCreationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
+import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -16,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -40,6 +44,7 @@ public class JobService {
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
     SavedJobRepository savedJobRepository;
+    ApplicationRepository applicationRepository;
 
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
@@ -132,7 +137,26 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
+<<<<<<< HEAD
     public Page<JobResponse> getAllJobs(Pageable pageable) {
+=======
+    @Transactional(readOnly = true) // Đảm bảo giao dịch chỉ đọc
+    public List<JobResponse> getAllJobs() {
+        return jobRepository.findAll()
+                .stream()
+                .map(job -> {
+                    JobResponse jobResponse = jobMapper.toJobResponse(job);
+                    // Lấy số lượng đơn ứng tuyển cho công việc này
+                    long applicationCount = applicationRepository.countByJob_Id(job.getId());
+                    jobResponse.setJobApplicationCounts(applicationCount);
+                    return jobResponse;
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    public List<JobResponse> getAllJobsForUser() {
+>>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal());
@@ -180,5 +204,96 @@ public class JobService {
         return jobs.stream()
                 .map(jobMapper::toJobResponse)
                 .toList();
+    }
+
+    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new IllegalStateException("User not authenticated.");
+        }
+
+        String userEmail = authentication.getName();
+        User currentEmployer = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalStateException("Employer not found for authenticated user: " + userEmail));
+
+        if (!currentEmployer.getRole().getName().equals("EMPLOYER")) {
+            throw new IllegalStateException("Access denied: User is not an employer.");
+        }
+
+        Long employerId = currentEmployer.getId();
+
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Job> jobsPage = jobRepository.findByEmployerId(employerId, pageable);
+
+
+        List<JobResponse> jobResponses = jobsPage.getContent().stream()
+                .map(job -> {
+                    // Mapping Employer
+                    UserResponse employerResponse = null;
+                    if (job.getEmployer() != null) {
+                        employerResponse = UserResponse.builder()
+                                .id(job.getEmployer().getId())
+                                .fullName(job.getEmployer().getUsername())
+                                .email(job.getEmployer().getEmail())
+                                .roleName(job.getEmployer().getRole().getName())
+                                .build();
+                    }
+
+                    // Mapping Category
+                    SimpleNameResponse categoryResponse = null;
+                    if (job.getCategory() != null) {
+                        categoryResponse = SimpleNameResponse.builder()
+                                .id(job.getCategory().getId())
+                                .name(job.getCategory().getName())
+                                .build();
+                    }
+
+                    // Mapping JobLevel
+                    SimpleNameResponse jobLevelResponse = null;
+                    if (job.getJobLevel() != null) {
+                        jobLevelResponse = SimpleNameResponse.builder()
+                                .id(job.getJobLevel().getId())
+                                .name(job.getJobLevel().getName())
+                                .build();
+                    }
+
+                    // Mapping JobType
+                    SimpleNameResponse jobTypeResponse = null;
+                    if (job.getJobType() != null) {
+                        jobTypeResponse = SimpleNameResponse.builder()
+                                .id(job.getJobType().getId())
+                                .name(job.getJobType().getName())
+                                .build();
+                    }
+
+                    Long jobApplicationCounts = applicationRepository.countByJob_Id(job.getId());
+
+                    return JobResponse.builder()
+                            .id(job.getId())
+                            .title(job.getTitle())
+                            .description(job.getDescription())
+                            .location(job.getLocation())
+                            .createdAt(job.getCreatedAt())
+                            .salaryMin(job.getSalaryMin())
+                            .salaryMax(job.getSalaryMax())
+                            .category(categoryResponse) // <-- Đã đổi
+                            .jobLevel(jobLevelResponse) // <-- Đã đổi
+                            .jobType(jobTypeResponse)   // <-- Đã đổi
+                            .jobApplicationCounts(jobApplicationCounts)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PageResponse.<JobResponse>builder()
+                .pageNumber(jobsPage.getNumber())
+                .pageSize(jobsPage.getSize())
+                .totalElements(jobsPage.getTotalElements())
+                .totalPages(jobsPage.getTotalPages())
+                .isLast(jobsPage.isLast())
+                .isFirst(jobsPage.isFirst())
+                .content(jobResponses)
+                .build();
     }
 }

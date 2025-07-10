@@ -27,6 +27,12 @@ public interface JobMapper {
     @Mapping(target = "id", ignore = true)
     void updateJob(@MappingTarget Job job, JobUpdateRequest request);
 
+
+    @Mapping(target = "employer", source = "employer") // Ánh xạ từ Job.employer sang JobResponse.employer
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "jobLevel", source = "jobLevel")
+    @Mapping(target = "jobType", source = "jobType")
+    @Mapping(target = "jobApplicationCounts", ignore = true)
     JobResponse toJobResponse(Job job);
 
     @Mapping(source = "id", target = "id")
