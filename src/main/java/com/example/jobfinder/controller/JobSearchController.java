@@ -2,6 +2,7 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
+import com.example.jobfinder.dto.job.JobSearchResponse;
 import com.example.jobfinder.mapper.JobDocumentMapper;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.service.JobSearchService;
@@ -30,35 +31,42 @@ public class JobSearchController {
     }
 
     @GetMapping("/search")
-    public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword,
+    public JobSearchResponse searchJobs(@RequestParam(required = false) String keyword,
                                         @RequestParam(required = false) String location,
                                         @RequestParam(required = false) Long categoryId,
                                         @RequestParam(required = false) Long jobLevelId,
                                         @RequestParam(required = false) Long jobTypeId,
-                                        @RequestParam(required = false) Long educationId) throws IOException {
-        boolean isEmptySearch = (keyword == null || keyword.isEmpty()) && location == null && categoryId == null
-                && jobLevelId == null && jobTypeId == null && educationId == null;
+                                        @RequestParam(required = false) Long educationId,
+                                        @RequestParam(defaultValue = "1") Integer page,
+                                        @RequestParam(defaultValue = "10") Integer size) throws IOException {
 
-        List<JobDocument> documents;
-        if (isEmptySearch) {
-            // Lấy tất cả jobs với isSave status
-            documents = jobSearchService.getAllJobsWithIsSaveStatus();
-        } else {
-            // Tìm kiếm jobs với isSave status
-            JobSearchRequest request = new JobSearchRequest();
-            request.setKeyword(keyword);
-            request.setLocation(location);
-            request.setCategoryId(categoryId);
-            request.setJobLevelId(jobLevelId);
-            request.setJobTypeId(jobTypeId);
-            request.setEducationId(educationId);
-            
-            documents = jobSearchService.searchWithIsSaveStatus(request);
+        JobSearchRequest request = new JobSearchRequest();
+        request.setKeyword(keyword);
+        request.setLocation(location);
+        request.setCategoryId(categoryId);
+        request.setJobLevelId(jobLevelId);
+        request.setJobTypeId(jobTypeId);
+        request.setEducationId(educationId);
+        request.setPage(page);
+        request.setSize(size);
+
+        if ((keyword == null || keyword.isEmpty()) && location == null && categoryId == null
+                && jobLevelId == null && jobTypeId == null && educationId == null) {
+
+            List<JobDocument> allJobs = jobSearchService.getAllJobsWithIsSaveStatus();
+            int fromIndex = Math.min((page - 1) * size, allJobs.size());
+            int toIndex = Math.min(fromIndex + size, allJobs.size());
+            List<JobDocument> pagedJobs = allJobs.subList(fromIndex, toIndex);
+
+            return JobSearchResponse.builder()
+                    .data(pagedJobs.stream().map(jobDocumentMapper::toJobResponse).toList())
+                    .totalHits(allJobs.size())
+                    .page(page)
+                    .size(size)
+                    .build();
         }
 
-        return documents.stream()
-                .map(jobDocumentMapper::toJobResponse)
-                .collect(Collectors.toList());
+        return jobSearchService.searchWithIsSaveStatus(request);
     }
 
     @GetMapping("/suggest")

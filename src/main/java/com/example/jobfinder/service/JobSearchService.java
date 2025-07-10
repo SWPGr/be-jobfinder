@@ -3,7 +3,10 @@ package com.example.jobfinder.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
+import com.example.jobfinder.dto.job.JobSearchResponse;
+import com.example.jobfinder.mapper.JobDocumentMapper;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.model.User;
@@ -30,8 +33,9 @@ public class JobSearchService {
     private final UserRepository userRepository;
     private final SavedJobRepository savedJobRepository;
     private final JobRepository jobRepository;
+    private final JobDocumentMapper jobDocumentMapper;
 
-    public List<JobDocument> search(JobSearchRequest request) throws IOException {
+    public JobSearchResponse search(JobSearchRequest request) throws IOException {
 
 
         List<Query> mustQueries = new ArrayList<>();
@@ -63,10 +67,14 @@ public class JobSearchService {
                 ? Query.of(q -> q.matchAll(m -> m))
                 : Query.of(q -> q.bool(b -> b.must(mustQueries)));
 
+        int safePage = Math.max(1, request.getPage());
+        int size = request.getSize();
+
         SearchResponse<JobDocument> response = client.search(s -> s
                         .index("jobs")
                         .query(finalQuery)
-                        .size(50),
+                        .from((safePage - 1) * size)
+                        .size(size),
                 JobDocument.class
         );
         log.info("Searching with filters: {}", mustQueries);
@@ -79,7 +87,20 @@ public class JobSearchService {
 
         setIsSaveStatus(jobs);
 
-        return jobs;
+        long totalHits = response.hits().total() != null
+                ? response.hits().total().value()
+                : jobs.size();
+
+        List<JobResponse> jobResponses = jobs.stream()
+                .map(jobDocumentMapper::toJobResponse)
+                .toList();
+
+        return JobSearchResponse.builder()
+                .data(jobResponses)
+                .totalHits(totalHits)
+                .page(safePage)
+                .size(size)
+                .build();
     }
 
     private Query termQuery(String field, Long value) {
@@ -116,16 +137,20 @@ public class JobSearchService {
         }
     }
 
-    public List<JobDocument> searchWithIsSaveStatus(JobSearchRequest request) throws IOException {
+    public JobSearchResponse searchWithIsSaveStatus(JobSearchRequest request) throws IOException {
         return search(request);
     }
 
     public List<JobDocument> getAllJobsWithIsSaveStatus() {
         // Lấy tất cả jobs từ database và convert thành JobDocument
         List<Job> allJobs = jobRepository.findAll();
+        log.info("Found {} jobs in database", allJobs.size());
+        
         List<JobDocument> jobDocuments = allJobs.stream()
                 .map(this::convertToJobDocument)
                 .toList();
+        
+        log.info("Converted {} jobs to JobDocuments", jobDocuments.size());
         
         // Set isSave status
         setIsSaveStatus(jobDocuments);
@@ -145,6 +170,9 @@ public class JobSearchService {
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
         doc.setIsSave(false);
+        doc.setExpiredDate(job.getExpiredDate() != null ? job.getExpiredDate().toString() : null);
+        
+        log.debug("Converted Job {} to JobDocument with title: {}", job.getId(), doc.getTitle());
         return doc;
     }
 
