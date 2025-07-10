@@ -1,6 +1,7 @@
 package com.example.jobfinder.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.example.jobfinder.dto.job.JobResponse;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,6 +30,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class JobSearchService {
     private static final Logger log = LoggerFactory.getLogger(JobSearchService.class);
+    private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter EXPIRED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
     private final ElasticsearchClient client;
     private final UserRepository userRepository;
@@ -70,13 +75,25 @@ public class JobSearchService {
         int safePage = Math.max(1, request.getPage());
         int size = request.getSize();
 
-        SearchResponse<JobDocument> response = client.search(s -> s
-                        .index("jobs")
-                        .query(finalQuery)
-                        .from((safePage - 1) * size)
-                        .size(size),
-                JobDocument.class
-        );
+        SearchResponse<JobDocument> response = client.search(s -> {
+            var searchRequest = s
+                    .index("jobs")
+                    .query(finalQuery)
+                    .from((safePage - 1) * size)
+                    .size(size);
+
+            if (request.getSort() != null) {
+                searchRequest = searchRequest.sort(srt -> srt
+                        .field(f -> f
+                                .field("createdAt")
+                                .order("asc".equalsIgnoreCase(request.getSort())
+                                        ? SortOrder.Asc
+                                        : SortOrder.Desc)
+                        ));
+            }
+
+            return searchRequest;
+        }, JobDocument.class);
         log.info("Searching with filters: {}", mustQueries);
 
 
@@ -170,7 +187,13 @@ public class JobSearchService {
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
         doc.setIsSave(false);
-        doc.setExpiredDate(job.getExpiredDate() != null ? job.getExpiredDate().toString() : null);
+        doc.setExpiredDate(job.getExpiredDate() != null
+                ? job.getExpiredDate().format(EXPIRED_DATE_FORMATTER)
+                : null);
+
+        doc.setCreatedAt(job.getCreatedAt() != null
+                ? job.getCreatedAt().format(CREATED_AT_FORMATTER)
+                : null);
         
         log.debug("Converted Job {} to JobDocument with title: {}", job.getId(), doc.getTitle());
         return doc;

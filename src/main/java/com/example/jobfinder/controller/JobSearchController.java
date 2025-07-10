@@ -38,7 +38,8 @@ public class JobSearchController {
                                         @RequestParam(required = false) Long jobTypeId,
                                         @RequestParam(required = false) Long educationId,
                                         @RequestParam(defaultValue = "1") Integer page,
-                                        @RequestParam(defaultValue = "10") Integer size) throws IOException {
+                                        @RequestParam(defaultValue = "10") Integer size,
+                                        @RequestParam(required = false) String sort) throws IOException {
 
         JobSearchRequest request = new JobSearchRequest();
         request.setKeyword(keyword);
@@ -47,23 +48,17 @@ public class JobSearchController {
         request.setJobLevelId(jobLevelId);
         request.setJobTypeId(jobTypeId);
         request.setEducationId(educationId);
+        if (sort != null && !sort.equalsIgnoreCase("asc") && !sort.equalsIgnoreCase("desc")) {
+            sort = null;
+        }
+        request.setSort(sort);
         request.setPage(page);
         request.setSize(size);
 
         if ((keyword == null || keyword.isEmpty()) && location == null && categoryId == null
                 && jobLevelId == null && jobTypeId == null && educationId == null) {
 
-            List<JobDocument> allJobs = jobSearchService.getAllJobsWithIsSaveStatus();
-            int fromIndex = Math.min((page - 1) * size, allJobs.size());
-            int toIndex = Math.min(fromIndex + size, allJobs.size());
-            List<JobDocument> pagedJobs = allJobs.subList(fromIndex, toIndex);
-
-            return JobSearchResponse.builder()
-                    .data(pagedJobs.stream().map(jobDocumentMapper::toJobResponse).toList())
-                    .totalHits(allJobs.size())
-                    .page(page)
-                    .size(size)
-                    .build();
+            return jobSearchService.searchWithIsSaveStatus(request);
         }
 
         return jobSearchService.searchWithIsSaveStatus(request);

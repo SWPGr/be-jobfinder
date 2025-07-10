@@ -10,6 +10,7 @@ public class JobSearchRequest {
     private Long jobLevelId;
     private Long jobTypeId;
     private Long educationId;
+    private String sort;
 
     private Integer page = 0;
     private Integer size = 10;
