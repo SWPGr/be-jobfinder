@@ -9,6 +9,8 @@ public class JobSearchRequest {
     private Long categoryId;
     private Long jobLevelId;
     private Long jobTypeId;
+    private Float salaryMin;
+    private Float salaryMax;
     private Long educationId;
     private String sort;
 

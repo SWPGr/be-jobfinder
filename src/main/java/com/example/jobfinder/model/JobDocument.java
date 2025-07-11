@@ -55,6 +55,12 @@ public class JobDocument {
     @Field(type = FieldType.Date, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private String createdAt;
 
+    @Field(type = FieldType.Float)
+    private Float salaryMin;
+
+    @Field(type = FieldType.Float)
+    private Float salaryMax;
+
     @Field(type = FieldType.Integer)
     private Integer applicantCount;
 

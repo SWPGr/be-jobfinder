@@ -2,15 +2,17 @@ package com.example.jobfinder.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
 import com.example.jobfinder.dto.job.JobSearchResponse;
 import com.example.jobfinder.mapper.JobDocumentMapper;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.model.User;
+
 import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -51,6 +53,45 @@ public class JobSearchService {
                             .fields("title", "description")
                             .query(request.getKeyword())
                     )));
+        }
+
+        if (request.getSalaryMin() != null || request.getSalaryMax() != null) {
+
+            if (request.getSalaryMin() != null && request.getSalaryMax() != null) {
+                Query salaryMinQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMin")
+                        .gte(request.getSalaryMin().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMinQuery);
+                
+                Query salaryMaxQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMax")
+                        .lte(request.getSalaryMax().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMaxQuery);
+                
+            } else if (request.getSalaryMin() != null) {
+                Query salaryMinQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMin")
+                        .gte(request.getSalaryMin().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMinQuery);
+                
+            } else if (request.getSalaryMax() != null) {
+                Query salaryMaxQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMax")
+                        .lte(request.getSalaryMax().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMaxQuery);
+            }
         }
 
         if (request.getLocation() != null)
@@ -184,6 +225,8 @@ public class JobSearchService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        doc.setSalaryMin(job.getSalaryMin());
+        doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
         doc.setIsSave(false);

@@ -51,6 +51,8 @@ public class ElasticsearchSyncService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        doc.setSalaryMin(job.getSalaryMin());
+        doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
         doc.setIsSave(false);

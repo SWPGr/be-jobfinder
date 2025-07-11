@@ -39,6 +39,8 @@ public class JobSearchController {
                                         @RequestParam(required = false) Long educationId,
                                         @RequestParam(defaultValue = "1") Integer page,
                                         @RequestParam(defaultValue = "10") Integer size,
+                                        @RequestParam(required = false) Float salaryMin,
+                                        @RequestParam(required = false) Float salaryMax,
                                         @RequestParam(required = false) String sort) throws IOException {
 
         JobSearchRequest request = new JobSearchRequest();
@@ -48,6 +50,8 @@ public class JobSearchController {
         request.setJobLevelId(jobLevelId);
         request.setJobTypeId(jobTypeId);
         request.setEducationId(educationId);
+        request.setSalaryMin(salaryMin);
+        request.setSalaryMax(salaryMax);
         if (sort != null && !sort.equalsIgnoreCase("asc") && !sort.equalsIgnoreCase("desc")) {
             sort = null;
         }
@@ -56,7 +60,8 @@ public class JobSearchController {
         request.setSize(size);
 
         if ((keyword == null || keyword.isEmpty()) && location == null && categoryId == null
-                && jobLevelId == null && jobTypeId == null && educationId == null) {
+                && jobLevelId == null && jobTypeId == null && educationId == null 
+                && salaryMin == null && salaryMax == null) {
 
             return jobSearchService.searchWithIsSaveStatus(request);
         }
