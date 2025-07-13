@@ -49,7 +49,8 @@ public class Job {
 
     private boolean isSave;
 
-    private boolean active = true;
+    @Column(nullable = false)
+    private Boolean active = true;
 
     // --- Mối quan hệ ---
 

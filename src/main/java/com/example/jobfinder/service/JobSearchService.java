@@ -55,9 +55,31 @@ public class JobSearchService {
                     )));
         }
 
-        if (request.getSalaryMin() != null || request.getSalaryMax() != null) {
-
+        // Handle salary search logic
+        if (request.getSalaryNegotiable() != null && request.getSalaryNegotiable()) {
+            // Tìm jobs có salary "Thỏa thuận" - những job có CẢ salaryMin VÀ salaryMax đều = null
+            // Tức là KHÔNG tồn tại cả 2 fields này trong document
+            Query noSalaryQuery = Query.of(q -> q.bool(b -> b
+                .mustNot(
+                    Query.of(q1 -> q1.exists(e -> e.field("salaryMin"))),
+                    Query.of(q2 -> q2.exists(e -> e.field("salaryMax")))
+                )
+            ));
+            mustQueries.add(noSalaryQuery);
+            
+        } else if (request.getSalaryMin() != null || request.getSalaryMax() != null) {
+            // Logic "contained": Tìm job có toàn bộ salary range nằm trong user's budget
+            // Chỉ search trong những job CÓ salary fields
+            
+            // Đảm bảo job có salary fields
+            Query hasSalaryMinQuery = Query.of(q -> q.exists(e -> e.field("salaryMin")));
+            mustQueries.add(hasSalaryMinQuery);
+            
+            Query hasSalaryMaxQuery = Query.of(q -> q.exists(e -> e.field("salaryMax")));
+            mustQueries.add(hasSalaryMaxQuery);
+            
             if (request.getSalaryMin() != null && request.getSalaryMax() != null) {
+                // job.salaryMin >= user.salaryMin
                 Query salaryMinQuery = RangeQuery.of(r -> r
                     .number(n -> n
                         .field("salaryMin")
@@ -66,6 +88,7 @@ public class JobSearchService {
                 )._toQuery();
                 mustQueries.add(salaryMinQuery);
                 
+                // job.salaryMax <= user.salaryMax
                 Query salaryMaxQuery = RangeQuery.of(r -> r
                     .number(n -> n
                         .field("salaryMax")
@@ -75,6 +98,7 @@ public class JobSearchService {
                 mustQueries.add(salaryMaxQuery);
                 
             } else if (request.getSalaryMin() != null) {
+                // Chỉ có salaryMin: tìm job có salaryMin >= salaryMin
                 Query salaryMinQuery = RangeQuery.of(r -> r
                     .number(n -> n
                         .field("salaryMin")
@@ -84,6 +108,7 @@ public class JobSearchService {
                 mustQueries.add(salaryMinQuery);
                 
             } else if (request.getSalaryMax() != null) {
+                // Chỉ có salaryMax: tìm job có salaryMax <= salaryMax
                 Query salaryMaxQuery = RangeQuery.of(r -> r
                     .number(n -> n
                         .field("salaryMax")
@@ -234,7 +259,7 @@ public class JobSearchService {
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
-        doc.setActive(job.isActive());
+        doc.setActive(job.getActive());
         doc.setIsSave(false);
         doc.setExpiredDate(job.getExpiredDate() != null
                 ? job.getExpiredDate().format(EXPIRED_DATE_FORMATTER)

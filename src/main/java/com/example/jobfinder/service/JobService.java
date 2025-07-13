@@ -99,6 +99,7 @@ public class JobService {
         newJob.setExpiredDate(jobCreationRequest.getExpiredDate());
         newJob.setVacancy(jobCreationRequest.getVacancy());
         newJob.setResponsibility(jobCreationRequest.getResponsibility());
+        newJob.setActive(true);
 
         return jobRepository.save(newJob);
     }

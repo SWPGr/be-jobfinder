@@ -38,6 +38,7 @@ public class JobSearchController {
                                         @RequestParam(defaultValue = "10") Integer size,
                                         @RequestParam(required = false) Float salaryMin,
                                         @RequestParam(required = false) Float salaryMax,
+                                        @RequestParam(required = false) Boolean isNegotiable,
                                         @RequestParam(required = false) String sort) throws IOException {
 
         JobSearchRequest request = new JobSearchRequest();
@@ -49,6 +50,7 @@ public class JobSearchController {
         request.setEducationId(educationId);
         request.setSalaryMin(salaryMin);
         request.setSalaryMax(salaryMax);
+        request.setSalaryNegotiable(isNegotiable);
         if (sort != null && !sort.equalsIgnoreCase("asc") && !sort.equalsIgnoreCase("desc")) {
             sort = null;
         }
@@ -58,7 +60,7 @@ public class JobSearchController {
 
         if ((keyword == null || keyword.isEmpty()) && location == null && categoryId == null
                 && jobLevelId == null && jobTypeId == null && educationId == null 
-                && salaryMin == null && salaryMax == null) {
+                && salaryMin == null && salaryMax == null && isNegotiable == null) {
 
             return jobSearchService.searchWithIsSaveStatus(request);
         }

@@ -11,11 +11,11 @@ public class JobSearchRequest {
     private Long jobTypeId;
     private Float salaryMin;
     private Float salaryMax;
+    private Boolean salaryNegotiable; // true = tìm job có salary "Thỏa thuận"
     private Long educationId;
     private String sort;
 
     private Integer page = 0;
     private Integer size = 10;
-
 }
 

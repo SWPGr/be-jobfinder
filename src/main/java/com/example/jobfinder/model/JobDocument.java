@@ -6,9 +6,12 @@ import lombok.*;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 
 
 @Document(indexName = "jobs")
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @Getter
 @Setter
 @Builder
