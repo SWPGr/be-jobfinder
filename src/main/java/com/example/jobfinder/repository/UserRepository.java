@@ -1,6 +1,5 @@
 package com.example.jobfinder.repository;
 
-import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.jpa.repository.JpaRepository;

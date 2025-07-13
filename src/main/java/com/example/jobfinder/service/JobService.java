@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +38,6 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
-    SavedJobRepository savedJobRepository;
-
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -146,12 +143,11 @@ public class JobService {
 
         Page<Job> jobPage;
         if (currentUserId != null) {
-            jobPage = jobRepository.findAllJobsNotSavedByUser(currentUserId, pageable);
+            jobPage = jobRepository.findAllActiveJobsNotSavedByUser(currentUserId, pageable);
         } else {
-            jobPage = jobRepository.findAll(pageable);
+            jobPage = jobRepository.findAllActive(pageable);
         }
 
-        Long finalUserId = currentUserId;
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
             response.setIsSave(false);

@@ -1,10 +1,8 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
 import com.example.jobfinder.dto.job.JobSearchResponse;
 import com.example.jobfinder.mapper.JobDocumentMapper;
-import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.service.JobSearchService;
 import com.example.jobfinder.service.JobSuggestionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/jobs/")

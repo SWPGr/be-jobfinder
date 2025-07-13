@@ -1,6 +1,5 @@
 package com.example.jobfinder.repository;
 
-import com.example.jobfinder.model.JobType;
 import com.example.jobfinder.model.SocialType;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.jpa.repository.Query;

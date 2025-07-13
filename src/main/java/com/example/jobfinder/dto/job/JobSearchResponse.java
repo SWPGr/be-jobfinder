@@ -1,6 +1,5 @@
 package com.example.jobfinder.dto.job;
 
-import com.example.jobfinder.model.JobDocument;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 

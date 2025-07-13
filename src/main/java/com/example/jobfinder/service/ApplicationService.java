@@ -10,12 +10,10 @@ import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse
 import com.example.jobfinder.dto.statistic_employer.EmployerJobApplicationStatsResponse;
 import com.example.jobfinder.dto.statistic_employer.JobApplicationCountDto;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;
 import com.example.jobfinder.mapper.JobMapper;
-import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
@@ -29,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -59,8 +56,6 @@ public class ApplicationService {
      final UserRepository userRepository;
      final JobRepository jobRepository;
      final JobMapper jobMapper;
-     final UserMapper userMapper;
-     final NotificationService notificationService;
      final ApplicationMapper applicationMapper;
      final UserDetailsRepository userDetailsRepository;
      final CloudinaryService cloudinaryService;

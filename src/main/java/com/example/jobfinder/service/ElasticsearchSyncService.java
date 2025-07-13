@@ -4,11 +4,8 @@ import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
-import com.example.jobfinder.repository.JobViewRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 

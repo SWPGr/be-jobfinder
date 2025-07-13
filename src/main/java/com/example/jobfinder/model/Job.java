@@ -49,6 +49,8 @@ public class Job {
 
     private boolean isSave;
 
+    private boolean active = true;
+
     // --- Mối quan hệ ---
 
     // Một Job được đăng bởi một Employer (User)
