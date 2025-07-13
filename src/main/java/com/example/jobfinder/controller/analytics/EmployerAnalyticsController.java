@@ -1,10 +1,9 @@
-package com.example.jobfinder.controller;
+package com.example.jobfinder.controller.analytics;
 
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.service.ApplicationService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

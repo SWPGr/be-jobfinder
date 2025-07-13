@@ -55,14 +55,7 @@ public class GeminiService {
         return executeGeminiRequest(url, request, String.class, "candidates[0].content.parts[0].text");
     }
 
-    /**
-     * Phân tích ý định của người dùng bằng cách gửi câu hỏi và System Instruction tới Gemini.
-     *
-     * @param userQuery Tin nhắn gốc của người dùng.
-     * @param systemInstruction Hướng dẫn hệ thống cho Gemini để trích xuất ý định và tham số.
-     * @return GeminiIntentResponse.IntentAnalysisResult chứa ý định và các tham số.
-     * @throws IOException Nếu có lỗi trong quá trình giao tiếp với Gemini API hoặc phân tích JSON.
-     */
+
     public GeminiIntentResponse.IntentAnalysisResult analyzeIntent(String userQuery, String systemInstruction) throws IOException {
         log.info("Analyzing intent for query: {}", userQuery);
 
