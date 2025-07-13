@@ -17,6 +17,10 @@ import java.util.Optional;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Optional<Application> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
 
+    Page<Application> findByJobSeekerId(Long jobSeekerId, Pageable pageable);
+
+    Long countByJobSeekerId(Long jobSeekerId); // <-- THÊM DÒNG NÀY
+
     List<Application> findByJobSeekerId(Long jobSeekerId);
 
     List<Application> findByAppliedAtBetween(LocalDateTime start, LocalDateTime end);

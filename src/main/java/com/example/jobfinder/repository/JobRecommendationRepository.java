@@ -14,4 +14,5 @@ public interface JobRecommendationRepository extends JpaRepository<JobRecommenda
     List<JobRecommendation> findByJobSeekerIdOrderByScoreDesc(Long jobSeekerId);
     Optional<JobRecommendation> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
     void deleteByJobSeekerId(Long jobSeekerId);
+    Long countByJobSeekerId(Long jobSeekerId);
 }
