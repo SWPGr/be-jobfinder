@@ -109,6 +109,11 @@ public class JobSearchService {
         if (request.getEducationId() != null)
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
+        mustQueries.add(Query.of(q -> q.term(t -> t
+                .field("active")
+                .value(true)
+        )));
+
         Query finalQuery = mustQueries.isEmpty()
                 ? Query.of(q -> q.matchAll(m -> m))
                 : Query.of(q -> q.bool(b -> b.must(mustQueries)));
@@ -229,6 +234,7 @@ public class JobSearchService {
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
+        doc.setActive(job.isActive());
         doc.setIsSave(false);
         doc.setExpiredDate(job.getExpiredDate() != null
                 ? job.getExpiredDate().format(EXPIRED_DATE_FORMATTER)

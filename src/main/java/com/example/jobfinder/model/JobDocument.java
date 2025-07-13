@@ -63,4 +63,8 @@ public class JobDocument {
     @Field(type = FieldType.Boolean)
     @Builder.Default
     private Boolean isSave = false;
+
+    @Field(type = FieldType.Boolean)
+    @Builder.Default
+    private Boolean active = true;
 }

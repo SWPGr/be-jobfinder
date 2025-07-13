@@ -45,6 +45,7 @@ public interface JobMapper {
     @Mapping(source = "expiredDate", target = "expiredDate")
     @Mapping(source = "createdAt", target = "createdAt")
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(source = "active", target = "active")
     JobResponse toJobResponse(JobDocument jobDocument);
 
     List<JobResponse> toJobResponseList(List<Job> jobs);
