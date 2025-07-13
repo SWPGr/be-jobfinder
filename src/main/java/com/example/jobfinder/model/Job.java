@@ -31,10 +31,10 @@ public class Job {
     @Column(nullable = false, length = 255)
     private String location;
 
-    @Column(name = "salary_min", nullable = false)
+    @Column(name = "salary_min")
     private Float salaryMin;
 
-    @Column(name = "salary_max", nullable = false)
+    @Column(name = "salary_max")
     private Float salaryMax;
 
     @Column(name = "created_at", nullable = false, updatable = false)
