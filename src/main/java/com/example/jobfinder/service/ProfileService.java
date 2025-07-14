@@ -68,6 +68,11 @@ public class ProfileService {
                 String resume = cloudinaryService.uploadFile(request.getResumeUrl());
                 userDetail.setResumeUrl(resume);
             }
+            if(request.getOrganization() != null) {
+                Organization organization = organizationRepository.findById(request.getOrganization().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
+                userDetail.setOrganization(organization);
+            }
         }else if(roleName.equals("EMPLOYER")) {
             if(request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
                 throw new Exception("Company name is required for employer");
