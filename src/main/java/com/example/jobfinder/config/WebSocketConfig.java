@@ -12,6 +12,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
@@ -21,12 +23,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws") // Endpoint WebSocket của bạn
-                // Đảm bảo rằng origin của frontend được cho phép ở đây.
-                // THAY THẾ "*" bằng "http://localhost:3000" trong môi trường production nếu bạn chỉ có một frontend.
-                .setAllowedOriginPatterns("http://localhost:3000") // <-- THAY ĐỔI TẠI ĐÂY
-                // Nếu bạn có nhiều origin, bạn có thể thêm chúng vào đây, ví dụ:
-                // .setAllowedOriginPatterns("http://localhost:3000", "https://yourproductionfrontend.com")
+                .setAllowedOriginPatterns("*")
                 .withSockJS(); // Bật hỗ trợ SockJS
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(webSocketAuthInterceptor);
     }
 
 }

@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.filters.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.SimpMessageType;
@@ -95,7 +96,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/ws/**",
                                 "/app/**",
-                                "api/options/**"
+                                "api/options/**",
+                                "/api/public/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
@@ -121,6 +123,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
                 "http://localhost:3030",
                 "http://localhost:8080"
         ));
@@ -147,5 +150,17 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.addAllowedOrigin("http://localhost:3030"); // Cho phép origin của frontend
+        config.addAllowedHeader("*"); // Cho phép tất cả các header
+        config.addAllowedMethod("*"); // Cho phép tất cả các phương thức HTTP (GET, POST, PUT, DELETE...)
+        source.registerCorsConfiguration("/**", config); // Áp dụng cho tất cả các đường dẫn
+        return new CorsFilter();
     }
 }
