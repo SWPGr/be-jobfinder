@@ -11,6 +11,7 @@ import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
 import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
+import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;

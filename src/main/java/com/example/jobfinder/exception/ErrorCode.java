@@ -156,7 +156,7 @@ public enum ErrorCode {
     SAVED_JOB_NOT_FOUND(2013, "You have not saved this job"),
     TOKEN_EXPIRED(2014, "Token has expired"),
 
-    ORGANIZATION_NOT_FOUND(2015, "Organization not found"),;
+    ORGANIZATION_NOT_FOUND(2015, "Organization not found"),
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
 

@@ -37,7 +37,6 @@ public class ProfileResponse {
     // Các trường đặc thù cho Employer
     private String companyName;
     private String website;
-    private String avatarUrl;
     private Long organizationId;
     private String organizationType;
     private String banner;

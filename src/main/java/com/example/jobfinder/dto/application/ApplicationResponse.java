@@ -19,7 +19,6 @@ public class ApplicationResponse {
     private ApplicantResponse jobSeeker;
     private JobResponse job;
 
-    private String status;
     private String email;
     private String phone;
     private String resume;
