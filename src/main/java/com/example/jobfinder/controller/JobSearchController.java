@@ -2,7 +2,6 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobSearchRequest;
 import com.example.jobfinder.dto.job.JobSearchResponse;
-import com.example.jobfinder.mapper.JobDocumentMapper;
 import com.example.jobfinder.service.JobSearchService;
 import com.example.jobfinder.service.JobSuggestionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,13 +17,10 @@ import java.util.List;
 public class JobSearchController {
     private final JobSuggestionService jobSuggestionService;
     private final JobSearchService jobSearchService;
-    private final JobDocumentMapper jobDocumentMapper;
 
-    public JobSearchController(JobSuggestionService jobSuggestionService, JobSearchService jobSearchService,
-                               JobDocumentMapper jobDocumentMapper) {
+    public JobSearchController(JobSuggestionService jobSuggestionService, JobSearchService jobSearchService) {
         this.jobSuggestionService = jobSuggestionService;
         this.jobSearchService = jobSearchService;
-        this.jobDocumentMapper = jobDocumentMapper;
     }
 
     @GetMapping("/search")

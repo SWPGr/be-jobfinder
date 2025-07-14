@@ -217,7 +217,10 @@ public class JobService {
                                 .id(job.getEmployer().getId())
                                 .fullName(job.getEmployer().getUsername())
                                 .email(job.getEmployer().getEmail())
-                                .roleName(job.getEmployer().getRole().getName())
+                                .role(SimpleNameResponse.builder()
+                                        .id(job.getEmployer().getRole().getId())
+                                        .name(job.getEmployer().getRole().getName())
+                                        .build())
                                 .build();
                     }
 

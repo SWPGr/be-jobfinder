@@ -1,4 +1,3 @@
-
 package com.example.jobfinder.dto.user;
 
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
@@ -20,7 +19,7 @@ public class UserResponse {
     private LocalDateTime createdAt; // Dùng LocalDateTime
     private LocalDateTime updatedAt; // Dùng LocalDateTime
 
-    private String roleName;
+    private SimpleNameResponse role;
     private String fullName;
     private String phone;
     private String location;
@@ -34,7 +33,7 @@ public class UserResponse {
     private String teamSize;
     private Integer yearOfEstablishment;
     private String mapLocation;
-    private String organizationType;
+    private SimpleNameResponse organization;
 
     // Các trường JobSeeker
     private String resumeUrl; // <-- Đảm bảo trường này có trong UserResponse
@@ -44,4 +43,9 @@ public class UserResponse {
     // Các trường tính toán
     private Long totalJobsPosted;
     private Long totalApplications;
+
+    // Additional fields for employer metrics
+    private String description;
+    private Float averageRating;
+    private Integer totalReviews;
 }
