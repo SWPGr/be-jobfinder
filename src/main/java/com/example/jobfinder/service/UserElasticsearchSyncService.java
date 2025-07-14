@@ -42,6 +42,7 @@ public class UserElasticsearchSyncService {
         userDocument.setLocation(userDetail.getLocation());
         userDocument.setDescription(userDetail.getDescription());
         userDocument.setWebsite(userDetail.getWebsite());
+        userDocument.setAvatarUrl(userDetail.getAvatarUrl());
         userDocument.setPhone(userDetail.getPhone());
         userDocument.setTeamSize(userDetail.getTeamSize());
         userDocument.setYearOfEstablishment(userDetail.getYearOfEstablishment());
