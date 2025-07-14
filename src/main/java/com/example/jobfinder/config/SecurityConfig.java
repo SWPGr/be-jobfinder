@@ -1,31 +1,22 @@
 package com.example.jobfinder.config;
 
-import com.example.jobfinder.dto.auth.LoginResponse;
 import com.example.jobfinder.service.AuthService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.filters.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
-import org.springframework.messaging.Message;
-import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -88,6 +79,7 @@ public class SecurityConfig {
                                 "/api/job/**",
                                 "/api/job/list",
                                 "/api/job-types",
+                                "/api/categories/**",
                                 "/api/statistics",
                                 "/api/statistics/employer",
                                 "/api/experiences/**",
@@ -97,7 +89,10 @@ public class SecurityConfig {
                                 "/ws/**",
                                 "/app/**",
                                 "api/options/**",
-                                "/api/public/**"
+                                "api/admin/jobs/**",
+                                "/api/jobs/**",
+                                "/api/categories/**",
+                                "/api/analytics/employer/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
@@ -114,6 +109,10 @@ public class SecurityConfig {
                             response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
                         })
                 );
+//        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
+
+
+          ;
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -123,7 +122,6 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
                 "http://localhost:3030",
                 "http://localhost:8080"
         ));
@@ -150,17 +148,5 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3030"); // Cho phép origin của frontend
-        config.addAllowedHeader("*"); // Cho phép tất cả các header
-        config.addAllowedMethod("*"); // Cho phép tất cả các phương thức HTTP (GET, POST, PUT, DELETE...)
-        source.registerCorsConfiguration("/**", config); // Áp dụng cho tất cả các đường dẫn
-        return new CorsFilter();
     }
 }

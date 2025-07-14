@@ -6,8 +6,7 @@ import com.example.jobfinder.dto.chat.ConversationResponse;
 import com.example.jobfinder.dto.chat.MessageResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.mapper.ConversationMapper; // Bạn cần tạo mapper này
-import com.example.jobfinder.mapper.MessageMapper;     // Bạn cần tạo mapper này
+import com.example.jobfinder.mapper.MessageMapper;
 import com.example.jobfinder.model.Conversation;
 import com.example.jobfinder.model.Message;
 import com.example.jobfinder.model.User;
@@ -26,9 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +38,6 @@ public class MessageService {
     UserDetailsRepository userDetailsRepository;
     ConversationRepository conversationRepository;
     MessageRepository messageRepository;
-    ConversationMapper conversationMapper;
     MessageMapper messageMapper;
 
     @Transactional

@@ -14,5 +14,6 @@ public interface SimpleNameMapper {
     SimpleNameResponse toSimpleNameResponse(Category category);
     SimpleNameResponse toSimpleNameResponse(JobLevel jobLevel);
     SimpleNameResponse toSimpleNameResponse(JobType jobType);
-    SimpleNameResponse toSimpleNameResponse(Role role); // <-- Thêm phương thức này cho Role
+    SimpleNameResponse toSimpleNameResponse(Role role);
+    // <-- Thêm phương thức này cho Role
 }

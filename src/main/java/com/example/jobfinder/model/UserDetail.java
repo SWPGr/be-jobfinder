@@ -56,8 +56,7 @@ public class UserDetail {
     @Column(name = "map_location", length = 255)
     private String mapLocation;
 
-    @Column(name = "organization_type", length = 255)
-    private String organizationType;
+  
 
     // --- Mối quan hệ ---
 
@@ -84,4 +83,9 @@ public class UserDetail {
     @ManyToOne
     @JoinColumn(name = "user_experience_id")
     private Experience experience;
+
+    @ManyToOne
+    @JoinColumn(name = "user_organization_type")
+    @JsonBackReference("organization-userDetails")
+    private Organization organization;
 }

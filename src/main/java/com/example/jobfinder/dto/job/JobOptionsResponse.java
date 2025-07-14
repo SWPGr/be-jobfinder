@@ -9,5 +9,6 @@ public record JobOptionsResponse(
     List<JobLevel> jobLevels,
     List<Education> educations,
     List<Category> categories,
-    List<Experience> experiences
+    List<Experience> experiences,
+    List<Organization> organizations
     ) {}

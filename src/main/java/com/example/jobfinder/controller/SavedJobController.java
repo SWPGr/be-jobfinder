@@ -3,7 +3,6 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.SavedJobRequest;
 import com.example.jobfinder.dto.job.SavedJobResponse;
-import com.example.jobfinder.model.SavedJob;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SavedJobService;
@@ -16,12 +15,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.security.core.Authentication; // Import Authentication
-import org.springframework.security.core.context.SecurityContextHolder; // Import SecurityContextHolder
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
-import com.example.jobfinder.exception.ErrorCode; // Import ErrorCode của bạn
+import com.example.jobfinder.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 

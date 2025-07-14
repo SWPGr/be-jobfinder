@@ -16,11 +16,11 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;
 import com.example.jobfinder.mapper.JobMapper;
-import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobRepository;
+import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +34,10 @@ import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -57,12 +59,12 @@ public class ApplicationService {
      final UserRepository userRepository;
      final JobRepository jobRepository;
      final JobMapper jobMapper;
-     final UserMapper userMapper;
-     final NotificationService notificationService;
      final ApplicationMapper applicationMapper;
+     final UserDetailsRepository userDetailsRepository;
+     final CloudinaryService cloudinaryService;
 
     @Transactional
-    public ApplicationResponse applyJob(ApplicationRequest request) {
+    public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
         log.debug("Processing apply job request: {}", request);
 
         // 1. Xác thực người dùng và vai trò
@@ -80,6 +82,8 @@ public class ApplicationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
         // Hoặc nếu bạn muốn chi tiết hơn với UsernameNotFoundException,
         // GlobalExceptionHandler của bạn cần handle nó để trả về USER_NOT_FOUND.
+        UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
@@ -98,11 +102,23 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ErrorCode.APPLICATION_ALREADY_SUBMITTED.getErrorMessage());
         }
 
+        MultipartFile resumeFile = request.getResume();
+        String resumeUrl;
+
         // 4. Tạo đối tượng Application
         Application application = new Application();
         application.setJobSeeker(jobSeeker);
         application.setJob(job);
         application.setStatus(ApplicationStatus.PENDING);
+        application.setEmail(request.getEmail());
+        application.setPhone(request.getPhone());
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            resumeUrl = cloudinaryService.uploadFile(resumeFile); // bạn cần triển khai service này
+        } else {
+            resumeUrl = userDetail.getResumeUrl();
+        }
+        application.setResume(resumeUrl);
+        application.setCoverLetter(request.getCoverLetter());
         application.setAppliedAt(LocalDateTime.now());
 
         // 5. Lưu Application vào database

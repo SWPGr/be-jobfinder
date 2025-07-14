@@ -2,7 +2,7 @@ package com.example.jobfinder.dto.auth;
 
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.Experience;
-import lombok.Data;
+import com.example.jobfinder.model.Organization;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,11 +15,12 @@ public class ProfileRequest {
     private String phone;
     private Education education;
     private Experience userExperience;
-    private String resumeUrl;
+    private MultipartFile resumeUrl;
     private String companyName;
     private String description;
     private String website;
     private MultipartFile avatar;
+    private Organization organization;
 
     private MultipartFile banner; // Để nhận URL banner nếu không gửi file mới
     private String teamSize;

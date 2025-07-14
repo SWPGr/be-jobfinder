@@ -4,14 +4,8 @@ import com.example.jobfinder.dto.auth.ProfileRequest;
 import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Education;
-import com.example.jobfinder.model.Experience;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.ExperienceRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,6 +21,7 @@ public class ProfileService {
     private final EducationRepository educationRepository;
     private final CloudinaryService cloudinaryService;
     private final ExperienceRepository experienceRepository;
+    private final OrganizationRepository organizationRepository;
 
     // Constants for role names - better practice
     private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
@@ -34,12 +29,13 @@ public class ProfileService {
 
     public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository,
                           EducationRepository educationRepository, CloudinaryService cloudinaryService,
-                          ExperienceRepository experienceRepository) {
+                          ExperienceRepository experienceRepository, OrganizationRepository organizationRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.educationRepository = educationRepository;
         this.cloudinaryService = cloudinaryService;
         this.experienceRepository = experienceRepository;
+        this.organizationRepository = organizationRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
@@ -62,17 +58,9 @@ public class ProfileService {
         if (roleName.equals(ROLE_JOB_SEEKER)) { // Sử dụng hằng số
             // Kiểm tra null cho từng trường để chỉ cập nhật nếu giá trị được cung cấp
             if (request.getEducation() != null) {
-                Long educationId = request.getEducation().getId();
-                // Tìm kiếm Education theo ID
-                Optional<Education> educationOptional = educationRepository.findById(educationId);
-
-                if (educationOptional.isPresent()) {
-                    // Nếu tìm thấy, set vào userDetail
-                    userDetail.setEducation(educationOptional.get());
-                } else {
-                    // Nếu không tìm thấy, ném ngoại lệ
-                    throw new AppException(ErrorCode.EDUCATION_NOT_FOUND);
-                }
+                Education education = educationRepository.findById(request.getEducation().getId())
+                        .orElseThrow(() -> new Exception("invalid education id"));
+                userDetail.setEducation(education);
             }
 
             Optional.ofNullable(request.getLocation()).ifPresent(userDetail::setLocation);
@@ -80,18 +68,15 @@ public class ProfileService {
             Optional.ofNullable(request.getPhone()).ifPresent(userDetail::setPhone);
 
             if (request.getUserExperience() != null) {
-                Long experienceId = request.getUserExperience().getId(); // Lấy ID từ request
-
-                // Tìm Experience theo ID, nếu không tìm thấy thì ném lỗi ngay lập tức
-                Experience experience = experienceRepository.findById(experienceId)
+                Experience experience = experienceRepository.findById(request.getUserExperience().getId())
                         .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
-
-                // Nếu tìm thấy, gán vào userDetail
                 userDetail.setExperience(experience);
             }
 
-            Optional.ofNullable(request.getResumeUrl()).ifPresent(userDetail::setResumeUrl);
-
+            if (request.getResumeUrl() != null && !request.getResumeUrl().isEmpty()) {
+                String resume = cloudinaryService.uploadFile(request.getResumeUrl());
+                userDetail.setResumeUrl(resume);
+            }
         } else if (roleName.equals(ROLE_EMPLOYER)) { // Sử dụng hằng số
             if (request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
                 throw new AppException(ErrorCode.COMPANY_NAME_REQUIRED); // Thêm ErrorCode này
@@ -105,6 +90,12 @@ public class ProfileService {
                 // Nếu client gửi chuỗi rỗng để xóa banner
                 userDetail.setBanner(null);
             }
+          
+          if (request.getOrganization() != null) {
+                Organization organization = organizationRepository.findById(request.getOrganization().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
+                userDetail.setOrganization(organization);
+            }
 
 
             Optional.ofNullable(request.getCompanyName()).ifPresent(userDetail::setCompanyName);
@@ -114,7 +105,6 @@ public class ProfileService {
             Optional.ofNullable(request.getTeamSize()).ifPresent(userDetail::setTeamSize);
             Optional.ofNullable(request.getYearOfEstablishment()).ifPresent(userDetail::setYearOfEstablishment);
             Optional.ofNullable(request.getMapLocation()).ifPresent(userDetail::setMapLocation);
-            Optional.ofNullable(request.getOrganizationType()).ifPresent(userDetail::setOrganizationType);
 
         } else {
             throw new AppException(ErrorCode.INVALID_ROLE); // Thêm ErrorCode này
@@ -162,23 +152,30 @@ public class ProfileService {
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
         if (userDetail.getEducation() != null) {
-            response.setEducation(userDetail.getEducation());
+            response.setEducationId(userDetail.getEducation().getId());
+            response.setEducationName(userDetail.getEducation().getName());
         }
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
         if (userDetail.getExperience() != null) {
-            response.setExperience(userDetail.getExperience());
+            response.setExperienceId(userDetail.getExperience().getId());
+            response.setExperienceName(userDetail.getExperience().getName());
         }
         response.setResumeUrl(userDetail.getResumeUrl());
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
         response.setAvatarUrl(userDetail.getAvatarUrl());
+        if (userDetail.getOrganization() != null) {
+            response.setOrganizationId(userDetail.getOrganization().getId());
+            response.setOrganizationType(userDetail.getOrganization().getName());
+        }
+
         response.setBanner(userDetail.getBanner()); // Có thể bạn muốn thêm banner vào đây
         response.setTeamSize(userDetail.getTeamSize()); // Và các trường khác
+
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
-        response.setOrganizationType(userDetail.getOrganizationType());
 
         return response;
     }

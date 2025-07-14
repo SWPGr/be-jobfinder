@@ -2,7 +2,6 @@
 package com.example.jobfinder.repository;
 
 import com.example.jobfinder.model.JobType; // Import entity JobType
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional; // Thường dùng cho các phương thức findBy...

@@ -1,6 +1,5 @@
 package com.example.jobfinder.exception;
 
-import org.springframework.http.HttpStatus;
 
 public enum ErrorCode {
 
@@ -156,8 +155,10 @@ public enum ErrorCode {
     EXPERIENCE_NOT_FOUND(2012," Experience not found"),
     SAVED_JOB_NOT_FOUND(2013, "You have not saved this job"),
     TOKEN_EXPIRED(2014, "Token has expired"),
-    EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
 
+    ORGANIZATION_NOT_FOUND(2015, "Organization not found"),
+
+    EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
 
 
 

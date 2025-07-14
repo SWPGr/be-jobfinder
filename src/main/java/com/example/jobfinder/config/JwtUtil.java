@@ -1,8 +1,8 @@
 package com.example.jobfinder.config;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -52,13 +52,19 @@ public class JwtUtil {
     }
 
     public String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 2))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
+        try {
+            return Jwts.builder()
+                    .setClaims(claims)
+                    .setSubject(subject)
+                    .setIssuedAt(new Date(System.currentTimeMillis()))
+                    .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60*60))
+                    .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                    .compact();
+        } catch(ExpiredJwtException e) {
+            throw new AppException(ErrorCode.TOKEN_EXPIRED);
+        }catch (UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+            throw new AppException(ErrorCode.INVALID_TOKEN);
+        }
     }
 
     public boolean validateToken(String token, String username) {

@@ -6,8 +6,8 @@ import lombok.experimental.FieldDefaults;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SimpleNameResponse {
     Long id;
