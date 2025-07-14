@@ -58,17 +58,9 @@ public class ProfileService {
         if (roleName.equals(ROLE_JOB_SEEKER)) { // Sử dụng hằng số
             // Kiểm tra null cho từng trường để chỉ cập nhật nếu giá trị được cung cấp
             if (request.getEducation() != null) {
-                Long educationId = request.getEducation().getId();
-                // Tìm kiếm Education theo ID
-                Optional<Education> educationOptional = educationRepository.findById(educationId);
-
-                if (educationOptional.isPresent()) {
-                    // Nếu tìm thấy, set vào userDetail
-                    userDetail.setEducation(educationOptional.get());
-                } else {
-                    // Nếu không tìm thấy, ném ngoại lệ
-                    throw new AppException(ErrorCode.EDUCATION_NOT_FOUND);
-                }
+                Education education = educationRepository.findById(request.getEducation().getId())
+                        .orElseThrow(() -> new Exception("invalid education id"));
+                userDetail.setEducation(education);
             }
 
             Optional.ofNullable(request.getLocation()).ifPresent(userDetail::setLocation);
@@ -76,40 +68,15 @@ public class ProfileService {
             Optional.ofNullable(request.getPhone()).ifPresent(userDetail::setPhone);
 
             if (request.getUserExperience() != null) {
-                Long experienceId = request.getUserExperience().getId(); // Lấy ID từ request
-
-                // Tìm Experience theo ID, nếu không tìm thấy thì ném lỗi ngay lập tức
-                Experience experience = experienceRepository.findById(experienceId)
+                Experience experience = experienceRepository.findById(request.getUserExperience().getId())
                         .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
-
-                // Nếu tìm thấy, gán vào userDetail
                 userDetail.setExperience(experience);
             }
-<<<<<<< HEAD
+
             if (request.getResumeUrl() != null && !request.getResumeUrl().isEmpty()) {
                 String resume = cloudinaryService.uploadFile(request.getResumeUrl());
                 userDetail.setResumeUrl(resume);
             }
-        }else if(roleName.equals("EMPLOYER")) {
-            if(request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
-                throw new Exception("Company name is required for employer");
-            }
-            userDetail.setCompanyName(request.getCompanyName());
-            userDetail.setLocation(request.getLocation());
-            userDetail.setDescription(request.getDescription());
-            userDetail.setWebsite(request.getWebsite());
-            if (request.getOrganization() != null) {
-                Organization organization = organizationRepository.findById(request.getOrganization().getId())
-                        .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
-                userDetail.setOrganization(organization);
-            }
-
-        }else {
-            throw new Exception("Invalid role");
-=======
-
-            Optional.ofNullable(request.getResumeUrl()).ifPresent(userDetail::setResumeUrl);
-
         } else if (roleName.equals(ROLE_EMPLOYER)) { // Sử dụng hằng số
             if (request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
                 throw new AppException(ErrorCode.COMPANY_NAME_REQUIRED); // Thêm ErrorCode này
@@ -123,6 +90,12 @@ public class ProfileService {
                 // Nếu client gửi chuỗi rỗng để xóa banner
                 userDetail.setBanner(null);
             }
+          
+          if (request.getOrganization() != null) {
+                Organization organization = organizationRepository.findById(request.getOrganization().getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
+                userDetail.setOrganization(organization);
+            }
 
 
             Optional.ofNullable(request.getCompanyName()).ifPresent(userDetail::setCompanyName);
@@ -132,11 +105,9 @@ public class ProfileService {
             Optional.ofNullable(request.getTeamSize()).ifPresent(userDetail::setTeamSize);
             Optional.ofNullable(request.getYearOfEstablishment()).ifPresent(userDetail::setYearOfEstablishment);
             Optional.ofNullable(request.getMapLocation()).ifPresent(userDetail::setMapLocation);
-            Optional.ofNullable(request.getOrganizationType()).ifPresent(userDetail::setOrganizationType);
 
         } else {
             throw new AppException(ErrorCode.INVALID_ROLE); // Thêm ErrorCode này
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
         }
 
         // Xử lý upload avatar (chung cho cả hai vai trò)
@@ -181,31 +152,31 @@ public class ProfileService {
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
         if (userDetail.getEducation() != null) {
-            response.setEducation(userDetail.getEducation());
+            response.setEducationId(userDetail.getEducation().getId());
+            response.setEducationName(userDetail.getEducation().getName());
         }
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
         if (userDetail.getExperience() != null) {
-            response.setExperience(userDetail.getExperience());
+            response.setExperienceId(userDetail.getExperience().getId());
+            response.setExperienceName(userDetail.getExperience().getName());
         }
         response.setResumeUrl(userDetail.getResumeUrl());
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
         response.setAvatarUrl(userDetail.getAvatarUrl());
-<<<<<<< HEAD
         if (userDetail.getOrganization() != null) {
             response.setOrganizationId(userDetail.getOrganization().getId());
             response.setOrganizationType(userDetail.getOrganization().getName());
         }
-=======
+
         response.setBanner(userDetail.getBanner()); // Có thể bạn muốn thêm banner vào đây
         response.setTeamSize(userDetail.getTeamSize()); // Và các trường khác
+
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
-        response.setOrganizationType(userDetail.getOrganizationType());
 
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
         return response;
     }
 }

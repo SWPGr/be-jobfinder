@@ -18,14 +18,13 @@ public class ApplicationResponse {
     private Long id;
     private ApplicantResponse jobSeeker;
     private JobResponse job;
-<<<<<<< HEAD
+
     private String status;
     private String email;
     private String phone;
     private String resume;
     private String coverLetter;
-=======
+
     private ApplicationStatus status;
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
     private LocalDateTime appliedAt;
 }

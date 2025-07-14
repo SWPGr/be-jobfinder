@@ -36,10 +36,10 @@ public class JobResponse {
     SimpleNameResponse category; // <-- Phải là CategoryDto, không phải Long categoryId, String categoryName
     SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
     SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
-<<<<<<< HEAD
+
     SimpleNameResponse education;
-=======
+
+
 
     Long jobApplicationCounts;
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
 }

@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +31,8 @@ public class SavedJobController {
     final SavedJobService savedJobService;
     final UserRepository userRepository;
 
-    @GetMapping
-    public ResponseEntity<List<JobResponse>> getSavedJobsForCurrentUser() {
+    @GetMapping("/saved-jobs")
+    public ResponseEntity<Page<JobResponse>> getSavedJobsForCurrentUser(Pageable pageable) { // <-- Thêm Pageable
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -42,8 +44,9 @@ public class SavedJobController {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
-        List<JobResponse> savedJobs = savedJobService.getSavedJobsByJobSeekerId(currentUser.getId());
-        return ResponseEntity.ok(savedJobs);
+        // Thay đổi kiểu trả về từ List<JobResponse> sang Page<JobResponse>
+        Page<JobResponse> savedJobsPage = savedJobService.getSavedJobsByJobSeekerId(currentUser.getId(), pageable);
+        return ResponseEntity.ok(savedJobsPage);
     }
 
     @PostMapping("/saved-jobs")

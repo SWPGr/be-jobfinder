@@ -42,12 +42,8 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
-<<<<<<< HEAD
     SavedJobRepository savedJobRepository;
     ApplicationRepository applicationRepository;
-
-=======
->>>>>>> 17dfa781e5fe62d3d74b1073a0a018a49aac6ea3
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -140,26 +136,7 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
-<<<<<<< HEAD
     public Page<JobResponse> getAllJobs(Pageable pageable) {
-=======
-    @Transactional(readOnly = true) // Đảm bảo giao dịch chỉ đọc
-    public List<JobResponse> getAllJobs() {
-        return jobRepository.findAll()
-                .stream()
-                .map(job -> {
-                    JobResponse jobResponse = jobMapper.toJobResponse(job);
-                    // Lấy số lượng đơn ứng tuyển cho công việc này
-                    long applicationCount = applicationRepository.countByJob_Id(job.getId());
-                    jobResponse.setJobApplicationCounts(applicationCount);
-                    return jobResponse;
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    public List<JobResponse> getAllJobsForUser() {
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal());

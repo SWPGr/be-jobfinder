@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,18 +43,24 @@ public class SavedJobService {
     JobRepository jobRepository;
     JobMapper  jobMapper;
 
-    public List<JobResponse> getSavedJobsByJobSeekerId(Long jobSeekerId) { // <-- Thay đổi kiểu trả về thành List<JobResponse>
+    public Page<JobResponse> getSavedJobsByJobSeekerId(Long jobSeekerId, Pageable pageable) {
+        // Kiểm tra sự tồn tại của Job Seeker
         userRepository.findById(jobSeekerId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)); // Sử dụng AppException nếu bạn muốn
 
-        List<SavedJob> savedJobs = savedJobRepository.findByJobSeeker_Id(jobSeekerId);
+        // Lấy Page các SavedJob từ Repository
+        Page<SavedJob> savedJobsPage = savedJobRepository.findByJobSeeker_Id(jobSeekerId, pageable);
 
-        List<Job> jobs = savedJobs.stream()
+        // Lấy danh sách Job từ Page<SavedJob>
+        List<Job> jobs = savedJobsPage.getContent().stream()
                 .map(SavedJob::getJob)
                 .collect(Collectors.toList());
 
-        // Sử dụng JobMapper để chuyển đổi List<Job> sang List<JobResponse>
-        return jobMapper.toJobResponseList(jobs); // <-- Đã sửa lại để dùng mapper
+        // Chuyển đổi List<Job> sang List<JobResponse>
+        List<JobResponse> jobResponses = jobMapper.toJobResponseList(jobs);
+
+        // Tạo một đối tượng Page<JobResponse> mới từ List<JobResponse> và thông tin phân trang của savedJobsPage
+        return new PageImpl<>(jobResponses, pageable, savedJobsPage.getTotalElements());
     }
 
 

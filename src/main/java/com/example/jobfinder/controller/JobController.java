@@ -49,21 +49,12 @@ public class JobController {
     }
 
     @GetMapping("/list")
-<<<<<<< HEAD
     public ResponseEntity<Page<JobResponse>> getAllJobs(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<JobResponse> jobs = jobService.getAllJobs(pageable);
-=======
-    public List<JobResponse> getAllJobs() {
-        return jobService.getAllJobs();
-    }
 
-    @GetMapping("/user")
-    public ResponseEntity<List<JobResponse>> getUserJobs() {
-        List<JobResponse> jobs = jobService.getAllJobsForUser();
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
         return ResponseEntity.ok(jobs);
     }
 

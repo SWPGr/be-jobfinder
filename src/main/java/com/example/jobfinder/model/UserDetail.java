@@ -44,8 +44,6 @@ public class UserDetail {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-<<<<<<< HEAD
-=======
     @Column(name = "banner", length = 512)
     private String banner;
 
@@ -58,9 +56,7 @@ public class UserDetail {
     @Column(name = "map_location", length = 255)
     private String mapLocation;
 
-    @Column(name = "organization_type", length = 255)
-    private String organizationType;
->>>>>>> 9125635c534fa49d4e82a6d4b822f01e31aa7529
+  
 
     // --- Mối quan hệ ---
 
