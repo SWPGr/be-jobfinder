@@ -24,6 +24,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByEmployerId(Long employerId);
 
+    Page<Job> findByEmployerId(Long employerId, Pageable pageable);
+
     @Query("SELECT COUNT(j) FROM Job j WHERE j.createdAt <= :endDate")
     long countTotalJobsPostedBeforeOrEquals(@Param("endDate") LocalDateTime endDate);
 

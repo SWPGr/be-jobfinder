@@ -20,6 +20,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +55,7 @@ public class ApplicationController {
     ApplicationRepository applicationRepository;
 
     @GetMapping("/my-applied-jobs")
-    public ResponseEntity<List<JobResponse>> getAppliedJobsForUser() {
+    public ResponseEntity<Page<JobResponse>> getAppliedJobsForUser(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -61,15 +63,16 @@ public class ApplicationController {
         }
 
         String userEmail = authentication.getName();
-        com.example.jobfinder.model.User currentUser = userRepository.findByEmail(userEmail)
+        User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         if (!currentUser.getRole().getName().equals("JOB_SEEKER") && !currentUser.getRole().getName().equals("ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        List<JobResponse> appliedJobs = applicationService.getAppliedJobsByUserId(currentUser.getId());
-        return ResponseEntity.ok(appliedJobs);
+        // Thay đổi kiểu trả về từ List<JobResponse> sang Page<JobResponse>
+        Page<JobResponse> appliedJobsPage = applicationService.getAppliedJobsByUserId(currentUser.getId(), pageable);
+        return ResponseEntity.ok(appliedJobsPage);
     }
 
     @GetMapping("/candidates/{jobId}")

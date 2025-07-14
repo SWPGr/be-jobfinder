@@ -1,5 +1,5 @@
 // src/main/java/com/example/jobfinder/controller/StatisticController.java
-package com.example.jobfinder.controller;
+package com.example.jobfinder.controller.analytics;
 
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.statistic_admin.*;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class AdminStatisticController {
+public class AdminAnalyticsController {
 
     StatisticService statisticService;
     ApplicationService applicationService;

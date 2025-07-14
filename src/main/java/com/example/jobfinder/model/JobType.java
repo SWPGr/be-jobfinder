@@ -1,4 +1,3 @@
-// D:\Code-Window\JobFinderProject\be-jobfinder\trunglecode\src\main\java\com\example\jobfinder\model\JobType.java
 package com.example.jobfinder.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;

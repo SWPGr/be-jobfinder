@@ -54,4 +54,11 @@ public class UserCreationRequest {
 
     private Integer verified;
     private Boolean isPremium;
+
+    private String banner; // URL của banner
+    private String teamSize; // Kích thước đội ngũ (ví dụ: "1-10", "11-50", "50+")
+    private Integer yearOfEstablishment; // Năm thành lập
+    private String mapLocation; // Vị trí trên bản đồ (ví dụ: tọa độ, hoặc link Google Maps)
+    private String organizationType; // Loại hình tổ chức (ví dụ: "Startup", "SME", "Corporation")
+    private String avatarUrl; // URL của ảnh đại diện công ty
 }

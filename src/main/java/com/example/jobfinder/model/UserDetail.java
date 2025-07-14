@@ -45,6 +45,21 @@ public class UserDetail {
     private String avatarUrl;
 
 
+    @Column(name = "banner", length = 512)
+    private String banner;
+
+    @Column(name = "team_size", length = 100)
+    private String teamSize;
+
+    @Column(name = "year_of_establishment")
+    private Integer yearOfEstablishment;
+
+    @Column(name = "map_location", length = 255)
+    private String mapLocation;
+
+    @Column(name = "organization_type", length = 255)
+    private String organizationType;
+
     // --- Mối quan hệ ---
 
     // Một UserDetail thuộc về một User (OneToOne)

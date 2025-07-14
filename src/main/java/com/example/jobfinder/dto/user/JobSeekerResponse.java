@@ -23,4 +23,6 @@ public class JobSeekerResponse {
     // Có thể thêm Education nếu muốn hiển thị
     private Long educationId; // ID của Education
     private String educationName; // Tên của Education (nếu có)
+
+    private Long totalApplications;
 }
