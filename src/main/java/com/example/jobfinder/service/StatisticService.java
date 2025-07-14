@@ -2,16 +2,18 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.statistic_admin.*;
+import com.example.jobfinder.dto.statistic_job_seeker.JobSeekerDashboardResponse;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.repository.ApplicationRepository;
-import com.example.jobfinder.repository.JobRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,9 @@ public class StatisticService {
     UserRepository userRepository;
     JobRepository jobRepository;
     ApplicationRepository applicationRepository;
+
+    SavedJobRepository savedJobRepository;
+    JobRecommendationRepository jobRecommendationRepository;
 
     @Transactional(readOnly = true)
     public List<MonthlyTrendResponse> getMonthlyTrendsCalculatedOnTheFly() {
@@ -180,9 +185,6 @@ public class StatisticService {
         return builder.build();
     }
 
-    // --- Hàm tiện ích để tính toán phần trăm thay đổi và trạng thái ---
-    // Sử dụng Reflection để set giá trị, giúp code gọn hơn.
-    // Nếu bạn không muốn dùng Reflection, bạn sẽ phải viết 4 khối if/else riêng biệt cho mỗi chỉ số.
     private void calculateAndSetComparison(MonthlyComparisonResponse.MonthlyComparisonResponseBuilder builder,
                                            long currentValue, long previousValue,
                                            String percentageFieldName, String statusFieldName) {
@@ -192,11 +194,8 @@ public class StatisticService {
         if (previousValue != 0) {
             changePercentage = ((double) (currentValue - previousValue) / previousValue) * 100;
         } else if (currentValue > 0) {
-            // Nếu tháng trước là 0 và tháng này > 0, coi như tăng trưởng vô hạn (hoặc 100% nếu muốn)
-            // hoặc bạn có thể định nghĩa là "increase_from_zero"
-            changePercentage = 100.0; // Hoặc một giá trị tượng trưng cho sự tăng trưởng lớn
+            changePercentage = 100.0;
         }
-        // else if (currentValue == 0 && previousValue == 0) -> changePercentage = 0, status = "no_change" (đã khởi tạo)
 
         if (changePercentage > 0) {
             status = "increase";
@@ -205,11 +204,6 @@ public class StatisticService {
         }
 
         try {
-            // Sử dụng Reflection để set giá trị vào builder
-            // Đây là cách gọn, nhưng nếu không thích Reflection, bạn có thể viết thủ công
-            // builder.jobsChangePercentage(changePercentage)
-            // builder.jobsStatus(status)
-            // ...
             java.lang.reflect.Method setPercentageMethod = builder.getClass().getMethod(percentageFieldName, double.class);
             setPercentageMethod.invoke(builder, changePercentage);
 
@@ -218,7 +212,6 @@ public class StatisticService {
 
         } catch (Exception e) {
             log.error("Lỗi khi setting giá trị bằng Reflection: {}", e.getMessage());
-            // Xử lý lỗi hoặc ném ngoại lệ tùy theo nhu cầu
         }
     }
 
@@ -279,6 +272,35 @@ public class StatisticService {
                         .jobCount((Long) result[1])       // result[1] là tổng số lượng
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public JobSeekerDashboardResponse getDashboardSummaryForCurrentUser() {
+        // 1. Lấy thông tin người dùng hiện tại từ SecurityContext
+        String authenticatedEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(authenticatedEmail)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. Đảm bảo người dùng là JOB_SEEKER
+        if (!currentUser.getRole().getName().equals("JOB_SEEKER")) {
+            log.warn("User {} is not a JOB_SEEKER. Cannot retrieve job seeker dashboard.", authenticatedEmail);
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND); // Hoặc một ErrorCode phù hợp hơn nếu bạn có
+        }
+
+        // 3. Sử dụng các Repository để đếm số lượng
+        long totalAppliedJobs = applicationRepository.countByJobSeekerId(currentUser.getId());
+        long totalSavedJobs = savedJobRepository.countByJobSeeker_Id(currentUser.getId()); // Đảm bảo có phương thức count này trong SavedJobRepository
+        long totalJobRecommendations = jobRecommendationRepository.countByJobSeekerId(currentUser.getId()); // Đảm bảo có phương thức count này trong JobRecommendationRepository
+
+        log.info("Dashboard summary for JobSeeker {}: Applied={}, Saved={}, Recommended={}",
+                currentUser.getEmail(), totalAppliedJobs, totalSavedJobs, totalJobRecommendations);
+
+        // 4. Trả về DTO tổng hợp
+        return JobSeekerDashboardResponse.builder()
+                .totalAppliedJobs(totalAppliedJobs)
+                .totalSavedJobs(totalSavedJobs)
+                .totalJobRecommendations(totalJobRecommendations)
+                .build();
     }
 
 }

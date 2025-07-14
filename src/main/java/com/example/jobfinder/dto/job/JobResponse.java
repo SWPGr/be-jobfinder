@@ -19,8 +19,8 @@ public class JobResponse {
     private String title;
     private String description;
     private String location;
-    private Double salaryMin;
-    private Double salaryMax;
+    private Float salaryMin;
+    private Float salaryMax;
     private String responsibility;
     private LocalDate expiredDate;
     private Boolean isSave;
@@ -37,4 +37,6 @@ public class JobResponse {
     SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
     SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
     SimpleNameResponse education;
+
+    Long jobApplicationCounts;
 }

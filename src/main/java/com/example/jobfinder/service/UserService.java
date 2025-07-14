@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +46,7 @@ public class UserService {
     EducationRepository educationRepository; // Cần nếu UserDetail có Education và bạn cần lấy/lưu Education
     JobRepository jobRepository;
     ExperienceRepository experienceRepository;
+    ApplicationRepository applicationRepository;
 
     // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
 
@@ -133,86 +135,6 @@ public class UserService {
         return userMapper.toUserResponse(savedUser);
     }
 
-    @Transactional // Đảm bảo các thao tác được thực hiện trong cùng một transaction.
-    public UserResponse updateUser(Long userId, UserUpdateRequest request) {
-        // 1. Tìm User hiện có.
-        User existingUser = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. Kiểm tra nếu email thay đổi và email mới đã tồn tại.
-        if (!existingUser.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException(ErrorCode.USER_EXIST);
-        }
-
-        // 3. Cập nhật các trường chung của User (email, enabled).
-        userMapper.updateUser(existingUser, request); // MapStruct sẽ giúp cập nhật các trường được định nghĩa.
-
-        // 4. Cập nhật Role nếu roleName được cung cấp và khác với role hiện tại.
-        // Đây là logic phức tạp, cần suy nghĩ kỹ nếu bạn cho phép chuyển đổi vai trò.
-        if (request.getRoleName() != null && !request.getRoleName().equals(existingUser.getRole().getName())) {
-            Role newRole = roleRepository.findByName(request.getRoleName())
-                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-            existingUser.setRole(newRole);
-            // Quan trọng: Nếu vai trò thay đổi, các trường chuyên biệt trong UserDetail cần được reset/chỉnh sửa
-            // Logic này sẽ được xử lý dưới đây trong phần UserDetail.
-        }
-
-        User updatedUser = userRepository.save(existingUser); // Lưu User đã cập nhật.
-
-        // 5. Cập nhật UserDetail liên kết.
-        UserDetail userDetail = userDetailRepository.findByUser(existingUser)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.
-
-        userDetail.setFullName(request.getFullName());
-        userDetail.setPhone(request.getPhone());
-        userDetail.setLocation(request.getLocation());
-
-        // 6. Cập nhật các trường đặc thù trong UserDetail dựa trên VAI TRÒ MỚI của người dùng.
-        // Điều này đảm bảo rằng khi một user chuyển vai trò, các trường cũ không liên quan sẽ bị null.
-        String currentRoleName = updatedUser.getRole().getName(); // Lấy vai trò sau khi update
-
-        if (currentRoleName.equals("JOB_SEEKER")) {
-            if (request.getUserExperience() != null) {
-                Experience experience = experienceRepository.findById(request.getUserExperience())
-                        .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
-                userDetail.setExperience(experience);
-            } else {
-                userDetail.setExperience(null);
-            }
-            userDetail.setResumeUrl(request.getResumeUrl());
-            if (request.getEducationId() != null) {
-                Education education = educationRepository.findById(request.getEducationId())
-                        .orElseThrow(() -> new AppException(ErrorCode.EDUCATION_NOT_FOUND));
-                userDetail.setEducation(education);
-            } else {
-                userDetail.setEducation(null); // Nếu request không có ID, xóa liên kết education
-            }
-            // Đảm bảo các trường Employer là null khi vai trò là JobSeeker.
-            userDetail.setCompanyName(null);
-            userDetail.setDescription(null);
-            userDetail.setWebsite(null);
-        } else if (currentRoleName.equals("EMPLOYER")) {
-            userDetail.setCompanyName(request.getCompanyName());
-            userDetail.setDescription(request.getDescription());
-            userDetail.setWebsite(request.getWebsite());
-            // Đảm bảo các trường JobSeeker là null khi vai trò là Employer.
-            userDetail.setExperience(null);
-            userDetail.setResumeUrl(null);
-            userDetail.setEducation(null);
-        } else {
-            // Nếu là ADMIN hoặc vai trò khác, đảm bảo tất cả các trường chuyên biệt là null.
-            userDetail.setExperience(null);
-            userDetail.setResumeUrl(null);
-            userDetail.setCompanyName(null);
-            userDetail.setDescription(null);
-            userDetail.setWebsite(null);
-            userDetail.setEducation(null);
-        }
-        userDetailRepository.save(userDetail); // Lưu UserDetail đã cập nhật.
-
-        return userMapper.toUserResponse(updatedUser); // Trả về UserResponse của người dùng đã cập nhật.
-    }
-
     @Transactional // Đảm bảo thao tác xóa được thực hiện trong một transaction.
     public void deleteUser(Long userId) {
         User userToDelete = userRepository.findById(userId)
@@ -223,8 +145,6 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserResponse> searchUsers(UserSearchRequest request) {
         log.info("Searching users with role: {}", request.getRoleName());
-
-        // Lấy dữ liệu thô từ Repository (User, UserDetail, Role)
         List<Object[]> results = userRepository.findUsersWithDetailsAndRole(request.getRoleName());
 
         return results.stream()
@@ -237,10 +157,12 @@ public class UserService {
                             .id(user.getId())
                             .email(user.getEmail())
                             .isPremium(user.getIsPremium())
-                            .createdAt(String.valueOf(user.getCreatedAt()))
-                            .updatedAt(String.valueOf(user.getUpdatedAt()))
+                            .createdAt(user.getCreatedAt()) // Chuyển đổi LocalDateTime sang String
+                            .updatedAt(user.getUpdatedAt()) // Chuyển đổi LocalDateTime sang String
                             .roleName(role != null ? role.getName() : null)
                             .verified(user.getVerified())
+                            .totalApplications(null) // Khởi tạo là null
+                            .totalJobsPosted(null)   // Khởi tạo là null
                             .build();
 
                     // Map UserDetail nếu có
@@ -252,13 +174,15 @@ public class UserService {
                         userResponse.setWebsite(userDetail.getWebsite());
                     }
 
-                    // Nếu là EMPLOYER, điền thêm totalJobsPosted
+                    // Điền totalJobsPosted cho EMPLOYER
                     if (role != null && "EMPLOYER".equals(role.getName())) {
                         long totalJobs = jobRepository.countByEmployerId(user.getId());
                         userResponse.setTotalJobsPosted(totalJobs);
-                    } else {
-                        // Đảm bảo trường này là null nếu không phải employer
-                        userResponse.setTotalJobsPosted(null);
+                    }
+                    // Điền totalApplications cho JOB_SEEKER
+                    else if (role != null && "JOB_SEEKER".equals(role.getName())) {
+                        long totalApplicationsCount = applicationRepository.countByApplicantId(user.getId());
+                        userResponse.setTotalApplications(totalApplicationsCount);
                     }
 
                     return userResponse;
@@ -279,23 +203,27 @@ public class UserService {
         return userMapper.toUserResponseList(users);
     }
 
+    @Transactional(readOnly = true)
     public JobSeekerResponse getJobSeekerInfo(Long userId) {
-        // 1. Tìm User entity theo ID.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. Kiểm tra xem vai trò của User có phải là JOB_SEEKER hay không.
         if (!user.getRole().getName().equals("JOB_SEEKER")) {
-            throw new AppException(ErrorCode.USER_IS_NOT_JOB_SEEKER); // Cần định nghĩa ErrorCode này.
+            throw new AppException(ErrorCode.USER_IS_NOT_JOB_SEEKER);
         }
 
-        // 3. Lấy UserDetail liên quan đến User. Phương thức findByUserId trong UserDetailsRepository
-        //    được thiết kế để tải eager User và Education để tránh LazyInitializationException.
         UserDetail userDetail = userDetailRepository.findByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
+                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
 
-        // 4. Chuyển đổi UserDetail entity sang JobSeekerResponse DTO.
-        return jobSeekerMapper.toJobSeekerResponse(userDetail);
+        long totalApplications = applicationRepository.countByApplicantId(userId);
+        JobSeekerResponse jobSeekerResponse = jobSeekerMapper.toJobSeekerResponse(userDetail);
+
+        // Gán thông tin từ User Entity
+        jobSeekerResponse.setUserId(user.getId());
+        jobSeekerResponse.setUserEmail(user.getEmail());
+        jobSeekerResponse.setResumeUrl(userDetail.getResumeUrl());
+        jobSeekerResponse.setTotalApplications(totalApplications); // <-- Gán giá trị vào DTO
+
+        return jobSeekerResponse;
     }
 
     /**

@@ -127,17 +127,6 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
-    public ApiResponse<UserResponse> updateUser(@PathVariable Long userId, @RequestBody @Valid UserUpdateRequest request) {
-        log.info("API: Cập nhật người dùng với ID: {}", userId);
-        UserResponse updatedUser = userService.updateUser(userId, request);
-        return ApiResponse.<UserResponse>builder()
-                .code(HttpStatus.OK.value())
-                .message("User updated successfully")
-                .result(updatedUser)
-                .build();
-    }
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xóa người dùng

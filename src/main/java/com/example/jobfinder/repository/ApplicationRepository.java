@@ -3,6 +3,8 @@ package com.example.jobfinder.repository;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.util.QueryConstants;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,11 +15,20 @@ import java.util.Optional;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Optional<Application> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
 
+    Page<Application> findByJobSeekerId(Long jobSeekerId, Pageable pageable);
+
+    Long countByJobSeekerId(Long jobSeekerId); // <-- THÊM DÒNG NÀY
+
     List<Application> findByJobSeekerId(Long jobSeekerId);
 
     List<Application> findByAppliedAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Application> findByJob_Id(Long jobId);
+
+    Long countByJob_Id (Long jobId);
+
+    @Query("SELECT COUNT(ja) FROM Application ja WHERE ja.jobSeeker.id = :applicantId")
+    long countByApplicantId(Long applicantId);
 
     boolean existsByJobSeeker_IdAndJob_Employer_Id(Long jobSeekerId, Long employerId);
     @Query(QueryConstants.FIND_APPLICATIONS_BY_CRITERIA) // Sử dụng hằng số
@@ -81,14 +92,38 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             "ORDER BY FUNCTION('DATE', ja.appliedAt) ASC")
     List<Object[]> countApplicationsByDateTimeRange(@Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
 
-    // Bạn cũng có thể dùng cách này nếu muốn đếm trong khoảng thời gian cụ thể:
-    Long countByAppliedAtBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
 
-    @Query("SELECT ja.job.id, ja.job.title, COUNT(ja) FROM Application ja " +
-            "WHERE ja.job.employer.id = :employerId " + // Lọc theo ID của nhà tuyển dụng
-            "GROUP BY ja.job.id, ja.job.title " +       // Nhóm theo Job ID và Title
-            "ORDER BY COUNT(ja) DESC")                   // Sắp xếp theo số lượng giảm dần
-    List<Object[]> countApplicationsPerJobByEmployerId(@Param("employerId") Long employerId);
+    @Query("SELECT ja FROM Application ja " +
+            "JOIN FETCH ja.job j " +
+            "JOIN FETCH j.employer e " +
+            "JOIN FETCH ja.jobSeeker a " + // Đảm bảo mối quan hệ là jobSeeker
+            "LEFT JOIN FETCH a.userDetail ud " +
+            "LEFT JOIN FETCH ud.education edu " +
+            "LEFT JOIN FETCH j.jobType jt " +
+            "LEFT JOIN FETCH j.jobLevel jl " +
+            "WHERE e.id = :employerId " +
+            "AND j.id = :jobId " +
+
+            // Filters for Applicant (UserDetail)
+            "AND (:name IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:educationId IS NULL OR edu.id = :educationId) " +
+
+            // Filters for Job (via Job entity, but applied to applications for *this* job)
+            "AND (:jobTypeId IS NULL OR jt.id = :jobTypeId) " +
+            "AND (:jobLevelId IS NULL OR jl.id = :jobLevelId)")
+    Page<Application> getEmployerJobApplicationsForSpecificJob( // Đã đổi tên phương thức ở đây
+                                                                   @Param("employerId") Long employerId,
+                                                                   @Param("jobId") Long jobId,
+                                                                   // Applicant-related filter parameters
+                                                                   @Param("name") String name,
+                                                                   @Param("minExperience") Integer minExperience,
+                                                                   @Param("maxExperience") Integer maxExperience,
+                                                                   // Job-related filter parameters
+                                                                   @Param("jobTypeId") Long jobTypeId,
+                                                                   @Param("educationId") Long educationId,
+                                                                   @Param("jobLevelId") Long jobLevelId,
+                                                                   Pageable pageable
+    );
 
 }
 

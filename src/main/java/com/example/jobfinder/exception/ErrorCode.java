@@ -58,6 +58,8 @@ public enum ErrorCode {
     EDUCATION_NAME_EXISTED(3301, "Education name already exists"),
     EDUCATION_IN_USE(3302, "Education cannot be deleted as it is currently in use"), // Nếu Education được dùng bởi UserProfile/Job
 
+
+    COMPANY_NAME_REQUIRED(3301, "Company name is required"),
     // -----------------------------------------------------------
     // Nhóm lỗi liên quan đến vai trò (Role) - Mã từ 4000 đến 4099
     // -----------------------------------------------------------
@@ -154,6 +156,8 @@ public enum ErrorCode {
     SAVED_JOB_NOT_FOUND(2013, "You have not saved this job"),
     TOKEN_EXPIRED(2014, "Token has expired"),
     ORGANIZATION_NOT_FOUND(2015, "Organization not found"),;
+    EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
+
 
 
     ErrorCode(int errorCode, String errorMessage) {

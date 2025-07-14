@@ -1,6 +1,6 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.JobRecommendationResponse;
+import com.example.jobfinder.dto.job.JobRecommendationResponse;
 import com.example.jobfinder.service.RecommendationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

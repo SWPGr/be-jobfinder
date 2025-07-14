@@ -2,6 +2,8 @@
 package com.example.jobfinder.dto.statistic_admin;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
