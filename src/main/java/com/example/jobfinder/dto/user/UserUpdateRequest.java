@@ -1,9 +1,6 @@
 // src/main/java/com/example/jobfinder/dto/user/UserUpdateRequest.java
 package com.example.jobfinder.dto.user;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 @Data // Tự động tạo getters, setters, toString, equals, hashCode
 @NoArgsConstructor // Tự động tạo constructor không đối số
@@ -16,7 +13,6 @@ public class UserUpdateRequest {
     private String phone;
     private String location;
 
-    // Ensure these fields exist in UserUpdateRequest and are of Boolean type
     private Boolean enabled;   // This field likely needs to be Boolean for updating
     private Boolean isPremium; // Add this field if it's not there, type Boolean
     private Boolean verified;  // Add this field if it's not there, type Boolean (will be mapped to Integer in User)

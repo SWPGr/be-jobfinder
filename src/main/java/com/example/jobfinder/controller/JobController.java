@@ -11,6 +11,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,15 +49,15 @@ public class JobController {
     }
 
     @GetMapping("/list")
+    public ResponseEntity<Page<JobResponse>> getAllJobs(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<JobResponse> jobs = jobService.getAllJobs(pageable);
     public List<JobResponse> getAllJobs() {
         return jobService.getAllJobs();
     }
 
-    @GetMapping("/user")
-    public ResponseEntity<List<JobResponse>> getUserJobs() {
-        List<JobResponse> jobs = jobService.getAllJobsForUser();
-        return ResponseEntity.ok(jobs);
-    }
 
     @GetMapping("/{jobId}")
     public JobResponse getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long

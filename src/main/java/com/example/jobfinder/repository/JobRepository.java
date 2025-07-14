@@ -52,4 +52,34 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     @Query("SELECT j FROM Job j ORDER BY j.createdAt DESC")
     List<Job> findTopNJobs(Pageable pageable);
 
+    @Query("""
+    SELECT j FROM Job j
+    WHERE NOT EXISTS (
+        SELECT 1 FROM SavedJob s
+        WHERE s.job.id = j.id AND s.jobSeeker.id = :userId
+    )
+""")
+    Page<Job> findAllJobsNotSavedByUser(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("""
+    SELECT j FROM Job j
+    WHERE NOT EXISTS (
+        SELECT 1 FROM SavedJob s
+        WHERE s.job.id = j.id AND s.jobSeeker.id = :userId
+    )
+""")
+    List<Long> findAllJobsNotSavedByJobSeeker(@Param("userId") Long userId);
+
+    @Query("""
+    SELECT j FROM Job j
+    WHERE j.active = true
+    AND j.id NOT IN (
+        SELECT sj.job.id FROM SavedJob sj WHERE sj.jobSeeker.id = :userId
+    )
+""")
+    Page<Job> findAllActiveJobsNotSavedByUser(@Param("userId") Long userId, Pageable pageable);
+
+
+    @Query("SELECT j FROM Job j WHERE j.active = true")
+    Page<Job> findAllActive(Pageable pageable);
 }

@@ -4,14 +4,8 @@ import com.example.jobfinder.dto.auth.ProfileRequest;
 import com.example.jobfinder.dto.auth.ProfileResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Education;
-import com.example.jobfinder.model.Experience;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.ExperienceRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,6 +21,7 @@ public class ProfileService {
     private final EducationRepository educationRepository;
     private final CloudinaryService cloudinaryService;
     private final ExperienceRepository experienceRepository;
+    private final OrganizationRepository organizationRepository;
 
     // Constants for role names - better practice
     private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
@@ -34,12 +29,13 @@ public class ProfileService {
 
     public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository,
                           EducationRepository educationRepository, CloudinaryService cloudinaryService,
-                          ExperienceRepository experienceRepository) {
+                          ExperienceRepository experienceRepository, OrganizationRepository organizationRepository) {
         this.userRepository = userRepository;
         this.userDetailsRepository = userDetailsRepository;
         this.educationRepository = educationRepository;
         this.cloudinaryService = cloudinaryService;
         this.experienceRepository = experienceRepository;
+        this.organizationRepository = organizationRepository;
     }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
@@ -89,7 +85,11 @@ public class ProfileService {
                 // Nếu tìm thấy, gán vào userDetail
                 userDetail.setExperience(experience);
             }
-
+            if (request.getResumeUrl() != null && !request.getResumeUrl().isEmpty()) {
+                String resume = cloudinaryService.uploadFile(request.getResumeUrl());
+                userDetail.setResumeUrl(resume);
+            }
+        
             Optional.ofNullable(request.getResumeUrl()).ifPresent(userDetail::setResumeUrl);
 
         } else if (roleName.equals(ROLE_EMPLOYER)) { // Sử dụng hằng số
@@ -162,23 +162,28 @@ public class ProfileService {
         response.setRoleName(user.getRole().getName());
         response.setLocation(userDetail.getLocation());
         if (userDetail.getEducation() != null) {
-            response.setEducation(userDetail.getEducation());
+            response.setEducationId(userDetail.getEducation().getId());
+            response.setEducationName(userDetail.getEducation().getName());
         }
         response.setFullName(userDetail.getFullName());
         response.setPhone(userDetail.getPhone());
         if (userDetail.getExperience() != null) {
-            response.setExperience(userDetail.getExperience());
+            response.setExperienceId(userDetail.getExperience().getId());
+            response.setExperienceName(userDetail.getExperience().getName());
         }
         response.setResumeUrl(userDetail.getResumeUrl());
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());
         response.setWebsite(userDetail.getWebsite());
         response.setAvatarUrl(userDetail.getAvatarUrl());
-        response.setBanner(userDetail.getBanner()); // Có thể bạn muốn thêm banner vào đây
-        response.setTeamSize(userDetail.getTeamSize()); // Và các trường khác
+        if (userDetail.getOrganization() != null) {
+            response.setOrganizationId(userDetail.getOrganization().getId());
+            response.setOrganizationType(userDetail.getOrganization().getName());
+        }
+        response.setBanner(userDetail.getBanner()); 
+        response.setTeamSize(userDetail.getTeamSize());
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
-        response.setOrganizationType(userDetail.getOrganizationType());
 
         return response;
     }

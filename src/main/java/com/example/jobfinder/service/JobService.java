@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +42,7 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
+
     SavedJobRepository savedJobRepository;
     ApplicationRepository applicationRepository;
 
@@ -107,6 +107,7 @@ public class JobService {
         newJob.setExpiredDate(jobCreationRequest.getExpiredDate());
         newJob.setVacancy(jobCreationRequest.getVacancy());
         newJob.setResponsibility(jobCreationRequest.getResponsibility());
+        newJob.setActive(true);
 
         return jobRepository.save(newJob);
     }
@@ -137,42 +138,33 @@ public class JobService {
         jobRepository.deleteById(jobId);
     }
 
-    @Transactional(readOnly = true) // Đảm bảo giao dịch chỉ đọc
-    public List<JobResponse> getAllJobs() {
-        return jobRepository.findAll()
-                .stream()
-                .map(job -> {
-                    JobResponse jobResponse = jobMapper.toJobResponse(job);
-                    // Lấy số lượng đơn ứng tuyển cho công việc này
-                    long applicationCount = applicationRepository.countByJob_Id(job.getId());
-                    jobResponse.setJobApplicationCounts(applicationCount);
-                    return jobResponse;
-                })
-                .collect(Collectors.toList());
-    }
+    public Page<JobResponse> getAllJobs(Pageable pageable) {
 
-
-    public List<JobResponse> getAllJobsForUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUser = authentication.getName();
+        boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal());
 
-        Optional<User> userOptional = userRepository.findByEmail(currentUser);
-        Long currentUserId = userOptional.map(User::getId).orElse(null);
+        Long currentUserId = null;
+        if (isAuthenticated) {
+            String currentUserEmail = authentication.getName();
+            Optional<User> userOptional = userRepository.findByEmail(currentUserEmail);
+            currentUserId = userOptional.map(User::getId).orElse(null);
+        }
 
-        return jobRepository.findAll().stream()
-                .map(job -> {
-                    JobResponse response = jobMapper.toJobResponse(job);
+        Page<Job> jobPage;
+        if (currentUserId != null) {
+            jobPage = jobRepository.findAllActiveJobsNotSavedByUser(currentUserId, pageable);
+        } else {
+            jobPage = jobRepository.findAllActive(pageable);
+        }
 
-                    if (currentUserId != null) {
-                        boolean saved = savedJobRepository.existsByJobIdAndJobSeekerId(job.getId(), currentUserId);
-                        response.setSave(saved);
-                    } else {
-                        response.setSave(false);
-                    }
-                    return response;
-                })
-                .collect(Collectors.toList());
+        return jobPage.map(job -> {
+            JobResponse response = jobMapper.toJobResponse(job);
+            response.setIsSave(false);
+            return response;
+        });
     }
+
 
     @Transactional(readOnly = true)
     public long getTotalJobs() {

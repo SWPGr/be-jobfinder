@@ -19,6 +19,7 @@ public class OptionController {
     EducationRepository educationRepository;
     CategoryRepository categoryRepository;
     ExperienceRepository experienceRepository;
+    OrganizationRepository organizationRepository;
 
     @GetMapping("/all")
     public JobOptionsResponse getAllOptions() {
@@ -27,7 +28,8 @@ public class OptionController {
                 jobLevelRepository.findAll(),
                 educationRepository.findAll(),
                 categoryRepository.findAll(),
-                experienceRepository.findAll()
+                experienceRepository.findAll(),
+                organizationRepository.findAll()
         );
     }
 }
