@@ -27,6 +27,7 @@ public class ProfileResponse {
     private String location;
     private String avatarUrl;
 
+
     // Các trường đặc thù cho Job Seeker
     private String resumeUrl;
     private Long educationId;

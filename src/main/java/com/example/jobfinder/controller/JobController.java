@@ -54,8 +54,8 @@ public class JobController {
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<JobResponse> jobs = jobService.getAllJobs(pageable);
-    public List<JobResponse> getAllJobs() {
-        return jobService.getAllJobs();
+
+        return ResponseEntity.ok(jobs);
     }
 
 

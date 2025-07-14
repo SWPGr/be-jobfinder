@@ -79,6 +79,7 @@ public class SecurityConfig {
                                 "/api/job/**",
                                 "/api/job/list",
                                 "/api/job-types",
+                                "/api/categories/**",
                                 "/api/statistics",
                                 "/api/statistics/employer",
                                 "/api/experiences/**",
@@ -107,6 +108,10 @@ public class SecurityConfig {
                             response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
                         })
                 );
+//        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
+
+
+          ;
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
