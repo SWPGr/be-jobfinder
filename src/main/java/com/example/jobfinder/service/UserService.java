@@ -5,6 +5,7 @@ import com.example.jobfinder.dto.user.UserCreationRequest;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.dto.user.UserUpdateRequest;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.user.EmployerResponse;
 import com.example.jobfinder.dto.user.UserSearchRequest; // Thêm DTO tìm kiếm người dùng
 import com.example.jobfinder.exception.AppException;
@@ -159,7 +160,7 @@ public class UserService {
                             .isPremium(user.getIsPremium())
                             .createdAt(user.getCreatedAt()) // Chuyển đổi LocalDateTime sang String
                             .updatedAt(user.getUpdatedAt()) // Chuyển đổi LocalDateTime sang String
-                            .roleName(role != null ? role.getName() : null)
+                            .role(role != null ? new SimpleNameResponse(role.getId(), role.getName()) : null)
                             .verified(user.getVerified())
                             .totalApplications(null) // Khởi tạo là null
                             .totalJobsPosted(null)   // Khởi tạo là null
