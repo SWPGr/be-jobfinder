@@ -1,10 +1,6 @@
 package com.example.jobfinder.dto.auth;
 
 
-import com.example.jobfinder.dto.simple.SimpleNameResponse;
-import com.example.jobfinder.model.Education;
-import com.example.jobfinder.model.Experience;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
