@@ -24,6 +24,7 @@ public class JobResponse {
     private String responsibility;
     private LocalDate expiredDate;
     private Boolean isSave;
+    private Boolean active;
 
     // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

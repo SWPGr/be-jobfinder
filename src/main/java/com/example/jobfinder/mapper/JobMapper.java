@@ -45,12 +45,13 @@ public interface JobMapper {
     @Mapping(target = "jobLevel", ignore = true)
     @Mapping(target = "jobType", ignore = true)
     @Mapping(target = "education", ignore = true)
-    @Mapping(target = "salaryMin", ignore = true)
-    @Mapping(target = "salaryMax", ignore = true)
+    @Mapping(source = "salaryMin", target = "salaryMin")
+    @Mapping(source = "salaryMax", target = "salaryMax")
     @Mapping(target = "responsibility", ignore = true)
-    @Mapping(target = "expiredDate", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(source = "expiredDate", target = "expiredDate")
+    @Mapping(source = "createdAt", target = "createdAt")
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(source = "active", target = "active")
     JobResponse toJobResponse(JobDocument jobDocument);
 
     List<JobResponse> toJobResponseList(List<Job> jobs);

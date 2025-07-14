@@ -1,9 +1,8 @@
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
+import com.example.jobfinder.dto.job.JobSearchResponse;
 import com.example.jobfinder.mapper.JobDocumentMapper;
-import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.service.JobSearchService;
 import com.example.jobfinder.service.JobSuggestionService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/jobs/")
@@ -30,35 +28,44 @@ public class JobSearchController {
     }
 
     @GetMapping("/search")
-    public List<JobResponse> searchJobs(@RequestParam(required = false) String keyword,
+    public JobSearchResponse searchJobs(@RequestParam(required = false) String keyword,
                                         @RequestParam(required = false) String location,
                                         @RequestParam(required = false) Long categoryId,
                                         @RequestParam(required = false) Long jobLevelId,
                                         @RequestParam(required = false) Long jobTypeId,
-                                        @RequestParam(required = false) Long educationId) throws IOException {
-        boolean isEmptySearch = (keyword == null || keyword.isEmpty()) && location == null && categoryId == null
-                && jobLevelId == null && jobTypeId == null && educationId == null;
+                                        @RequestParam(required = false) Long educationId,
+                                        @RequestParam(defaultValue = "1") Integer page,
+                                        @RequestParam(defaultValue = "10") Integer size,
+                                        @RequestParam(required = false) Float salaryMin,
+                                        @RequestParam(required = false) Float salaryMax,
+                                        @RequestParam(required = false) Boolean isNegotiable,
+                                        @RequestParam(required = false) String sort) throws IOException {
 
-        List<JobDocument> documents;
-        if (isEmptySearch) {
-            // Lấy tất cả jobs với isSave status
-            documents = jobSearchService.getAllJobsWithIsSaveStatus();
-        } else {
-            // Tìm kiếm jobs với isSave status
-            JobSearchRequest request = new JobSearchRequest();
-            request.setKeyword(keyword);
-            request.setLocation(location);
-            request.setCategoryId(categoryId);
-            request.setJobLevelId(jobLevelId);
-            request.setJobTypeId(jobTypeId);
-            request.setEducationId(educationId);
-            
-            documents = jobSearchService.searchWithIsSaveStatus(request);
+        JobSearchRequest request = new JobSearchRequest();
+        request.setKeyword(keyword);
+        request.setLocation(location);
+        request.setCategoryId(categoryId);
+        request.setJobLevelId(jobLevelId);
+        request.setJobTypeId(jobTypeId);
+        request.setEducationId(educationId);
+        request.setSalaryMin(salaryMin);
+        request.setSalaryMax(salaryMax);
+        request.setSalaryNegotiable(isNegotiable);
+        if (sort != null && !sort.equalsIgnoreCase("asc") && !sort.equalsIgnoreCase("desc")) {
+            sort = null;
+        }
+        request.setSort(sort);
+        request.setPage(page);
+        request.setSize(size);
+
+        if ((keyword == null || keyword.isEmpty()) && location == null && categoryId == null
+                && jobLevelId == null && jobTypeId == null && educationId == null 
+                && salaryMin == null && salaryMax == null && isNegotiable == null) {
+
+            return jobSearchService.searchWithIsSaveStatus(request);
         }
 
-        return documents.stream()
-                .map(jobDocumentMapper::toJobResponse)
-                .collect(Collectors.toList());
+        return jobSearchService.searchWithIsSaveStatus(request);
     }
 
     @GetMapping("/suggest")

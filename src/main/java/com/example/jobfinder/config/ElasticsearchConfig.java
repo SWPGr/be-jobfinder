@@ -9,16 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 
 import java.net.URI;
 import java.util.Base64;
@@ -39,12 +35,16 @@ public class ElasticsearchConfig{
     public ElasticsearchClient elasticsearchClient() throws Exception {
         URI uri = new URI(elasticsearchUrl);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-        BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+
+        Header[] defaultHeaders = new Header[]{
+                new BasicHeader("Authorization", "Basic " + encodedAuth)
+        };
 
         RestClient restClient = RestClient.builder(host)
+                .setDefaultHeaders(defaultHeaders)
                 .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder
-                        .setDefaultCredentialsProvider(credsProvider)
                         .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
                 )
                 .build();

@@ -9,9 +9,9 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL) //Khi đưa object sang json thì thằng nào null sẽ không cho vào json
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T>{
-    int code = 200; //success
+    int code = 200;
     String message;
     T result;
 }

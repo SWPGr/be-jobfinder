@@ -3,14 +3,11 @@ package com.example.jobfinder.service;
 import com.example.jobfinder.dto.simple.SimpleNameCreationRequest;
 import com.example.jobfinder.dto.simple.SimpleNameUpdateRequest;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
-import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.SocialTypeMapper;
 import com.example.jobfinder.model.SocialType;
 import com.example.jobfinder.repository.SocialTypeRepository;
 import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 

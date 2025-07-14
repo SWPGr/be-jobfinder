@@ -1,12 +1,18 @@
 package com.example.jobfinder.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobSearchRequest;
+import com.example.jobfinder.dto.job.JobSearchResponse;
+import com.example.jobfinder.mapper.JobDocumentMapper;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.model.User;
+
 import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -16,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,13 +32,17 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class JobSearchService {
     private static final Logger log = LoggerFactory.getLogger(JobSearchService.class);
+    private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter EXPIRED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
 
     private final ElasticsearchClient client;
     private final UserRepository userRepository;
     private final SavedJobRepository savedJobRepository;
     private final JobRepository jobRepository;
+    private final JobDocumentMapper jobDocumentMapper;
 
-    public List<JobDocument> search(JobSearchRequest request) throws IOException {
+    public JobSearchResponse search(JobSearchRequest request) throws IOException {
 
 
         List<Query> mustQueries = new ArrayList<>();
@@ -42,6 +53,70 @@ public class JobSearchService {
                             .fields("title", "description")
                             .query(request.getKeyword())
                     )));
+        }
+
+        // Handle salary search logic
+        if (request.getSalaryNegotiable() != null && request.getSalaryNegotiable()) {
+            // Tìm jobs có salary "Thỏa thuận" - những job có CẢ salaryMin VÀ salaryMax đều = null
+            // Tức là KHÔNG tồn tại cả 2 fields này trong document
+            Query noSalaryQuery = Query.of(q -> q.bool(b -> b
+                .mustNot(
+                    Query.of(q1 -> q1.exists(e -> e.field("salaryMin"))),
+                    Query.of(q2 -> q2.exists(e -> e.field("salaryMax")))
+                )
+            ));
+            mustQueries.add(noSalaryQuery);
+            
+        } else if (request.getSalaryMin() != null || request.getSalaryMax() != null) {
+            // Logic "contained": Tìm job có toàn bộ salary range nằm trong user's budget
+            // Chỉ search trong những job CÓ salary fields
+            
+            // Đảm bảo job có salary fields
+            Query hasSalaryMinQuery = Query.of(q -> q.exists(e -> e.field("salaryMin")));
+            mustQueries.add(hasSalaryMinQuery);
+            
+            Query hasSalaryMaxQuery = Query.of(q -> q.exists(e -> e.field("salaryMax")));
+            mustQueries.add(hasSalaryMaxQuery);
+            
+            if (request.getSalaryMin() != null && request.getSalaryMax() != null) {
+                // job.salaryMin >= user.salaryMin
+                Query salaryMinQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMin")
+                        .gte(request.getSalaryMin().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMinQuery);
+                
+                // job.salaryMax <= user.salaryMax
+                Query salaryMaxQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMax")
+                        .lte(request.getSalaryMax().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMaxQuery);
+                
+            } else if (request.getSalaryMin() != null) {
+                // Chỉ có salaryMin: tìm job có salaryMin >= salaryMin
+                Query salaryMinQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMin")
+                        .gte(request.getSalaryMin().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMinQuery);
+                
+            } else if (request.getSalaryMax() != null) {
+                // Chỉ có salaryMax: tìm job có salaryMax <= salaryMax
+                Query salaryMaxQuery = RangeQuery.of(r -> r
+                    .number(n -> n
+                        .field("salaryMax")
+                        .lte(request.getSalaryMax().doubleValue())
+                    )
+                )._toQuery();
+                mustQueries.add(salaryMaxQuery);
+            }
         }
 
         if (request.getLocation() != null)
@@ -59,16 +134,37 @@ public class JobSearchService {
         if (request.getEducationId() != null)
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
+        mustQueries.add(Query.of(q -> q.term(t -> t
+                .field("active")
+                .value(true)
+        )));
+
         Query finalQuery = mustQueries.isEmpty()
                 ? Query.of(q -> q.matchAll(m -> m))
                 : Query.of(q -> q.bool(b -> b.must(mustQueries)));
 
-        SearchResponse<JobDocument> response = client.search(s -> s
-                        .index("jobs")
-                        .query(finalQuery)
-                        .size(50),
-                JobDocument.class
-        );
+        int safePage = Math.max(1, request.getPage());
+        int size = request.getSize();
+
+        SearchResponse<JobDocument> response = client.search(s -> {
+            var searchRequest = s
+                    .index("jobs")
+                    .query(finalQuery)
+                    .from((safePage - 1) * size)
+                    .size(size);
+
+            if (request.getSort() != null) {
+                searchRequest = searchRequest.sort(srt -> srt
+                        .field(f -> f
+                                .field("createdAt")
+                                .order("asc".equalsIgnoreCase(request.getSort())
+                                        ? SortOrder.Asc
+                                        : SortOrder.Desc)
+                        ));
+            }
+
+            return searchRequest;
+        }, JobDocument.class);
         log.info("Searching with filters: {}", mustQueries);
 
 
@@ -79,7 +175,20 @@ public class JobSearchService {
 
         setIsSaveStatus(jobs);
 
-        return jobs;
+        long totalHits = response.hits().total() != null
+                ? response.hits().total().value()
+                : jobs.size();
+
+        List<JobResponse> jobResponses = jobs.stream()
+                .map(jobDocumentMapper::toJobResponse)
+                .toList();
+
+        return JobSearchResponse.builder()
+                .data(jobResponses)
+                .totalHits(totalHits)
+                .page(safePage)
+                .size(size)
+                .build();
     }
 
     private Query termQuery(String field, Long value) {
@@ -116,16 +225,20 @@ public class JobSearchService {
         }
     }
 
-    public List<JobDocument> searchWithIsSaveStatus(JobSearchRequest request) throws IOException {
+    public JobSearchResponse searchWithIsSaveStatus(JobSearchRequest request) throws IOException {
         return search(request);
     }
 
     public List<JobDocument> getAllJobsWithIsSaveStatus() {
         // Lấy tất cả jobs từ database và convert thành JobDocument
         List<Job> allJobs = jobRepository.findAll();
+        log.info("Found {} jobs in database", allJobs.size());
+        
         List<JobDocument> jobDocuments = allJobs.stream()
                 .map(this::convertToJobDocument)
                 .toList();
+        
+        log.info("Converted {} jobs to JobDocuments", jobDocuments.size());
         
         // Set isSave status
         setIsSaveStatus(jobDocuments);
@@ -142,9 +255,21 @@ public class JobSearchService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        doc.setSalaryMin(job.getSalaryMin());
+        doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
+        doc.setActive(job.getActive());
         doc.setIsSave(false);
+        doc.setExpiredDate(job.getExpiredDate() != null
+                ? job.getExpiredDate().format(EXPIRED_DATE_FORMATTER)
+                : null);
+
+        doc.setCreatedAt(job.getCreatedAt() != null
+                ? job.getCreatedAt().format(CREATED_AT_FORMATTER)
+                : null);
+        
+        log.debug("Converted Job {} to JobDocument with title: {}", job.getId(), doc.getTitle());
         return doc;
     }
 

@@ -1,7 +1,6 @@
 package com.example.jobfinder.exception;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.exception.AppException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;

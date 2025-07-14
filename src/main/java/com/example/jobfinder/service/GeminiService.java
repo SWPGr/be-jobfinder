@@ -16,7 +16,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList; // THÊM IMPORT NÀY
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,7 +24,7 @@ import java.util.List;
 public class GeminiService {
 
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper; // Thêm ObjectMapper để xử lý JSON
+    private final ObjectMapper objectMapper;
 
     @Value("${google.gemini.api-key}")
     private String geminiApiKey;

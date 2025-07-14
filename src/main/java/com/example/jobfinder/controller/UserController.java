@@ -1,10 +1,9 @@
-// src/main/java/com/example/jobfinder/controller/UserController.java
 package com.example.jobfinder.controller;
 
-import com.example.jobfinder.dto.ApiResponse; // Đảm bảo import đúng đường dẫn ApiResponse của bạn
+import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.user.UserCreationRequest;
 import com.example.jobfinder.dto.user.UserResponse;
-import com.example.jobfinder.dto.user.UserSearchRequest; // Hoặc UserSearchParams nếu bạn dùng tên đó
+import com.example.jobfinder.dto.user.UserSearchRequest;
 import com.example.jobfinder.dto.user.UserUpdateRequest;
 import com.example.jobfinder.service.UserService;
 import jakarta.validation.Valid; // Để kích hoạt Bean Validation
@@ -14,19 +13,19 @@ import lombok.experimental.FieldDefaults;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize; // Để phân quyền
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController // Đánh dấu đây là một REST Controller
-@RequestMapping("api/users") // Định nghĩa base path cho tất cả các API trong controller này
-@RequiredArgsConstructor // Tự động tạo constructor với các trường final, giúp inject dependency
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true) // Đặt các trường là private final
-@Slf4j // Để sử dụng logging
+@RestController
+@RequestMapping("api/users")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserController {
 
-    UserService userService; // Inject UserService vào Controller
+    UserService userService;
     @PostMapping
     public ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest request) {
         log.info("API: Tạo người dùng mới với email: {}", request.getEmail());

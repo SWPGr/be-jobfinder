@@ -1,6 +1,5 @@
 package com.example.jobfinder.exception;
 
-import org.springframework.http.HttpStatus;
 
 public enum ErrorCode {
 

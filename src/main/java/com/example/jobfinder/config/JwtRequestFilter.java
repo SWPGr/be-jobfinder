@@ -1,6 +1,5 @@
 package com.example.jobfinder.config;
 
-import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;

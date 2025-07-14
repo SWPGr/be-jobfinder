@@ -1,7 +1,6 @@
 // src/main/java/com/example/jobfinder/config/WebSocketAuthInterceptor.java
 package com.example.jobfinder.config;
 
-import com.example.jobfinder.config.JwtUtil; // Dịch vụ xử lý JWT
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Để ghi log
 import org.springframework.messaging.Message; // Đại diện cho tin nhắn
