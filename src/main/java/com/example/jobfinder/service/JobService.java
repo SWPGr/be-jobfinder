@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,10 +43,8 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
-
     SavedJobRepository savedJobRepository;
     ApplicationRepository applicationRepository;
-
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -139,7 +138,6 @@ public class JobService {
     }
 
     public Page<JobResponse> getAllJobs(Pageable pageable) {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal());

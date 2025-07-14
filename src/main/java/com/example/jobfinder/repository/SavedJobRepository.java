@@ -25,4 +25,5 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
     Page<SavedJob> findByJobSeeker_Id(Long jobSeekerId, Pageable pageable);
 
     Long countByJobSeeker_Id(Long jobSeekerId);
+
 }

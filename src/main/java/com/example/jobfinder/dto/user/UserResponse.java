@@ -1,8 +1,11 @@
 
 package com.example.jobfinder.dto.user;
 
+import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDateTime;
 
 
 @Data
