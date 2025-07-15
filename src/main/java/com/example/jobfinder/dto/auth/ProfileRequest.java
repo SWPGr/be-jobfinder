@@ -1,5 +1,6 @@
 package com.example.jobfinder.dto.auth;
 
+import com.example.jobfinder.model.Category;
 import com.example.jobfinder.model.Education;
 import com.example.jobfinder.model.Experience;
 import com.example.jobfinder.model.Organization;
@@ -21,6 +22,8 @@ public class ProfileRequest {
     private String website;
     private MultipartFile avatar;
     private Organization organization;
+    private Category category;
+    private String companyVision;
 
     private MultipartFile banner; // Để nhận URL banner nếu không gửi file mới
     private String teamSize;
