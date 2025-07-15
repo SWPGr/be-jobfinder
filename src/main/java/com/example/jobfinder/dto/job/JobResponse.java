@@ -25,6 +25,7 @@ public class JobResponse {
     private LocalDate expiredDate;
     private Boolean isSave;
     private Boolean active;
+    private Integer vacancy;
 
     // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -38,6 +39,8 @@ public class JobResponse {
     SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
 
     SimpleNameResponse education;
+    SimpleNameResponse experience;
+
 
 
 

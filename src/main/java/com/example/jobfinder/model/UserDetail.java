@@ -56,6 +56,8 @@ public class UserDetail {
     @Column(name = "map_location", length = 255)
     private String mapLocation;
 
+    @Column(name = "company_vision")
+    private String companyVision;
   
 
     // --- Mối quan hệ ---
@@ -88,4 +90,9 @@ public class UserDetail {
     @JoinColumn(name = "user_organization_type")
     @JsonBackReference("organization-userDetails")
     private Organization organization;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    @JsonBackReference("category-userDetails")
+    private Category category;
 }

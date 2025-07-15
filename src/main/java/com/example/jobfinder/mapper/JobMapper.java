@@ -32,6 +32,9 @@ public interface JobMapper {
     @Mapping(target = "category", source = "category")
     @Mapping(target = "jobLevel", source = "jobLevel")
     @Mapping(target = "jobType", source = "jobType")
+    @Mapping(target = "education", source = "education")
+    @Mapping(target = "experience", source = "experience")
+    @Mapping(target = "vacancy", source = "vacancy")
     @Mapping(target = "jobApplicationCounts", ignore = true)
     JobResponse toJobResponse(Job job);
 

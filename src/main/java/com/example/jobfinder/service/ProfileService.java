@@ -6,6 +6,7 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Optional; // Import Optional
 
 @Service
+@RequiredArgsConstructor
 public class ProfileService {
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
@@ -22,21 +24,12 @@ public class ProfileService {
     private final CloudinaryService cloudinaryService;
     private final ExperienceRepository experienceRepository;
     private final OrganizationRepository organizationRepository;
+    private final CategoryRepository categoryRepository;
 
     // Constants for role names - better practice
     private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
     private static final String ROLE_EMPLOYER = "EMPLOYER";
 
-    public ProfileService(UserRepository userRepository, UserDetailsRepository userDetailsRepository,
-                          EducationRepository educationRepository, CloudinaryService cloudinaryService,
-                          ExperienceRepository experienceRepository, OrganizationRepository organizationRepository) {
-        this.userRepository = userRepository;
-        this.userDetailsRepository = userDetailsRepository;
-        this.educationRepository = educationRepository;
-        this.cloudinaryService = cloudinaryService;
-        this.experienceRepository = experienceRepository;
-        this.organizationRepository = organizationRepository;
-    }
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -97,6 +90,12 @@ public class ProfileService {
                 userDetail.setOrganization(organization);
             }
 
+          if (request.getCategory() != null) {
+              Category category = categoryRepository.findById(request.getOrganization().getId())
+                      .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+              userDetail.setCategory(category);
+          }
+
 
             Optional.ofNullable(request.getCompanyName()).ifPresent(userDetail::setCompanyName);
             Optional.ofNullable(request.getLocation()).ifPresent(userDetail::setLocation);
@@ -105,6 +104,7 @@ public class ProfileService {
             Optional.ofNullable(request.getTeamSize()).ifPresent(userDetail::setTeamSize);
             Optional.ofNullable(request.getYearOfEstablishment()).ifPresent(userDetail::setYearOfEstablishment);
             Optional.ofNullable(request.getMapLocation()).ifPresent(userDetail::setMapLocation);
+            Optional.ofNullable(request.getCompanyVision()).ifPresent(userDetail::setCompanyVision);
 
         } else {
             throw new AppException(ErrorCode.INVALID_ROLE); // Thêm ErrorCode này
@@ -161,6 +161,10 @@ public class ProfileService {
             response.setExperienceId(userDetail.getExperience().getId());
             response.setExperienceName(userDetail.getExperience().getName());
         }
+        if (userDetail.getCategory() != null) {
+            response.setCategoryId(userDetail.getCategory().getId());
+            response.setCategoryName(userDetail.getCategory().getName());
+        }
         response.setResumeUrl(userDetail.getResumeUrl());
         response.setCompanyName(userDetail.getCompanyName());
         response.setDescription(userDetail.getDescription());
@@ -176,6 +180,7 @@ public class ProfileService {
 
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
+        response.setCompanyVision(userDetail.getCompanyVision());
 
         return response;
     }
