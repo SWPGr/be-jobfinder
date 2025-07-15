@@ -61,10 +61,9 @@ public class JobSearchService {
                                     .query(keyword)
                             ))
                     )
-            ).minimumShouldMatch("1")))); // ít nhất một trong 2 điều kiện đúng
+            ).minimumShouldMatch("1"))));
         }
 
-        // Handle salary search logic
         if (request.getSalaryNegotiable() != null && request.getSalaryNegotiable()) {
             Query noSalaryQuery = Query.of(q -> q.bool(b -> b
                 .mustNot(
@@ -202,10 +201,8 @@ public class JobSearchService {
     }
 
     private void setIsSaveStatus(List<JobDocument> jobs) {
-        // Khởi tạo tất cả jobs với isSave = false
         jobs.forEach(job -> job.setIsSave(false));
 
-        // Kiểm tra và set isSave = true nếu user đã đăng nhập và lưu job
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             String email = auth.getName();
@@ -229,7 +226,6 @@ public class JobSearchService {
     }
 
     public List<JobDocument> getAllJobsWithIsSaveStatus() {
-        // Lấy tất cả jobs từ database và convert thành JobDocument
         List<Job> allJobs = jobRepository.findAll();
         log.info("Found {} jobs in database", allJobs.size());
         
@@ -239,7 +235,6 @@ public class JobSearchService {
         
         log.info("Converted {} jobs to JobDocuments", jobDocuments.size());
         
-        // Set isSave status
         setIsSaveStatus(jobDocuments);
         
         return jobDocuments;
