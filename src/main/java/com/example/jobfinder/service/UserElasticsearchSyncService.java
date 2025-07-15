@@ -58,6 +58,9 @@ public class UserElasticsearchSyncService {
         if (userDetail.getOrganization() != null) {
             userDocument.setOrganizationId(userDetail.getOrganization().getId());
         }
+        if (userDetail.getExperience() != null) {
+            userDocument.setExperienceId(userDetail.getExperience().getId());
+        }
 
         return userDocument;
     }

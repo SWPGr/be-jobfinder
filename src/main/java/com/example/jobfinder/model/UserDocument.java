@@ -61,6 +61,9 @@ public class UserDocument {
     private Long educationId;
 
     @Field(type = FieldType.Long)
+    private Long experienceId;
+
+    @Field(type = FieldType.Long)
     private Long organizationId;
 
     @Field(type = FieldType.Boolean)
