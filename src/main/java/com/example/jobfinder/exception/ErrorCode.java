@@ -157,6 +157,9 @@ public enum ErrorCode {
     TOKEN_EXPIRED(2014, "Token has expired"),
 
     ORGANIZATION_NOT_FOUND(2015, "Organization not found"),
+    PLAN_NOT_FOUND(2016,"PLAN_NOT_FOUND"),
+    INVALID_PAYMENT_FOR_FREE_PLAN(2017, "Invalid payment for free plan"),
+
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
 

@@ -1,6 +1,6 @@
+// src/main/java/com/example/jobfinder/model/Payment.java
 package com.example.jobfinder.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,32 +18,39 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @OneToOne(fetch = FetchType.LAZY) // OneToOne vì mỗi payment thường cho một subscription cụ thể
+    @JoinColumn(name = "subscription_id", unique = true) // Có thể unique hoặc không tùy logic của bạn
+    private Subscription subscription; // Liên kết với Subscription mà payment này kích hoạt
+
     private Float amount;
 
     @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
+    private String paymentMethod; // Ví dụ: "PayOS", "Stripe", "PayPal"
 
-    @Column(name = "paid_at", nullable = false, updatable = false)
+    @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
-    // --- Mối quan hệ ---
+    // Thêm các trường PayOS specific để lưu trữ thông tin giao dịch
+    @Column(name = "payos_order_code", unique = true) // Mã đơn hàng từ PayOS
+    private Long payosOrderCode;
 
-    // Một Payment thuộc về một User
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id") // user_id có thể NULL trong DB schema của bạn nếu free plan
-    @JsonManagedReference("user-payments") // Đặt reference name khác nếu User có nhiều loại payments
-    private User user;
+    @Column(name = "payos_payment_link_id", unique = true) // ID link thanh toán từ PayOS
+    private String payosPaymentLinkId;
 
-    // Một Payment liên quan đến một Subscription (OneToOne)
-    // Payment sở hữu khóa ngoại subscription_id
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id") // subscription_id có thể NULL trong DB
-    @JsonManagedReference("subscription-payment")
-    private Subscription subscription;
+    @Column(name = "payos_transaction_ref") // Mã tham chiếu giao dịch từ PayOS webhook
+    private String payosTransactionRef;
 
-    // Lifecycle callbacks
+    @Column(name = "payos_status") // Trạng thái cuối cùng từ PayOS webhook
+    private String payosStatus;
+
     @PrePersist
     protected void onCreate() {
-        this.paidAt = LocalDateTime.now();
+        if (paidAt == null) {
+            paidAt = LocalDateTime.now();
+        }
     }
 }

@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPlan, Long> {
     Optional<SubscriptionPlan> findBySubscriptionPlanName(String subscriptionPlanName, Limit limit);
+    Optional<SubscriptionPlan> findByPrice(Float price);
 }

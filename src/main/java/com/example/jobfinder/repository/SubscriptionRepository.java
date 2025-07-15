@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
     Optional<Subscription> findByUser_Email(String userEmail);
-
+    Optional<Subscription> findByUserId(Long userId);
     @Query(QueryConstants.FIND_SUBSCRIPTIONS_BY_CRITERIA) // Sử dụng hằng số
     List<Subscription> findSubscriptionsByCriteria(@Param("userEmail") String userEmail,
                                                    @Param("planName") String planName,

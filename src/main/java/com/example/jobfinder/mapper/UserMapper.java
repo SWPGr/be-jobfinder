@@ -122,7 +122,7 @@ public interface UserMapper {
     @Mapping(target = "organization", ignore = true) // Will be set by UserDocumentMapper
     @Mapping(target = "resumeUrl", ignore = true) // Not available in UserDocument for employers
     @Mapping(target = "education", ignore = true) // Will be set by UserDocumentMapper
-    @Mapping(target = "experience", ignore = true) // Not available in UserDocument
+    @Mapping(target = "experience", ignore = true) // Will be set by UserDocumentMapper
     @Mapping(target = "totalApplications", ignore = true) // Not available in UserDocument
     UserResponse toUserResponse(UserDocument userDocument);
 

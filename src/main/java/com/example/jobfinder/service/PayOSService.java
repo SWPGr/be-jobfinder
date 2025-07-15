@@ -25,25 +25,15 @@ public class PayOSService {
     @Value("${payos.checksum-key}")
     private String checksumKey;
 
-    private PayOS payOS; // [cite: 21, 25, 38, 49, 59, 68]
+    private PayOS payOS;
 
     @PostConstruct
     public void init() {
-        payOS = new PayOS(clientId, apiKey, checksumKey); // [cite: 25, 38, 49, 59, 68]
+        payOS = new PayOS(clientId, apiKey, checksumKey);
         System.out.println("PayOS initialized successfully.");
     }
 
-    /**
-     * Tạo link thanh toán cho đơn hàng.
-     * @param orderCode Mã đơn hàng duy nhất của bạn (kiểu long). [cite: 78]
-     * @param amount Tổng số tiền thanh toán (kiểu int). [cite: 78]
-     * @param description Mô tả cho thanh toán (nội dung chuyển khoản). [cite: 78]
-     * @param items Danh sách các sản phẩm trong đơn hàng. [cite: 78]
-     * @param returnUrl Đường dẫn chuyển tiếp khi thanh toán thành công. [cite: 78]
-     * @param cancelUrl Đường dẫn chuyển tiếp khi người dùng hủy đơn hàng. [cite: 78]
-     * @return CheckoutResponseData chứa thông tin thanh toán, bao gồm checkoutUrl. [cite: 27, 32, 95]
-     * @throws Exception nếu có lỗi trong quá trình tạo link.
-     */
+
     public CheckoutResponseData createPaymentLink(
             long orderCode,
             int amount,
@@ -52,16 +42,18 @@ public class PayOSService {
             String returnUrl,
             String cancelUrl) throws Exception {
 
-        PaymentData paymentData = PaymentData.builder()
-                .orderCode(orderCode) // [cite: 78]
-                .amount(amount) // [cite: 78]
-                .description(description) // [cite: 78]
-                .items(items) // [cite: 78]
-                .returnUrl(returnUrl) // [cite: 78, 41]
-                .cancelUrl(cancelUrl) // [cite: 78, 40]
+        PaymentData.PaymentDataBuilder builder = PaymentData.builder();
+        builder.orderCode(orderCode);
+        builder.amount(amount);
+        builder.description(description);
+        builder.items(items);
+        builder.returnUrl(returnUrl);
+        builder.cancelUrl(cancelUrl);
+// [cite: 78, 41]
+        PaymentData paymentData = builder
                 .build();
 
-        // Sử dụng phương thức createPaymentLink từ đối tượng payOS. [cite: 27, 43]
+
         return payOS.createPaymentLink(paymentData);
     }
 
@@ -72,7 +64,7 @@ public class PayOSService {
      * @throws Exception nếu có lỗi.
      */
     public PaymentLinkData getPaymentLinkInformation(long orderCode) throws Exception {
-        return payOS.getPaymentLinkInformation(orderCode); // [cite: 27, 51]
+        return payOS.getPaymentLinkInformation(orderCode);
     }
 
     /**
@@ -83,7 +75,7 @@ public class PayOSService {
      * @throws Exception nếu có lỗi.
      */
     public PaymentLinkData cancelPaymentLink(long orderCode, String cancellationReason) throws Exception {
-        return payOS.cancelPaymentLink(orderCode, cancellationReason); // [cite: 61]
+        return payOS.cancelPaymentLink(orderCode, cancellationReason);
     }
 
     /**
@@ -93,7 +85,7 @@ public class PayOSService {
      * @throws Exception nếu có lỗi.
      */
     public String confirmWebhook(String webhookUrl) throws Exception {
-        return payOS.confirmWebhook(webhookUrl); // [cite: 70]
+        return payOS.confirmWebhook(webhookUrl);
     }
 
 

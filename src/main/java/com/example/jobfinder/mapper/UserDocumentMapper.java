@@ -4,6 +4,7 @@ import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.model.UserDocument;
 import com.example.jobfinder.repository.EducationRepository;
+import com.example.jobfinder.repository.ExperienceRepository;
 import com.example.jobfinder.repository.OrganizationRepository;
 import com.example.jobfinder.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class UserDocumentMapper {
     private final EducationRepository educationRepository;
     private final RoleRepository roleRepository;
     private final OrganizationRepository organizationRepository;
+    private final ExperienceRepository experienceRepository;
     private final UserMapper userMapper;
 
     public UserResponse toUserResponse(UserDocument userDocument) {
@@ -25,6 +27,7 @@ public class UserDocumentMapper {
         response.setEducation(getEducation(userDocument.getEducationId()));
         response.setRole(getRole(userDocument.getRoleId()));
         response.setOrganization(getOrganization(userDocument.getOrganizationId()));
+        response.setExperience(getExperience(userDocument.getExperienceId()));
         
         return response;
     }
@@ -47,6 +50,13 @@ public class UserDocumentMapper {
         if (organizationId == null) return null;
         return organizationRepository.findById(organizationId)
                 .map(organization -> new SimpleNameResponse(organization.getId(), organization.getName()))
+                .orElse(null);
+    }
+
+    private SimpleNameResponse getExperience(Long experienceId) {
+        if (experienceId == null) return null;
+        return experienceRepository.findById(experienceId)
+                .map(experience -> new SimpleNameResponse(experience.getId(), experience.getName()))
                 .orElse(null);
     }
 }
