@@ -290,11 +290,12 @@ public class JobSearchService {
                     String searchQuery = buildSearchQueryString(request);
                     
                     if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-                        // Kiểm tra search history gần nhất của user
                         SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
                         
-                        // Chỉ lưu nếu khác với tìm kiếm cuối cùng
-                        if (lastSearchHistory == null || !searchQuery.equals(lastSearchHistory.getSearchQuery())) {
+                        boolean isDuplicate = lastSearchHistory != null &&
+                                searchQuery.toLowerCase().equals(lastSearchHistory.getSearchQuery().toLowerCase());
+                        
+                        if (!isDuplicate) {
                             SearchHistory searchHistory = SearchHistory.builder()
                                     .user(user)
                                     .searchQuery(searchQuery)
@@ -303,7 +304,6 @@ public class JobSearchService {
                             searchHistoryRepository.save(searchHistory);
                             log.debug("Saved new search history for user {}: {}", email, searchQuery);
                             
-                            // Cleanup: Giữ tối đa 50 search histories gần nhất
                             cleanupOldSearchHistory(user, 50);
                         } else {
                             log.debug("Skipped saving duplicate search history for user {}: {}", email, searchQuery);
@@ -337,7 +337,7 @@ public class JobSearchService {
         List<String> queryParts = new ArrayList<>();
         
         if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
-            queryParts.add("keyword: " + request.getKeyword().trim());
+            queryParts.add(request.getKeyword().trim());
         }
         
         return queryParts.isEmpty() ? null : String.join(", ", queryParts);
