@@ -34,7 +34,10 @@ public class Payment {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
-    // Thêm các trường PayOS specific để lưu trữ thông tin giao dịch
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "intended_plan_id", nullable = false) // Gói mà user muốn mua
+    private SubscriptionPlan intendedPlan;
+
     @Column(name = "payos_order_code", unique = true) // Mã đơn hàng từ PayOS
     private Long payosOrderCode;
 

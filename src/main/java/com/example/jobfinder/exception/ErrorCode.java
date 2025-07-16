@@ -1,6 +1,10 @@
 package com.example.jobfinder.exception;
 
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
 public enum ErrorCode {
 
     //1000 _> Success
@@ -159,6 +163,10 @@ public enum ErrorCode {
     ORGANIZATION_NOT_FOUND(2015, "Organization not found"),
     PLAN_NOT_FOUND(2016,"PLAN_NOT_FOUND"),
     INVALID_PAYMENT_FOR_FREE_PLAN(2017, "Invalid payment for free plan"),
+    PAYMENT_PROCESSING_ERROR(2018, "Payment processing error"),
+    PAYMENT_INFO_NOT_FOUND_PAYOS(2019, "Payment info not found for payos"),
+    PAYMENT_FAILED_OR_PENDING(2020, "Payment failed or pending"),
+    PLAN_NAME_DUPLICATED(2021, "Plan name already exists" ),
 
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
@@ -170,22 +178,7 @@ public enum ErrorCode {
         this.errorMessage = errorMessage;
     }
 
-    private int errorCode;
-    private String errorMessage;
+    private final int errorCode;
+    private final String errorMessage;
 
-    public void setErrorCode(int errorCode) {
-        this.errorCode = errorCode;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public int getErrorCode() {
-        return errorCode;
-    }
 }

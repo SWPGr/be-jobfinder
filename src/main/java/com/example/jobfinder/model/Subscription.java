@@ -49,7 +49,7 @@ public class Subscription {
 
     // Một Subscription có một Payment
     // Mối quan hệ OneToOne với Payment, Payment sở hữu khóa ngoại subscription_id
-    @OneToOne(mappedBy = "subscription", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToOne(mappedBy = "subscription", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference("subscription-payment")
     private Payment payment;
 

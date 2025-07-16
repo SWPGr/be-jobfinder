@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(name = "is_premium", columnDefinition = "BOOLEAN DEFAULT FALSE") // Đảm bảo đúng kiểu dữ liệu
+    @Column(name = "is_premium", columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isPremium;
 
     @Column(name = "reset_password_token", length = 255)
@@ -44,8 +44,8 @@ public class User implements UserDetails {
     @Column(name = "verification_token", length = 255)
     private String verificationToken;
 
-    @Column(name = "verified", columnDefinition = "INT DEFAULT 0") // Đảm bảo đúng kiểu dữ liệu INT
-    private Integer verified; // Sửa từ Boolean sang Integer theo DB schema
+    @Column(name = "verified", columnDefinition = "INT DEFAULT 0")
+    private Integer verified;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -62,7 +62,7 @@ public class User implements UserDetails {
     @JsonManagedReference("role-users")
     private Role role;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference("user-userDetail") // Phía "One" sẽ là BackReference
     private UserDetail userDetail;
 
@@ -116,7 +116,6 @@ public class User implements UserDetails {
     private Set<ChatbotHistory> chatbotHistories = new HashSet<>();
 
 
-    // --- Implement UserDetails cho Spring Security ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.getName())); // Lấy tên role từ entity Role
