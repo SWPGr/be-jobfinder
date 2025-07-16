@@ -48,6 +48,7 @@ public interface JobMapper {
     @Mapping(target = "jobLevel", ignore = true)
     @Mapping(target = "jobType", ignore = true)
     @Mapping(target = "education", ignore = true)
+    @Mapping(target = "experience", ignore = true)
     @Mapping(source = "salaryMin", target = "salaryMin")
     @Mapping(source = "salaryMax", target = "salaryMax")
     @Mapping(target = "responsibility", ignore = true)

@@ -3,10 +3,7 @@ package com.example.jobfinder.mapper;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.model.JobDocument;
-import com.example.jobfinder.repository.CategoryRepository;
-import com.example.jobfinder.repository.EducationRepository;
-import com.example.jobfinder.repository.JobLevelRepository;
-import com.example.jobfinder.repository.JobTypeRepository;
+import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +15,7 @@ public class JobDocumentMapper {
     private final CategoryRepository categoryRepository;
     private final JobTypeRepository jobTypeRepository;
     private final JobLevelRepository jobLevelRepository;
+    private final ExperienceRepository experienceRepository;
     private final JobMapper jobMapper;
 
     public JobResponse toJobResponse(JobDocument doc) {
@@ -34,6 +32,7 @@ public class JobDocumentMapper {
         response.setCategory(getCategory(doc.getCategoryId()));
         response.setJobType(getJobType(doc.getJobTypeId()));
         response.setJobLevel(getJobLevel(doc.getJobLevelId()));
+        response.setExperience(getExperience(doc.getExperience()));
 
         return response;
     }
@@ -59,6 +58,12 @@ public class JobDocumentMapper {
     private SimpleNameResponse getJobLevel(Long id) {
         return jobLevelRepository.findById(id)
                 .map(l -> new SimpleNameResponse(l.getId(), l.getName()))
+                .orElse(null);
+    }
+
+    private SimpleNameResponse getExperience(Long id) {
+        return experienceRepository.findById(id)
+                .map(r -> new SimpleNameResponse(r.getId(), r.getName()))
                 .orElse(null);
     }
 }

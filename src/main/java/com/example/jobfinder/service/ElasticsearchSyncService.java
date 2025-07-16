@@ -52,6 +52,9 @@ public class ElasticsearchSyncService {
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
         doc.setEducationId(job.getEducation().getId());
+        if (job.getExperience() != null) {
+            doc.setExperience(job.getExperience().getId());
+        }
         doc.setActive(job.getActive());
         doc.setIsSave(false);
         doc.setExpiredDate(job.getExpiredDate() != null

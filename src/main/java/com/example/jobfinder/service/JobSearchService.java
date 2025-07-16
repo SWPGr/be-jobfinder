@@ -249,6 +249,9 @@ public class JobSearchService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        if (job.getExperience() != null) {
+            doc.setExperience(job.getExperience().getId());
+        }
         doc.setSalaryMin(job.getSalaryMin());
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());

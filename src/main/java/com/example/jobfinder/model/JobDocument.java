@@ -45,6 +45,9 @@ public class JobDocument {
     @Field(type = FieldType.Long)
     private Long educationId;
 
+    @Field(type = FieldType.Long)
+    private Long experience;
+
     @Field(type = FieldType.Integer)
     private Integer viewCount;
 
