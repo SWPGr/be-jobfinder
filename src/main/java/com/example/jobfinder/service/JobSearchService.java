@@ -133,7 +133,7 @@ public class JobSearchService {
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
         if (request.getExperienceId() != null) {
-            mustQueries.add(termQuery("experienceId", request.getExperienceId()));
+            mustQueries.add(termQuery("experience", request.getExperienceId()));
         }
 
         mustQueries.add(Query.of(q -> q.term(t -> t
