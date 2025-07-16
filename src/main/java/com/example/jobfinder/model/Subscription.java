@@ -42,8 +42,8 @@ public class Subscription {
     @JsonManagedReference("plan-subscriptions")
     private SubscriptionPlan plan;
 
+    @OneToOne(mappedBy = "subscription", cascade = CascadeType.ALL, orphanRemoval = true)
 
-    @OneToOne(mappedBy = "subscription", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("subscription-payment")
     private Payment payment;
 
