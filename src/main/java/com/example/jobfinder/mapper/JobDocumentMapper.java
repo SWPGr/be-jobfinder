@@ -38,33 +38,39 @@ public class JobDocumentMapper {
     }
 
     private SimpleNameResponse getEducation(Long id) {
+        if (id == null) return null;
         return educationRepository.findById(id)
                 .map(e -> new SimpleNameResponse(e.getId(), e.getName()))
                 .orElse(null);
     }
 
     private SimpleNameResponse getCategory(Long id) {
+        if (id == null) return null;
         return categoryRepository.findById(id)
                 .map(c -> new SimpleNameResponse(c.getId(), c.getName()))
                 .orElse(null);
     }
 
     private SimpleNameResponse getJobType(Long id) {
+        if (id == null) return null;
         return jobTypeRepository.findById(id)
                 .map(j -> new SimpleNameResponse(j.getId(), j.getName()))
                 .orElse(null);
     }
 
     private SimpleNameResponse getJobLevel(Long id) {
+        if (id == null) return null;
         return jobLevelRepository.findById(id)
                 .map(l -> new SimpleNameResponse(l.getId(), l.getName()))
                 .orElse(null);
     }
 
     private SimpleNameResponse getExperience(Long id) {
+        if (id == null) return null;
         return experienceRepository.findById(id)
                 .map(r -> new SimpleNameResponse(r.getId(), r.getName()))
                 .orElse(null);
     }
+
 }
 

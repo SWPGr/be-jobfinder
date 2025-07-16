@@ -132,6 +132,10 @@ public class JobSearchService {
         if (request.getEducationId() != null)
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
+        if (request.getExperienceId() != null) {
+            mustQueries.add(termQuery("experienceId", request.getExperienceId()));
+        }
+
         mustQueries.add(Query.of(q -> q.term(t -> t
                 .field("active")
                 .value(true)
