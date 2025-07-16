@@ -17,13 +17,16 @@ public class CloudinaryService {
     }
     public String uploadFile(MultipartFile file) throws IOException {
         try {
-            // Lấy đuôi file để xác định loại
             String contentType = file.getContentType();
             String resourceType = determineResourceType(contentType);
             String originalFilename = file.getOriginalFilename();
 
-            // Tạo unique filename để tránh conflict
-            String publicId = "resumes/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
+            String publicId;
+            if ("raw".equals(resourceType) && contentType != null && contentType.equals("application/pdf")) {
+                publicId = "resumes/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
+            } else {
+                publicId = "resumes/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
+            }
 
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
@@ -34,24 +37,26 @@ public class CloudinaryService {
                     "type", "upload"
             );
             
-            // Đặc biệt cho PDF/documents
             if ("raw".equals(resourceType)) {
-                uploadParams.put("use_filename", true);
+                uploadParams.put("use_filename", false);
                 uploadParams.put("unique_filename", false);
+                uploadParams.put("overwrite", true);
+                uploadParams.put("invalidate", true);
             }
 
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
 
             String url = uploadResult.get("secure_url").toString();
             
-            // Đặc biệt xử lý cho PDF và documents để download đúng
             if ("raw".equals(resourceType)) {
                 if (contentType != null && contentType.equals("application/pdf")) {
-                    // Để PDF có thể view trong browser, không thêm fl_attachment
-                    // Nếu muốn force download, uncomment dòng dưới:
-                    // url = url.replace("/upload/", "/upload/fl_attachment/");
+                    if (!url.contains("?")) {
+                        url += "?";
+                    } else {
+                        url += "&";
+                    }
+                    url += "content_type=application/pdf";
                 } else {
-                    // Các file documents khác thì force download
                     url = url.replace("/upload/", "/upload/fl_attachment/");
                 }
             }
@@ -85,37 +90,99 @@ public class CloudinaryService {
         return "raw";  // fallback
     }
 
-    /**
-     * Upload PDF với settings tối ưu để tránh file bị corrupt
-     */
     public String uploadPDF(MultipartFile file) throws IOException {
         try {
             String originalFilename = file.getOriginalFilename();
             
-            // Tạo unique filename
-            String publicId = "pdfs/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
+            String publicId = "pdfs/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
 
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
                     "resource_type", "raw",
-                    "folder", "pdfs", 
                     "public_id", publicId,
                     "access_mode", "public",
                     "type", "upload",
-                    "use_filename", true,
+                    "use_filename", false,
                     "unique_filename", false,
-                    "format", "pdf"
+                    "overwrite", true,
+                    "invalidate", true
             );
 
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
 
             String url = uploadResult.get("secure_url").toString();
             
-            // Không thêm fl_attachment để PDF có thể view inline trong browser
+            if (!url.contains("?")) {
+                url += "?";
+            } else {
+                url += "&";
+            }
+            url += "content_type=application/pdf";
+            
             return url;
             
         } catch (IOException e) {
             throw new RuntimeException("PDF upload failed: " + e.getMessage(), e);
+        }
+    }
+
+    public String uploadPDFWithStream(MultipartFile file) throws IOException {
+        try {
+            String originalFilename = file.getOriginalFilename();
+            
+            String publicId = "pdfs/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
+                    "resource_type", "raw",
+                    "public_id", publicId,
+                    "access_mode", "public",
+                    "type", "upload",
+                    "use_filename", false,
+                    "unique_filename", false,
+                    "overwrite", true
+            );
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getInputStream(), uploadParams);
+
+            String url = uploadResult.get("secure_url").toString();
+            
+            return url;
+            
+        } catch (IOException e) {
+            throw new RuntimeException("PDF upload with stream failed: " + e.getMessage(), e);
+        }
+    }
+
+    public String uploadPDFWithTransformation(MultipartFile file) throws IOException {
+        try {
+            String originalFilename = file.getOriginalFilename();
+            
+            String publicId = "documents/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
+                    "resource_type", "raw",
+                    "public_id", publicId,
+                    "access_mode", "public",
+                    "type", "upload",
+                    "use_filename", false,
+                    "unique_filename", true,
+                    "overwrite", false,
+                    "flags", "immutable",
+                    "raw_convert", "aspose"
+            );
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getInputStream(), uploadParams);
+
+            String url = uploadResult.get("secure_url").toString();
+            
+            url = url.replace("/upload/", "/upload/f_auto/");
+            
+            return url;
+            
+        } catch (IOException e) {
+            throw new RuntimeException("PDF upload with transformation failed: " + e.getMessage(), e);
         }
     }
 }
