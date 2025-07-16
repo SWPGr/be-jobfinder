@@ -37,12 +37,12 @@ public class ProfileResponse {
     private String organizationType;
     private Long categoryId;
     private String categoryName;
+    private String companyVision;
     private String banner;
     private String teamSize;
     private Integer yearOfEstablishment;
     private String mapLocation;
     private String description;
-    private String companyVision;
 
     // Các trường tính toán (cần được gán thủ công trong service)
     private Long totalJobsPosted;
