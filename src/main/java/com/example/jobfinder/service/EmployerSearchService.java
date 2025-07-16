@@ -9,9 +9,15 @@ import com.example.jobfinder.dto.employer.EmployerSearchResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.mapper.UserDocumentMapper;
 import com.example.jobfinder.model.UserDocument;
+import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.SearchHistory;
+import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.repository.SearchHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -27,6 +33,8 @@ public class EmployerSearchService {
 
     private final ElasticsearchClient client;
     private final UserDocumentMapper userDocumentMapper;
+    private final UserRepository userRepository;
+    private final SearchHistoryRepository searchHistoryRepository;
 
     public EmployerSearchResponse search(EmployerSearchRequest request) throws IOException {
         List<Query> mustQueries = new ArrayList<>();
@@ -115,6 +123,9 @@ public class EmployerSearchService {
                 .map(userDocumentMapper::toUserResponse)
                 .toList();
 
+        // Lưu lịch sử tìm kiếm employer sau khi search thành công
+        saveEmployerSearchHistory(request);
+
         return EmployerSearchResponse.builder()
                 .data(employerResponses)
                 .totalHits(totalHits)
@@ -136,5 +147,87 @@ public class EmployerSearchService {
                 .field(field)
                 .query(value)
         ));
+    }
+
+    private void saveEmployerSearchHistory(EmployerSearchRequest request) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                String email = auth.getName();
+                User user = userRepository.findByEmail(email).orElse(null);
+                
+                if (user != null) {
+                    String searchQuery = buildEmployerSearchQueryString(request);
+                    
+                    if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+                        SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
+                        
+                        // So sánh với normalize text để tránh lưu duplicate khi chỉ khác chữ hoa/thường hoặc spaces
+                        boolean isDuplicate = lastSearchHistory != null && 
+                                normalizeForComparison(searchQuery).equals(
+                                    normalizeForComparison(lastSearchHistory.getSearchQuery())
+                                );
+                        
+                        if (!isDuplicate) {
+                            SearchHistory searchHistory = SearchHistory.builder()
+                                    .user(user)
+                                    .searchQuery(searchQuery)
+                                    .build();
+                            
+                            searchHistoryRepository.save(searchHistory);
+                            log.debug("Saved new employer search history for user {}: {}", email, searchQuery);
+                            
+                            cleanupOldSearchHistory(user, 50);
+                        } else {
+                            log.debug("Skipped saving duplicate employer search history for user {}: {} (normalized comparison)", email, searchQuery);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to save employer search history: {}", e.getMessage());
+        }
+    }
+
+    private void cleanupOldSearchHistory(User user, int maxRecords) {
+        try {
+            long totalRecords = searchHistoryRepository.countByUser(user);
+            if (totalRecords > maxRecords) {
+                List<SearchHistory> allHistories = searchHistoryRepository.findByUserOrderByCreatedAtAsc(user);
+                int recordsToDelete = (int) (totalRecords - maxRecords);
+                
+                List<SearchHistory> historiesToDelete = allHistories.subList(0, recordsToDelete);
+                searchHistoryRepository.deleteAll(historiesToDelete);
+                
+                log.debug("Cleaned up {} old search history records for user {}", recordsToDelete, user.getEmail());
+            }
+        } catch (Exception e) {
+            log.error("Failed to cleanup old search history: {}", e.getMessage());
+        }
+    }
+
+    private String buildEmployerSearchQueryString(EmployerSearchRequest request) {
+        List<String> queryParts = new ArrayList<>();
+        
+        // Thêm prefix để phân biệt employer search với job search
+        queryParts.add("[EMPLOYER]");
+        
+        if (request.getName() != null && !request.getName().trim().isEmpty()) {
+            queryParts.add("name: " + request.getName().trim());
+        }
+        
+        if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
+            queryParts.add("keyword: " + request.getKeyword().trim());
+        }
+        
+        return queryParts.size() > 1 ? String.join(", ", queryParts) : null;
+    }
+
+    /**
+     * Normalize text để so sánh: lowercase, trim, loại bỏ extra spaces
+     */
+    private String normalizeForComparison(String text) {
+        if (text == null) return null;
+        return text.trim().toLowerCase().replaceAll("\\s+", " ");
     }
 }
