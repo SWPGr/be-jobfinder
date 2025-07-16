@@ -175,10 +175,10 @@ public class UserService {
                         userResponse.setWebsite(userDetail.getWebsite());
                     }
 
-                    // Điền totalJobsPosted cho EMPLOYER
+                    // Điền totalJobsPosted cho EMPLOYER (chỉ đếm job active)
                     if (role != null && "EMPLOYER".equals(role.getName())) {
-                        long totalJobs = jobRepository.countByEmployerId(user.getId());
-                        userResponse.setTotalJobsPosted(totalJobs);
+                        long totalActiveJobs = jobRepository.countByEmployerIdAndActiveTrue(user.getId());
+                        userResponse.setTotalJobsPosted(totalActiveJobs);
                     }
                     // Điền totalApplications cho JOB_SEEKER
                     else if (role != null && "JOB_SEEKER".equals(role.getName())) {

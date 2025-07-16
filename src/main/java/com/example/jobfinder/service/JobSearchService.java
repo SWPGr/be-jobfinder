@@ -132,6 +132,10 @@ public class JobSearchService {
         if (request.getEducationId() != null)
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
+        if (request.getExperienceId() != null) {
+            mustQueries.add(termQuery("experienceId", request.getExperienceId()));
+        }
+
         mustQueries.add(Query.of(q -> q.term(t -> t
                 .field("active")
                 .value(true)
@@ -249,6 +253,9 @@ public class JobSearchService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        if (job.getExperience() != null) {
+            doc.setExperience(job.getExperience().getId());
+        }
         doc.setSalaryMin(job.getSalaryMin());
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());

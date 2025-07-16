@@ -29,6 +29,7 @@ public class JobSearchController {
                                         @RequestParam(required = false) Long categoryId,
                                         @RequestParam(required = false) Long jobLevelId,
                                         @RequestParam(required = false) Long jobTypeId,
+                                        @RequestParam(required = false) Long experienceId,
                                         @RequestParam(required = false) Long educationId,
                                         @RequestParam(defaultValue = "1") Integer page,
                                         @RequestParam(defaultValue = "10") Integer size,
@@ -43,6 +44,7 @@ public class JobSearchController {
         request.setCategoryId(categoryId);
         request.setJobLevelId(jobLevelId);
         request.setJobTypeId(jobTypeId);
+        request.setExperienceId(experienceId);
         request.setEducationId(educationId);
         request.setSalaryMin(salaryMin);
         request.setSalaryMax(salaryMax);

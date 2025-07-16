@@ -4,6 +4,7 @@ import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.UserDocument;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import com.example.jobfinder.repository.UserDocumentRepository;
+import com.example.jobfinder.repository.JobRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,10 +19,14 @@ public class UserElasticsearchSyncService {
 
     private final UserDetailsRepository userDetailsRepository;
     private final UserDocumentRepository userDocumentRepository;
+    private final JobRepository jobRepository;
 
-    public UserElasticsearchSyncService(UserDetailsRepository userDetailsRepository, UserDocumentRepository userDocumentRepository) {
+    public UserElasticsearchSyncService(UserDetailsRepository userDetailsRepository, 
+                                       UserDocumentRepository userDocumentRepository,
+                                       JobRepository jobRepository) {
         this.userDetailsRepository = userDetailsRepository;
         this.userDocumentRepository = userDocumentRepository;
+        this.jobRepository = jobRepository;
     }
 
     @Scheduled(cron = "0 5 0 * * *")
@@ -31,6 +36,11 @@ public class UserElasticsearchSyncService {
 
         userDocumentRepository.saveAll(userDocuments);
         log.info("All jobs have been synced, indexed {} user", userDetails.size());
+    }
+
+    // Method để sync manual cho testing
+    public void syncAllUserManual() {
+        syncAllUser();
     }
 
     private UserDocument mapToDocument(UserDetail userDetail) {
@@ -60,6 +70,17 @@ public class UserElasticsearchSyncService {
         }
         if (userDetail.getExperience() != null) {
             userDocument.setExperienceId(userDetail.getExperience().getId());
+        }
+
+        // Set số lượng job active của employer
+        if (userDetail.getUser() != null && userDetail.getUser().getRole() != null 
+            && "EMPLOYER".equals(userDetail.getUser().getRole().getName())) {
+            long activeJobsCount = jobRepository.countByEmployerIdAndActiveTrue(userDetail.getUser().getId());
+            userDocument.setJobsPosted((int) activeJobsCount);
+            log.info("Employer {} (userId: {}) has {} active jobs", 
+                    userDetail.getCompanyName(), userDetail.getUser().getId(), activeJobsCount);
+        } else {
+            userDocument.setJobsPosted(0);
         }
 
         return userDocument;

@@ -23,11 +23,15 @@ public class UserDocumentMapper {
     public UserResponse toUserResponse(UserDocument userDocument) {
         UserResponse response = userMapper.toUserResponse(userDocument);
 
-        // Set the missing fields that need to be resolved from repositories
         response.setEducation(getEducation(userDocument.getEducationId()));
         response.setRole(getRole(userDocument.getRoleId()));
         response.setOrganization(getOrganization(userDocument.getOrganizationId()));
         response.setExperience(getExperience(userDocument.getExperienceId()));
+        
+        // Set số lượng job đã post (chỉ job active)
+        if (userDocument.getJobsPosted() != null) {
+            response.setTotalJobsPosted(userDocument.getJobsPosted().longValue());
+        }
         
         return response;
     }
