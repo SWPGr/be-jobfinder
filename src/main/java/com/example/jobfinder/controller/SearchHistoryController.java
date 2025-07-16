@@ -60,13 +60,7 @@ public class SearchHistoryController {
                 .build();
     }
 
-    /**
-     * Xóa một lịch sử tìm kiếm cụ thể của người dùng hiện tại.
-     * Endpoint: DELETE /search-history/{id}
-     * Yêu cầu: Đã xác thực (AUTHENTICATED), chỉ xóa của mình hoặc ADMIN.
-     * @param id ID của lịch sử tìm kiếm cần xóa.
-     * @return ApiResponse rỗng.
-     */
+
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()") // Phân quyền chi tiết được xử lý trong service
     public ApiResponse<Void> deleteSearchHistory(@PathVariable Long id) {
