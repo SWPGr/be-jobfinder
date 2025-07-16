@@ -39,10 +39,9 @@ public class EmployerSearchService {
     public EmployerSearchResponse search(EmployerSearchRequest request) throws IOException {
         List<Query> mustQueries = new ArrayList<>();
 
-        // Always filter by EMPLOYER role
         mustQueries.add(Query.of(q -> q.term(t -> t
                 .field("roleId")
-                .value(2L) // Assuming EMPLOYER role has ID = 2
+                .value(2L)
         )));
 
         if (request.getName() != null && !request.getName().isBlank()) {
@@ -79,18 +78,15 @@ public class EmployerSearchService {
             ).minimumShouldMatch("1"))));
         }
 
-        // Location filter
         if (request.getLocation() != null && !request.getLocation().isBlank()) {
             mustQueries.add(matchQuery("location", request.getLocation()));
         }
 
-        // Organization filter
         if (request.getOrganizationId() != null) {
             mustQueries.add(termQuery("organizationId", request.getOrganizationId()));
         }
         
 
-        // Build final query
         Query finalQuery = mustQueries.isEmpty()
                 ? Query.of(q -> q.matchAll(m -> m))
                 : Query.of(q -> q.bool(b -> b.must(mustQueries)));
@@ -123,7 +119,6 @@ public class EmployerSearchService {
                 .map(userDocumentMapper::toUserResponse)
                 .toList();
 
-        // Lưu lịch sử tìm kiếm employer sau khi search thành công
         saveEmployerSearchHistory(request);
 
         return EmployerSearchResponse.builder()
@@ -134,7 +129,6 @@ public class EmployerSearchService {
                 .build();
     }
 
-    // Helper methods for building queries
     private Query termQuery(String field, Object value) {
         return Query.of(q -> q.term(t -> t
                 .field(field)
@@ -162,8 +156,7 @@ public class EmployerSearchService {
                     if (searchQuery != null && !searchQuery.trim().isEmpty()) {
                         SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
                         
-                        // So sánh với normalize text để tránh lưu duplicate khi chỉ khác chữ hoa/thường hoặc spaces
-                        boolean isDuplicate = lastSearchHistory != null && 
+                        boolean isDuplicate = lastSearchHistory != null &&
                                 normalizeForComparison(searchQuery).equals(
                                     normalizeForComparison(lastSearchHistory.getSearchQuery())
                                 );
@@ -209,7 +202,6 @@ public class EmployerSearchService {
     private String buildEmployerSearchQueryString(EmployerSearchRequest request) {
         List<String> queryParts = new ArrayList<>();
         
-        // Thêm prefix để phân biệt employer search với job search
         queryParts.add("[EMPLOYER]");
         
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
@@ -223,9 +215,7 @@ public class EmployerSearchService {
         return queryParts.size() > 1 ? String.join(", ", queryParts) : null;
     }
 
-    /**
-     * Normalize text để so sánh: lowercase, trim, loại bỏ extra spaces
-     */
+
     private String normalizeForComparison(String text) {
         if (text == null) return null;
         return text.trim().toLowerCase().replaceAll("\\s+", " ");
