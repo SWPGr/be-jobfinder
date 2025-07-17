@@ -12,36 +12,36 @@ import java.util.Map;
 public class CloudinaryService {
     private final Cloudinary cloudinary;
 
-    public CloudinaryService(Cloudinary cloudinary) {
-        this.cloudinary = cloudinary;
-    }
-    public String uploadFile(MultipartFile file) throws IOException {
-        try {
-            // Lấy đuôi file để xác định loại
-            String contentType = file.getContentType();
-            String resourceType = determineResourceType(contentType);
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "resource_type", resourceType,
-                            "folder", "resumes",
-                            "public_id", "resumes/" + removeExtension(file.getOriginalFilename()),
-                            "access_mode", "public",
-                            "type", "upload"
-                    )
-            );
-
-            String url = uploadResult.get("secure_url").toString();
-//            if ("raw".equals(resourceType)) {
-//                url = url.replace("/upload/", "/upload/fl_attachment:false/");
-//            }
-
-            return url;
-        } catch (IOException e) {
-            throw new RuntimeException("Upload failed", e);
+        public CloudinaryService(Cloudinary cloudinary) {
+            this.cloudinary = cloudinary;
         }
-    }
+        public String uploadFile(MultipartFile file) throws IOException {
+            try {
+                // Lấy đuôi file để xác định loại
+                String contentType = file.getContentType();
+                String resourceType = determineResourceType(contentType);
+
+                Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                        file.getBytes(),
+                        ObjectUtils.asMap(
+                                "resource_type", resourceType,
+                                "folder", "resumes",
+                                "public_id", "resumes/" + removeExtension(file.getOriginalFilename()),
+                                "access_mode", "public",
+                                "type", "upload"
+                        )
+                );
+
+                String url = uploadResult.get("secure_url").toString();
+    //            if ("raw".equals(resourceType)) {
+    //                url = url.replace("/upload/", "/upload/fl_attachment:false/");
+    //            }
+
+                return url;
+            } catch (IOException e) {
+                throw new RuntimeException("Upload failed", e);
+            }
+        }
 
     private String removeExtension(String filename) {
         int dotIndex = filename.lastIndexOf('.');

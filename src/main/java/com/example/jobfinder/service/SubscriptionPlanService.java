@@ -2,10 +2,14 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanCreationRequest;
+import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanUpdateRequest;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
+import com.example.jobfinder.mapper.SubscriptionPlanMapper;
+import com.example.jobfinder.model.Role;
 import com.example.jobfinder.model.SubscriptionPlan;
+import com.example.jobfinder.repository.RoleRepository;
 import com.example.jobfinder.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +23,8 @@ import java.util.Optional;
 public class SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-
+    private final RoleRepository roleRepository;
+    private final SubscriptionPlanMapper subscriptionPlanMapper;
     /**
      * Tạo một gói đăng ký mới.
      * @param request DTO chứa thông tin gói cần tạo.
@@ -44,30 +49,14 @@ public class SubscriptionPlanService {
         return subscriptionPlanRepository.save(newPlan);
     }
 
-    /**
-     * Lấy tất cả các gói đăng ký.
-     * @return Danh sách các SubscriptionPlan.
-     */
     public List<SubscriptionPlan> getAllSubscriptionPlans() {
         return subscriptionPlanRepository.findAll();
     }
 
-    /**
-     * Lấy một gói đăng ký theo ID.
-     * @param id ID của gói đăng ký.
-     * @return Optional chứa SubscriptionPlan nếu tìm thấy, ngược lại là rỗng.
-     */
     public Optional<SubscriptionPlan> getSubscriptionPlanById(Long id) {
         return subscriptionPlanRepository.findById(id);
     }
 
-    /**
-     * Cập nhật thông tin của một gói đăng ký.
-     * @param id ID của gói cần cập nhật.
-     * @param request DTO chứa thông tin cập nhật.
-     * @return SubscriptionPlan đã được cập nhật.
-     * @throws AppException nếu không tìm thấy gói hoặc có lỗi cập nhật.
-     */
     @Transactional
     public SubscriptionPlan updateSubscriptionPlan(Long id, SubscriptionPlanUpdateRequest request) {
         SubscriptionPlan existingPlan = subscriptionPlanRepository.findById(id)
@@ -95,5 +84,22 @@ public class SubscriptionPlanService {
             throw new AppException(ErrorCode.PLAN_NOT_FOUND);
         }
         subscriptionPlanRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SubscriptionPlanResponse> getSubscriptionPlansByRoleId(Long roleId) {
+        // Kiểm tra xem Role có tồn tại không
+        Role targetRole = roleRepository.findById(roleId)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
+        List<SubscriptionPlan> plans = subscriptionPlanRepository.findByRole(targetRole); // Sử dụng findByRole với entity Role
+
+        if (plans.isEmpty()) {
+
+            // Bạn có thể chọn ném ngoại lệ hoặc trả về danh sách rỗng tùy theo logic nghiệp vụ
+            // throw new AppException(ErrorCode.NO_SUBSCRIPTION_PLANS_FOUND_FOR_ROLE);
+        }
+
+        return subscriptionPlanMapper.toSubscriptionPlanResponseList(plans);
     }
 }

@@ -25,6 +25,7 @@ import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.sql.Date;
+import java.net.URL;
+
+import org.apache.pdfbox.pdmodel.*;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +66,7 @@ public class ApplicationService {
      final ApplicationMapper applicationMapper;
      final UserDetailsRepository userDetailsRepository;
      final CloudinaryService cloudinaryService;
+     final GeminiService geminiService;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
@@ -95,7 +100,6 @@ public class ApplicationService {
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.JOB_NOT_FOUND.getErrorMessage()));
 
-        // 3. Kiểm tra xem người dùng đã nộp đơn cho công việc này chưa
         Optional<Application> existingApplication = applicationRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId());
         if (existingApplication.isPresent()) {
             // Sử dụng ErrorCode.APPLICATION_ALREADY_SUBMITTED
@@ -113,7 +117,7 @@ public class ApplicationService {
         application.setEmail(request.getEmail());
         application.setPhone(request.getPhone());
         if (resumeFile != null && !resumeFile.isEmpty()) {
-            resumeUrl = cloudinaryService.uploadFile(resumeFile); // bạn cần triển khai service này
+            resumeUrl = cloudinaryService.uploadFile(resumeFile);
         } else {
             resumeUrl = userDetail.getResumeUrl();
         }
@@ -201,18 +205,16 @@ public class ApplicationService {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
             Experience experience = user.getUserDetail().getExperience();
-            if (user.getUserDetail() != null) {
-                jobSeekerResponse = JobSeekerResponse.builder()
-                        .userId(user.getUserDetail().getId())
-                        .phone(user.getUserDetail().getPhone())
-                        .location(user.getUserDetail().getLocation())
-                        .resumeUrl(user.getUserDetail().getResumeUrl())
-                        .userEmail(user.getEmail())
-                        .fullName(user.getUserDetail().getFullName())
-                        .educationName(education != null ? education.getName() : null)
-                        .experienceName(experience != null ? experience.getName() : null)
-                        .build();
-            }
+            jobSeekerResponse = JobSeekerResponse.builder()
+                    .userId(user.getUserDetail().getId())
+                    .phone(user.getUserDetail().getPhone())
+                    .location(user.getUserDetail().getLocation())
+                    .resumeUrl(user.getUserDetail().getResumeUrl())
+                    .userEmail(user.getEmail())
+                    .fullName(user.getUserDetail().getFullName())
+                    .educationName(education != null ? education.getName() : null)
+                    .experienceName(experience != null ? experience.getName() : null)
+                    .build();
 
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
@@ -339,6 +341,81 @@ public class ApplicationService {
         return buildPageResponse(applicationsPage);
     }
 
+    @Transactional(readOnly = true)
+    public String summarizeResumeWithGemini(Long applicationId) throws IOException {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        String resumeUrl = application.getResume(); // Giả sử trường resumeUrl trong Application là 'resume'
+        if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
+            throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION); // Bạn cần định nghĩa ErrorCode này
+        }
+
+        String resumeContent = "";
+        try {
+            // Tạo đối tượng URL từ resumeUrl
+            URL url = new URL(resumeUrl);
+
+            // Tải tài liệu PDF từ URL và mở nó
+            // .openStream() sẽ tải nội dung của URL dưới dạng InputStream
+            PDDocument document = PDDocument.load(url.openStream());
+
+            // Tạo đối tượng PDFTextStripper để trích xuất văn bản
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+
+            // Lấy toàn bộ văn bản từ tài liệu PDF
+            resumeContent = pdfStripper.getText(document);
+
+            // Đóng tài liệu sau khi hoàn tất
+            document.close();
+
+            log.info("Successfully extracted content from resume URL: {}", resumeUrl);
+
+        } catch (IOException e) {
+            log.error("Error reading resume content from URL {} using PDFBox: {}", resumeUrl, e.getMessage(), e);
+            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+        } catch (Exception e) {
+            log.error("An unexpected error occurred while processing resume URL {}: {}", resumeUrl, e.getMessage(), e);
+            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+        }
+
+        if (resumeContent.trim().isEmpty()) {
+            throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT); // Định nghĩa ErrorCode này
+        }
+
+        // Tạo prompt cho Gemini để tóm tắt resume
+        String prompt = "Tóm tắt nội dung resume sau đây một cách ngắn gọn và súc tích, nêu bật các kỹ năng, kinh nghiệm và thông tin chính:\n\n" + resumeContent;
+
+        // Gọi GeminiService để lấy tóm tắt
+        return geminiService.getGeminiResponse(prompt);
+    }
+
+    @Transactional(readOnly = true)
+    public ApplicationResponse getApplicationDetails(Long applicationId, Long currentUserId, String currentUserRole) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        boolean authorized = false;
+        if ("ADMIN".equals(currentUserRole)) {
+            authorized = true;
+        } else if ("JOB_SEEKER".equals(currentUserRole)) {
+            if (application.getJobSeeker().getId().equals(currentUserId)) {
+                authorized = true;
+            }
+        } else if ("EMPLOYER".equals(currentUserRole)) {
+            if (application.getJob().getEmployer().getId().equals(currentUserId)) {
+                authorized = true;
+            }
+        }
+
+        if (!authorized) {
+            log.warn("Unauthorized access attempt to application {}. User ID: {}, Role: {}", applicationId, currentUserId, currentUserRole);
+            throw new AppException(ErrorCode.APPLICATION_NOT_FOUND);
+        }
+
+         return applicationMapper.toApplicationResponse(application);
+    }
+
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
@@ -436,7 +513,6 @@ public class ApplicationService {
                 })
                 .collect(Collectors.toList());
 
-        // Build and return the PageResponse metadata and content
         return PageResponse.<ApplicationResponse>builder()
                 .pageNumber(applicationsPage.getNumber())
                 .pageSize(applicationsPage.getSize())
