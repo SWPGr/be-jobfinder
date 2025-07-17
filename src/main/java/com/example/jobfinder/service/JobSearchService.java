@@ -285,53 +285,65 @@ public class JobSearchService {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 String email = auth.getName();
                 User user = userRepository.findByEmail(email).orElse(null);
-                
+
                 if (user != null) {
                     String searchQuery = buildSearchQueryString(request);
-                    
+
                     if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-                        SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
-                        
+                        SearchHistory lastSearchHistory = searchHistoryRepository
+                                .findFirstByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.JOB);
+
                         boolean isDuplicate = lastSearchHistory != null &&
-                                searchQuery.toLowerCase().equals(lastSearchHistory.getSearchQuery().toLowerCase());
-                        
+                                normalizeForComparison(searchQuery).equals(
+                                        normalizeForComparison(lastSearchHistory.getSearchQuery())
+                                );
+
                         if (!isDuplicate) {
                             SearchHistory searchHistory = SearchHistory.builder()
                                     .user(user)
                                     .searchQuery(searchQuery)
+                                    .searchType(SearchHistory.SearchType.JOB)
                                     .build();
-                            
                             searchHistoryRepository.save(searchHistory);
-                            log.debug("Saved new search history for user {}: {}", email, searchQuery);
-                            
+                            log.debug("Saved new job search history for user {}: {}", email, searchQuery);
+
                             cleanupOldSearchHistory(user, 50);
                         } else {
-                            log.debug("Skipped saving duplicate search history for user {}: {}", email, searchQuery);
+                            log.debug("Skipped saving duplicate job search history for user {}: {}", email, searchQuery);
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to save search history: {}", e.getMessage());
+            log.error("Failed to save job search history: {}", e.getMessage());
         }
     }
 
+
     private void cleanupOldSearchHistory(User user, int maxRecords) {
         try {
-            long totalRecords = searchHistoryRepository.countByUser(user);
+            long totalRecords = searchHistoryRepository.countByUserAndSearchType(user, SearchHistory.SearchType.JOB);
             if (totalRecords > maxRecords) {
-                List<SearchHistory> allHistories = searchHistoryRepository.findByUserOrderByCreatedAtAsc(user);
+                List<SearchHistory> allHistories = searchHistoryRepository
+                        .findByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.JOB);
+
                 int recordsToDelete = (int) (totalRecords - maxRecords);
-                
                 List<SearchHistory> historiesToDelete = allHistories.subList(0, recordsToDelete);
                 searchHistoryRepository.deleteAll(historiesToDelete);
-                
-                log.debug("Cleaned up {} old search history records for user {}", recordsToDelete, user.getEmail());
+
+                log.debug("Cleaned up {} old job search history records for user {}", recordsToDelete, user.getEmail());
             }
         } catch (Exception e) {
-            log.error("Failed to cleanup old search history: {}", e.getMessage());
+            log.error("Failed to cleanup old job search history: {}", e.getMessage());
         }
     }
+
+    private String normalizeForComparison(String text) {
+        if (text == null) return null;
+        return text.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
+
 
     private String buildSearchQueryString(JobSearchRequest request) {
         List<String> queryParts = new ArrayList<>();
