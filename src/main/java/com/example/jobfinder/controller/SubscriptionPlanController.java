@@ -8,11 +8,14 @@ import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanUpdateRequest;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.SubscriptionPlan;
+import com.example.jobfinder.model.User;
+import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // Để quản lý quyền truy cập
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +26,7 @@ import java.util.List;
 public class SubscriptionPlanController {
 
     private final SubscriptionPlanService subscriptionPlanService;
+    private final UserRepository userRepository;
 
     @GetMapping
 
@@ -45,15 +49,25 @@ public class SubscriptionPlanController {
         }
     }
 
-    @GetMapping("/by-role/{roleId}") // Thay đổi PathVariable thành roleId
-    @PreAuthorize("permitAll()") // Hoặc bạn có thể yêu cầu xác thực hoặc vai trò cụ thể
-    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getSubscriptionPlansByRoleId(
-            @PathVariable Long roleId) {
+    @GetMapping("/by-role") // Thay đổi path, bỏ {roleId}
+    @PreAuthorize("isAuthenticated()") // Yêu cầu người dùng phải được xác thực
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getSubscriptionPlansByCurrentUserRole(
+            Authentication authentication) { // Nhận Authentication object
         try {
-            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getSubscriptionPlansByRoleId(roleId); // Gọi phương thức Service đã cập nhật
+            // Lấy email của người dùng hiện tại từ Authentication
+            String currentUserEmail = authentication.getName();
+
+            // Tìm đối tượng User để lấy Role ID
+            User currentUser = userRepository.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+            // Lấy ID của vai trò từ đối tượng Role của người dùng
+            Long currentRoleId = currentUser.getRole().getId(); // Giả định Role entity có getId()
+
+            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getSubscriptionPlansByRoleId(currentRoleId);
             return ResponseEntity.ok(ApiResponse.<List<SubscriptionPlanResponse>>builder()
                     .code(HttpStatus.OK.value())
-                    .message("Subscription plans fetched successfully by role ID.")
+                    .message("Subscription plans fetched successfully for current user's role.")
                     .result(plans)
                     .build());
         } catch (AppException e) {
@@ -68,7 +82,7 @@ public class SubscriptionPlanController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.<List<SubscriptionPlanResponse>>builder()
                             .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .message("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò.")
+                            .message("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò của người dùng.")
                             .build());
         }
     }

@@ -72,27 +72,21 @@ public class ApplicationService {
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
         log.debug("Processing apply job request: {}", request);
 
-        // 1. Xác thực người dùng và vai trò
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getName() == null) {
-            // Sử dụng ErrorCode.UNAUTHENTICATED
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
-            // Hoặc nếu bạn có một cơ chế exception cụ thể hơn để truyền ErrorCode object
-            // throw new AppException(ErrorCode.UNAUTHENTICATED); // Nếu bạn có lớp AppException
         }
         String email = authentication.getName();
         log.debug("Authenticated email: {}", email);
 
         User jobSeeker = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
-        // Hoặc nếu bạn muốn chi tiết hơn với UsernameNotFoundException,
-        // GlobalExceptionHandler của bạn cần handle nó để trả về USER_NOT_FOUND.
         UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
-            // Sử dụng ErrorCode.UNAUTHORIZED
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
