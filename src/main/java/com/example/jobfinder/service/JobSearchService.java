@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.SearchHistory;
 
 import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class JobSearchService {
     private final SavedJobRepository savedJobRepository;
     private final JobRepository jobRepository;
     private final JobDocumentMapper jobDocumentMapper;
+    private final SearchHistoryRepository searchHistoryRepository;
 
     public JobSearchResponse search(JobSearchRequest request) throws IOException {
 
@@ -132,6 +134,10 @@ public class JobSearchService {
         if (request.getEducationId() != null)
             mustQueries.add(termQuery("educationId", request.getEducationId()));
 
+        if (request.getExperienceId() != null) {
+            mustQueries.add(termQuery("experience", request.getExperienceId()));
+        }
+
         mustQueries.add(Query.of(q -> q.term(t -> t
                 .field("active")
                 .value(true)
@@ -180,6 +186,9 @@ public class JobSearchService {
         List<JobResponse> jobResponses = jobs.stream()
                 .map(jobDocumentMapper::toJobResponse)
                 .toList();
+
+        // Lưu lịch sử tìm kiếm sau khi search thành công
+        saveSearchHistory(request);
 
         return JobSearchResponse.builder()
                 .data(jobResponses)
@@ -249,6 +258,9 @@ public class JobSearchService {
         doc.setEmployerId(job.getEmployer().getId());
         doc.setCategoryId(job.getCategory().getId());
         doc.setJobLevelId(job.getJobLevel().getId());
+        if (job.getExperience() != null) {
+            doc.setExperience(job.getExperience().getId());
+        }
         doc.setSalaryMin(job.getSalaryMin());
         doc.setSalaryMax(job.getSalaryMax());
         doc.setJobTypeId(job.getJobType().getId());
@@ -267,4 +279,67 @@ public class JobSearchService {
         return doc;
     }
 
+    private void saveSearchHistory(JobSearchRequest request) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                String email = auth.getName();
+                User user = userRepository.findByEmail(email).orElse(null);
+                
+                if (user != null) {
+                    String searchQuery = buildSearchQueryString(request);
+                    
+                    if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+                        SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
+                        
+                        boolean isDuplicate = lastSearchHistory != null &&
+                                searchQuery.toLowerCase().equals(lastSearchHistory.getSearchQuery().toLowerCase());
+                        
+                        if (!isDuplicate) {
+                            SearchHistory searchHistory = SearchHistory.builder()
+                                    .user(user)
+                                    .searchQuery(searchQuery)
+                                    .build();
+                            
+                            searchHistoryRepository.save(searchHistory);
+                            log.debug("Saved new search history for user {}: {}", email, searchQuery);
+                            
+                            cleanupOldSearchHistory(user, 50);
+                        } else {
+                            log.debug("Skipped saving duplicate search history for user {}: {}", email, searchQuery);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to save search history: {}", e.getMessage());
+        }
+    }
+
+    private void cleanupOldSearchHistory(User user, int maxRecords) {
+        try {
+            long totalRecords = searchHistoryRepository.countByUser(user);
+            if (totalRecords > maxRecords) {
+                List<SearchHistory> allHistories = searchHistoryRepository.findByUserOrderByCreatedAtAsc(user);
+                int recordsToDelete = (int) (totalRecords - maxRecords);
+                
+                List<SearchHistory> historiesToDelete = allHistories.subList(0, recordsToDelete);
+                searchHistoryRepository.deleteAll(historiesToDelete);
+                
+                log.debug("Cleaned up {} old search history records for user {}", recordsToDelete, user.getEmail());
+            }
+        } catch (Exception e) {
+            log.error("Failed to cleanup old search history: {}", e.getMessage());
+        }
+    }
+
+    private String buildSearchQueryString(JobSearchRequest request) {
+        List<String> queryParts = new ArrayList<>();
+        
+        if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
+            queryParts.add(request.getKeyword().trim());
+        }
+        
+        return queryParts.isEmpty() ? null : String.join(", ", queryParts);
+    }
 }

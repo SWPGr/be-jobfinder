@@ -35,6 +35,9 @@ public class ProfileResponse {
     private String website;
     private Long organizationId;
     private String organizationType;
+    private Long categoryId;
+    private String categoryName;
+    private String companyVision;
     private String banner;
     private String teamSize;
     private Integer yearOfEstablishment;
