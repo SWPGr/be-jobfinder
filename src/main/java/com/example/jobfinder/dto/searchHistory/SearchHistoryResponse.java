@@ -14,5 +14,6 @@ public class SearchHistoryResponse {
     private Long userId; // ID của người dùng đã tìm kiếm
     private String userEmail; // Email của người dùng
     private String searchQuery;
+    private String searchType;
     private LocalDateTime createdAt;
 }

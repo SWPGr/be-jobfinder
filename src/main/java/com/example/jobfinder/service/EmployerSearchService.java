@@ -154,7 +154,7 @@ public class EmployerSearchService {
                     String searchQuery = buildEmployerSearchQueryString(request);
                     
                     if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-                        SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserOrderByCreatedAtDesc(user);
+                        SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.COMPANY);
                         
                         boolean isDuplicate = lastSearchHistory != null &&
                                 normalizeForComparison(searchQuery).equals(
@@ -165,6 +165,7 @@ public class EmployerSearchService {
                             SearchHistory searchHistory = SearchHistory.builder()
                                     .user(user)
                                     .searchQuery(searchQuery)
+                                    .searchType(SearchHistory.SearchType.COMPANY)
                                     .build();
                             
                             searchHistoryRepository.save(searchHistory);
@@ -184,9 +185,9 @@ public class EmployerSearchService {
 
     private void cleanupOldSearchHistory(User user, int maxRecords) {
         try {
-            long totalRecords = searchHistoryRepository.countByUser(user);
+            long totalRecords = searchHistoryRepository.countByUserAndSearchType(user, SearchHistory.SearchType.COMPANY);
             if (totalRecords > maxRecords) {
-                List<SearchHistory> allHistories = searchHistoryRepository.findByUserOrderByCreatedAtAsc(user);
+                List<SearchHistory> allHistories = searchHistoryRepository.findByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.COMPANY);
                 int recordsToDelete = (int) (totalRecords - maxRecords);
                 
                 List<SearchHistory> historiesToDelete = allHistories.subList(0, recordsToDelete);
@@ -201,18 +202,17 @@ public class EmployerSearchService {
 
     private String buildEmployerSearchQueryString(EmployerSearchRequest request) {
         List<String> queryParts = new ArrayList<>();
-        
-        queryParts.add("[EMPLOYER]");
+
         
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
-            queryParts.add("name: " + request.getName().trim());
+            queryParts.add(request.getName().trim());
         }
         
         if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
-            queryParts.add("keyword: " + request.getKeyword().trim());
+            queryParts.add(request.getKeyword().trim());
         }
-        
-        return queryParts.size() > 1 ? String.join(", ", queryParts) : null;
+
+        return queryParts.isEmpty() ? null : String.join(", ", queryParts);
     }
 
 
