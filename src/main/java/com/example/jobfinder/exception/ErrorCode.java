@@ -167,6 +167,9 @@ public enum ErrorCode {
     PAYMENT_INFO_NOT_FOUND_PAYOS(2019, "Payment info not found for payos"),
     PAYMENT_FAILED_OR_PENDING(2020, "Payment failed or pending"),
     PLAN_NAME_DUPLICATED(2021, "Plan name already exists" ),
+    RESUME_PROCESSING_ERROR(2022, "Resume processing error" ),
+    EMPTY_RESUME_CONTENT(2023, "Empty resume content" ),
+    RESUME_NOT_FOUND_FOR_APPLICATION(2024, "Resume not found for application" ),
 
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");

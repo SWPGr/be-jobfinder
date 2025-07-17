@@ -91,12 +91,12 @@ public class GeminiService {
             JsonNode rootNode = objectMapper.readTree(rawResponse);
             JsonNode candidatesNode = rootNode.path("candidates");
 
-            if (candidatesNode.isArray() && candidatesNode.size() > 0) {
+            if (candidatesNode.isArray() && !candidatesNode.isEmpty()) {
                 JsonNode firstCandidate = candidatesNode.get(0);
                 JsonNode contentNode = firstCandidate.path("content");
                 JsonNode partsNode = contentNode.path("parts");
 
-                if (partsNode.isArray() && partsNode.size() > 0) {
+                if (partsNode.isArray() && !partsNode.isEmpty()) {
                     JsonNode firstPart = partsNode.get(0);
                     JsonNode textNode = firstPart.path("text");
                     if (textNode.isTextual()) {
@@ -119,26 +119,11 @@ public class GeminiService {
         }
     }
 
-    /**
-     * Tạo phản hồi từ Gemini dựa trên tin nhắn người dùng và ngữ cảnh bổ sung.
-     * Phương thức này giúp Gemini có thêm thông tin để đưa ra câu trả lời chính xác và hữu ích hơn.
-     *
-     * @param userMessage Tin nhắn gốc của người dùng.
-     * @param context Ngữ cảnh bổ sung được tạo từ dữ liệu database hoặc logic nghiệp vụ.
-     * @return Phản hồi được tạo bởi Gemini.
-     * @throws IOException Nếu có lỗi trong quá trình giao tiếp với Gemini API.
-     */
     public String generateResponseWithContext(String userMessage, String context) throws IOException {
         log.info("Generating response with context for user message: '{}', context: '{}'", userMessage, context);
 
         String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
                 modelName, geminiApiKey);
-
-        // Xây dựng các "parts" cho request.
-        // Ngữ cảnh sẽ là một "part" riêng biệt hoặc kết hợp vào prompt.
-        // Cách tốt nhất là gửi dưới dạng các lượt trò chuyện (conversation turns) để Gemini hiểu rõ hơn.
-        // Ở đây, chúng ta sẽ gửi Context và User Message dưới dạng 2 lượt User nói chuyện,
-        // hoặc coi Context như một phần của User Message ban đầu.
 
         List<GeminiIntentRequest.Content> contents = new ArrayList<>();
 
@@ -206,8 +191,6 @@ public class GeminiService {
         }
     }
 
-    // Helper method để parse JsonNode dựa trên path.
-    // Đây là một cách đơn giản, có thể cần phức tạp hơn cho các path lồng nhau.
     private String parseJsonNodeByPath(JsonNode rootNode, String path) {
         String[] parts = path.split("\\.");
         JsonNode currentNode = rootNode;

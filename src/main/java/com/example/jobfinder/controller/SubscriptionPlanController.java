@@ -3,6 +3,7 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanCreationRequest;
+import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanUpdateRequest;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
@@ -41,6 +42,34 @@ public class SubscriptionPlanController {
                     .message("Failed to retrieve subscription plans: " + e.getMessage())
                     .build();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
+        }
+    }
+
+    @GetMapping("/by-role/{roleId}") // Thay đổi PathVariable thành roleId
+    @PreAuthorize("permitAll()") // Hoặc bạn có thể yêu cầu xác thực hoặc vai trò cụ thể
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getSubscriptionPlansByRoleId(
+            @PathVariable Long roleId) {
+        try {
+            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getSubscriptionPlansByRoleId(roleId); // Gọi phương thức Service đã cập nhật
+            return ResponseEntity.ok(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Subscription plans fetched successfully by role ID.")
+                    .result(plans)
+                    .build());
+        } catch (AppException e) {
+
+            return ResponseEntity.status(e.getErrorCode().getErrorCode())
+                    .body(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                            .code(e.getErrorCode().getErrorCode())
+                            .message(e.getErrorCode().getErrorMessage())
+                            .build());
+        } catch (Exception e) {
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò.")
+                            .build());
         }
     }
 
