@@ -23,12 +23,13 @@ public interface ApplicationMapper {
     Application toApplication(ApplicationRequest request);
 
     // Ánh xạ từ Entity sang Response DTO
-    @Mapping(source = "jobSeeker", target = "jobSeeker")
+    @Mapping(source = "jobSeeker.userDetail", target = "jobSeeker")
     @Mapping(source = "job", target = "job")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "email", target = "email")
     @Mapping(source = "phone", target = "phone")
     @Mapping(source = "resume", target = "resume")
+    @Mapping(source = "appliedAt", target = "appliedAt")
     @Mapping(source = "coverLetter", target = "coverLetter")
     ApplicationResponse toApplicationResponse(Application application);
 

@@ -170,6 +170,8 @@ public enum ErrorCode {
     RESUME_PROCESSING_ERROR(2022, "Resume processing error" ),
     EMPTY_RESUME_CONTENT(2023, "Empty resume content" ),
     RESUME_NOT_FOUND_FOR_APPLICATION(2024, "Resume not found for application" ),
+    LINKEDIN_SCRAPING_ERROR(2025, "Linkedin scraping error" ),
+    LINKEDIN_PROFILE_URL_NOT_FOUND(2026, "Linkedin profile url not found" ),
 
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");

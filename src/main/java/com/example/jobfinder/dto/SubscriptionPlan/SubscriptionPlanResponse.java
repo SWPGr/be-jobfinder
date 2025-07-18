@@ -19,4 +19,6 @@ public class SubscriptionPlanResponse {
     private Boolean highlightJobs;
     private LocalDateTime createdAt;
     private SimpleNameResponse role; // THAY THẾ BẰNG SimpleNameResponse
+
+    private Boolean isActive;
 }

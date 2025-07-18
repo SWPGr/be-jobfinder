@@ -14,7 +14,6 @@ public class JobSeekerResponse {
     private String phone;     // Từ UserDetail
     private String location;  // Từ UserDetail
 
-    // Các trường dành riêng cho JobSeeker từ UserDetail
     private Long experienceId;
     private String experienceName;
     
