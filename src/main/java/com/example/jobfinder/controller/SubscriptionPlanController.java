@@ -29,19 +29,18 @@ public class SubscriptionPlanController {
     private final UserRepository userRepository;
 
     @GetMapping
-
-    public ResponseEntity<ApiResponse<List<SubscriptionPlan>>> getAllSubscriptionPlans() {
+    @PreAuthorize("permitAll()") // Cho phép mọi truy cập (kể cả anonymous)
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getAllSubscriptionPlans() { // Sửa kiểu trả về
         try {
-            List<SubscriptionPlan> plans = subscriptionPlanService.getAllSubscriptionPlans();
-            ApiResponse<List<SubscriptionPlan>> apiResponse = ApiResponse.<List<SubscriptionPlan>>builder()
+            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getAllSubscriptionPlans();
+            ApiResponse<List<SubscriptionPlanResponse>> apiResponse = ApiResponse.<List<SubscriptionPlanResponse>>builder() // Sửa kiểu
                     .code(200)
                     .message("Subscription plans retrieved successfully")
                     .result(plans)
                     .build();
             return ResponseEntity.ok(apiResponse);
         } catch (Exception e) {
-            System.err.println("Error retrieving all subscription plans: " + e.getMessage());
-            ApiResponse<List<SubscriptionPlan>> apiResponse = ApiResponse.<List<SubscriptionPlan>>builder()
+            ApiResponse<List<SubscriptionPlanResponse>> apiResponse = ApiResponse.<List<SubscriptionPlanResponse>>builder() // Sửa kiểu
                     .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .message("Failed to retrieve subscription plans: " + e.getMessage())
                     .build();
@@ -49,20 +48,15 @@ public class SubscriptionPlanController {
         }
     }
 
-    @GetMapping("/by-role") // Thay đổi path, bỏ {roleId}
-    @PreAuthorize("isAuthenticated()") // Yêu cầu người dùng phải được xác thực
+    @GetMapping("/by-role")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getSubscriptionPlansByCurrentUserRole(
-            Authentication authentication) { // Nhận Authentication object
+            Authentication authentication) {
         try {
-            // Lấy email của người dùng hiện tại từ Authentication
             String currentUserEmail = authentication.getName();
-
-            // Tìm đối tượng User để lấy Role ID
             User currentUser = userRepository.findByEmail(currentUserEmail)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-            // Lấy ID của vai trò từ đối tượng Role của người dùng
-            Long currentRoleId = currentUser.getRole().getId(); // Giả định Role entity có getId()
+            Long currentRoleId = currentUser.getRole().getId();
 
             List<SubscriptionPlanResponse> plans = subscriptionPlanService.getSubscriptionPlansByRoleId(currentRoleId);
             return ResponseEntity.ok(ApiResponse.<List<SubscriptionPlanResponse>>builder()
@@ -84,37 +78,6 @@ public class SubscriptionPlanController {
                             .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
                             .message("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò của người dùng.")
                             .build());
-        }
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SubscriptionPlan>> getSubscriptionPlanById(@PathVariable Long id) {
-        try {
-            SubscriptionPlan plan = subscriptionPlanService.getSubscriptionPlanById(id)
-                    .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND)); // Sử dụng ErrorCode mới
-
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(200)
-                    .message("Subscription plan retrieved successfully")
-                    .result(plan)
-                    .build();
-            return ResponseEntity.ok(apiResponse);
-        } catch (AppException e) {
-            System.err.println("Application Error getting subscription plan: " + e.getMessage());
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(e.getErrorCode().getErrorCode())
-                    .message(e.getErrorCode().getErrorMessage())
-                    .build();
-            // Trả về HttpStatus tương ứng với lỗi nghiệp vụ
-            return ResponseEntity.status(e.getErrorCode().getErrorCode()).body(apiResponse);
-        } catch (Exception e) {
-            System.err.println("Internal Server Error getting subscription plan: " + e.getMessage());
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .message("Failed to retrieve subscription plan: " + e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
         }
     }
 

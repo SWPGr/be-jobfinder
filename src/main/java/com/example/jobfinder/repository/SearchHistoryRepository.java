@@ -28,6 +28,12 @@ public interface SearchHistoryRepository extends JpaRepository<SearchHistory, Lo
     // Tìm search histories cũ nhất của user (để xóa khi vượt quá limit)
     List<SearchHistory> findByUserOrderByCreatedAtAsc(User user);
 
+    List<SearchHistory> findByUserAndSearchTypeOrderByCreatedAtDesc(User user, SearchHistory.SearchType type);
+
+    long countByUserAndSearchType(User user, SearchHistory.SearchType type);
+
+    SearchHistory findFirstByUserAndSearchTypeOrderByCreatedAtDesc(User user, SearchHistory.SearchType type);
+
     // Xóa tất cả lịch sử tìm kiếm của một người dùng
     void deleteByUser(User user);
 }

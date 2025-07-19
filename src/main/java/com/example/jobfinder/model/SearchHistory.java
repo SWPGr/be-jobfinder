@@ -27,6 +27,9 @@ public class SearchHistory {
     @Column(name = "search_query", length = 255)
     private String searchQuery;
 
+    @Enumerated(EnumType.STRING)
+    private SearchType searchType;
+
     @Column(name = "created_at") // Đảm bảo khớp với TIMESTAMP trong DB, thường tự động tạo
     private LocalDateTime createdAt;
 
@@ -36,5 +39,10 @@ public class SearchHistory {
         if (this.createdAt == null) { // Chỉ set nếu nó chưa được set (có thể từ client)
             this.createdAt = LocalDateTime.now();
         }
+    }
+
+    public enum SearchType {
+        JOB,
+        COMPANY
     }
 }

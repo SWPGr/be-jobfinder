@@ -377,8 +377,28 @@ public class ApplicationService {
             throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT); // Định nghĩa ErrorCode này
         }
 
-        // Tạo prompt cho Gemini để tóm tắt resume
-        String prompt = "Tóm tắt nội dung resume sau đây một cách ngắn gọn và súc tích, nêu bật các kỹ năng, kinh nghiệm và thông tin chính:\n\n" + resumeContent;
+
+        String prompt = """
+            Bạn là một chuyên gia tóm tắt hồ sơ ứng viên.
+            Hãy đọc kỹ và tóm tắt nội dung resume dưới đây một cách chi tiết nhưng súc tích, tập trung vào những điểm chính sau:
+            - **Thông tin liên hệ cơ bản**: Tên, email, số điện thoại (nếu có).
+            - **Mục tiêu nghề nghiệp/Tóm tắt bản thân**: Tóm tắt ngắn gọn nếu có.
+            - **Kinh nghiệm làm việc**:
+                - Liệt kê các vị trí công việc gần đây nhất (tối đa 3 vị trí).
+                - Với mỗi vị trí, nêu tên công ty, chức danh, thời gian làm việc và 1-2 gạch đầu dòng mô tả các trách nhiệm chính hoặc thành tựu nổi bật nhất.
+            - **Kỹ năng**:
+                - Phân loại và liệt kê các kỹ năng chính (ví dụ: Ngôn ngữ lập trình, Frameworks, Cơ sở dữ liệu, Công cụ, Kỹ năng mềm).
+                - Chỉ liệt kê các kỹ năng được đề cập rõ ràng trong resume.
+            - **Học vấn**: Liệt kê bằng cấp cao nhất, tên trường và thời gian tốt nghiệp.
+            - **Dự án/Hoạt động (nếu có)**: Tóm tắt 1-2 dự án hoặc hoạt động nổi bật, nêu rõ vai trò và kết quả chính.
+            
+            Đảm bảo tóm tắt bằng tiếng Việt, mạch lạc, chuyên nghiệp và không thêm thông tin suy diễn.
+            Nếu một phần thông tin không có trong resume, hãy bỏ qua phần đó.
+            
+            --- Bắt đầu Resume ---
+            """ + resumeContent + """
+            --- Kết thúc Resume ---
+            """;
 
         // Gọi GeminiService để lấy tóm tắt
         return geminiService.getGeminiResponse(prompt);
@@ -389,6 +409,7 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
+        // Kiểm tra phân quyền (giữ nguyên logic này)
         boolean authorized = false;
         if ("ADMIN".equals(currentUserRole)) {
             authorized = true;
@@ -404,107 +425,17 @@ public class ApplicationService {
 
         if (!authorized) {
             log.warn("Unauthorized access attempt to application {}. User ID: {}, Role: {}", applicationId, currentUserId, currentUserRole);
-            throw new AppException(ErrorCode.APPLICATION_NOT_FOUND);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-         return applicationMapper.toApplicationResponse(application);
+        // Sử dụng MapStruct mapper để chuyển đổi Entity sang DTO
+        return applicationMapper.toApplicationResponse(application);
     }
 
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
-                .map(application -> {
-                    // Map JobSimpleResponse details
-                    JobResponse jobSimpleResponse = null;
-                    Job jobEntity = application.getJob(); // Get associated Job entity
-                    if (jobEntity != null) {
-                        User employerEntity = jobEntity.getEmployer(); // Get associated Employer (User)
-                        UserResponse employerResponse = null;
-                        if (employerEntity != null) {
-                            employerResponse = UserResponse.builder()
-                                    .id(employerEntity.getId())
-                                    .email(employerEntity.getEmail())
-                                    .build(); // Build employer DTO
-                        }
-
-                        SimpleNameResponse categoryResponse = null;
-                        if (jobEntity.getCategory() != null) {
-                            categoryResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getCategory().getId())
-                                    .name(jobEntity.getCategory().getName())
-                                    .build(); // Build category DTO
-                        }
-
-                        SimpleNameResponse jobLevelResponse = null;
-                        if (jobEntity.getJobLevel() != null) {
-                            jobLevelResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getJobLevel().getId())
-                                    .name(jobEntity.getJobLevel().getName())
-                                    .build(); // Build job level DTO
-                        }
-
-                        SimpleNameResponse jobTypeResponse = null;
-                        if (jobEntity.getJobType() != null) {
-                            jobTypeResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getJobType().getId())
-                                    .name(jobEntity.getJobType().getName())
-                                    .build(); // Build job type DTO
-                        }
-
-                        jobSimpleResponse = JobResponse.builder()
-                                .id(jobEntity.getId())
-                                .title(jobEntity.getTitle())
-                                .description(jobEntity.getDescription())
-                                .location(jobEntity.getLocation())
-                                .salaryMin(jobEntity.getSalaryMin())
-                                .salaryMax(jobEntity.getSalaryMax())
-                                .responsibility(jobEntity.getResponsibility())
-                                .expiredDate(jobEntity.getExpiredDate())
-                                .createdAt(jobEntity.getCreatedAt())
-                                .employer(employerResponse)
-                                .category(categoryResponse)
-                                .jobLevel(jobLevelResponse)
-                                .jobType(jobTypeResponse)
-                                // .jobApplicationCounts(jobApplicationCountForJob) // Remove or calculate if needed
-                                .isSave(false) // Assuming default or determined logic
-                                .build();
-                    }
-
-                    // Map ApplicantResponse (JobSeeker) details
-                    ApplicantResponse applicantResponse = null;
-                    // **IMPORTANT:** Replace 'getJobSeeker()' with 'getApplicant()' if your Application entity uses 'applicant'
-                    User applicantUser = application.getJobSeeker();
-                    if (applicantUser != null) {
-                        UserDetail applicantDetail = applicantUser.getUserDetail();
-                        SimpleNameResponse educationResponse = null;
-                        if (applicantDetail != null && applicantDetail.getEducation() != null) {
-                            educationResponse = SimpleNameResponse.builder()
-                                    .id(applicantDetail.getEducation().getId())
-                                    .name(applicantDetail.getEducation().getName())
-                                    .build();
-                        }
-
-                        applicantResponse = ApplicantResponse.builder()
-                                .id(applicantUser.getId())
-                                .email(applicantUser.getEmail())
-                                .fullName(applicantDetail != null ? applicantDetail.getFullName() : null)
-                                .location(applicantDetail != null ? applicantDetail.getLocation() : null)
-                                .phone(applicantDetail != null ? applicantDetail.getPhone() : null)
-                                .education(educationResponse)
-                                // Removed salary fields as per requirement
-                                .build();
-                    }
-
-                    // Build the main ApplicationResponse DTO
-                    return ApplicationResponse.builder()
-                            .id(application.getId())
-                            .jobSeeker(applicantResponse) // Assuming ApplicationResponse has a jobSeeker field
-                            .job(jobSimpleResponse)
-                            .status(application.getStatus())
-                            .appliedAt(application.getAppliedAt())
-
-                            .build();
-                })
+                .map(applicationMapper::toApplicationResponse) // Sử dụng ApplicationMapper
                 .collect(Collectors.toList());
 
         return PageResponse.<ApplicationResponse>builder()

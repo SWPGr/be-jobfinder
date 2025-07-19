@@ -1,6 +1,7 @@
 package com.example.jobfinder.dto.application;
 
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.user.JobSeekerResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import lombok.AccessLevel;
@@ -16,14 +17,16 @@ import java.time.LocalDateTime;
 @Builder // Đảm bảo bạn có constructor hoặc @Builder để dễ tạo
 public class ApplicationResponse {
     private Long id;
-    private ApplicantResponse jobSeeker;
-    private JobResponse job;
-
-    private String email;
-    private String phone;
-    private String resume;
-    private String coverLetter;
-
-    private ApplicationStatus status;
     private LocalDateTime appliedAt;
+    private String status;
+    private String resume; // Tên trường trong ApplicationMapper là 'resume', nên để khớp ở đây là 'resume' (hoặc 'resumeUrl' nếu bạn thay đổi mapper)
+    private String coverLetter;
+    private String email; // Giữ lại nếu Application có trường này
+    private String phone; // Giữ lại nếu Application có trường này
+    private String applicationNote; // Giữ lại nếu có
+
+    private JobSeekerResponse jobSeeker;
+
+    // Thông tin chi tiết về công việc đã ứng tuyển
+    private JobResponse job;
 }

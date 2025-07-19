@@ -211,6 +211,7 @@ public class ApplicationController {
     }
 
 
+
     private Long getUserIdFromAuthentication(Authentication authentication) {
         String userEmail = authentication.getName();
         User user = userRepository.findByEmail(userEmail)
