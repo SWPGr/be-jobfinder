@@ -39,7 +39,7 @@ public class AICompanyAnalysisService {
     private String buildCompanyAnalysisPrompt(UserDetail userDetail) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("Bạn là một chuyên gia phân tích doanh nghiệp và hợp tác chiến lược. Nhiệm vụ của bạn là phân tích sâu hồ sơ công ty và cung cấp các thông tin chi tiết có cấu trúc JSON, phục vụ cho việc đánh giá tiềm năng hợp tác trong các sự kiện đa dạng (ví dụ: tuyển dụng, công nghệ, cộng đồng, bền vững).\n");
-        prompt.append("Dựa trên thông tin hồ sơ công ty sau, hãy phân tích và trả về kết quả dưới dạng JSON theo cấu trúc sau:\n");
+        prompt.append("Dựa trên thông tin hồ sơ công ty sau, hãy phân tích và trả về kết quả bằng tiếng anh dưới dạng JSON theo cấu trúc sau:\n");
         prompt.append("```json\n");
         prompt.append("{\n");
         prompt.append("  \"industryKeywords\": \"<các từ khóa ngành nghề chính, phân tách bằng dấu phẩy, ví dụ: Software Development, AI/ML, Fintech>\",\n");

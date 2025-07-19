@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,11 +17,12 @@ import java.util.Optional;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Optional<Application> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
 
+    Optional<Application> findByJobSeekerId(Long jobSeekerId);
+
     Page<Application> findByJobSeekerId(Long jobSeekerId, Pageable pageable);
 
     Long countByJobSeekerId(Long jobSeekerId); // <-- THÊM DÒNG NÀY
 
-    List<Application> findByJobSeekerId(Long jobSeekerId);
 
     List<Application> findByAppliedAtBetween(LocalDateTime start, LocalDateTime end);
 
