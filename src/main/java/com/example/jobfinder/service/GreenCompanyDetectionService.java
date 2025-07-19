@@ -66,7 +66,8 @@ public class GreenCompanyDetectionService {
                     "water conservation", "sustainable sourcing", "green building certification",
                     "environmental management system", "climate action", "biodiversity protection",
                     "carbon offsetting", "clean energy transition", "environmental monitoring",
-                    "pollution prevention", "resource conservation", "ecosystem restoration"
+                    "pollution prevention", "resource conservation", "ecosystem restoration",
+                    "green initiatives"
             ),
             "SOCIAL_RESPONSIBILITY", Set.of(
                     "community engagement", "social impact", "stakeholder engagement",
@@ -536,17 +537,27 @@ public class GreenCompanyDetectionService {
         }
     }
 
-    private String normalizeText(String text) {
-        if (text == null) return "";
-
-        CoreDocument document = new CoreDocument(text);
+    private String normalizeText(String input) {
+        CoreDocument document = new CoreDocument(input.toLowerCase());
         pipeline.annotate(document);
-
         return document.tokens().stream()
-                .map(token -> token.lemma().toLowerCase())
-                .filter(lemma -> lemma.length() > 2)
+                .map(token -> token.lemma())
                 .collect(Collectors.joining(" "));
     }
+
+    public String lemmatizeText(String input) {
+        CoreDocument doc = new CoreDocument(input.toLowerCase());
+        pipeline.annotate(doc);
+        return doc.tokens().stream()
+                .map(token -> token.lemma())
+                .collect(Collectors.joining(" "));
+    }
+
+
+
+
+
+
 
     private GreenCompanyAnalysis createDefaultGreenCompanyAnalysis() {
         return GreenCompanyAnalysis.builder()
