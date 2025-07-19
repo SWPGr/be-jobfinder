@@ -28,6 +28,9 @@ public class ProfileService {
     private final OrganizationRepository organizationRepository;
     private final CategoryRepository categoryRepository;
     private final AICompanyAnalysisService aiCompanyAnalysisService;
+    private final JobseekerAnalysisService jobseekerAnalysisService;
+    private final JobseekerAnalysisRepository jobseekerAnalysisRepository;
+    private final ApplicationRepository applicationRepository;
 
     // Constants for role names - better practice
     private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
@@ -37,6 +40,9 @@ public class ProfileService {
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
+        boolean resumeUpdated = false;
+
+        boolean resumeUrlUpdatedOrCleared = false;
 
         // Sử dụng AppException cho lỗi User not found
         User user = userRepository.findByEmail(email)
@@ -51,7 +57,9 @@ public class ProfileService {
 
         String roleName = user.getRole().getName();
 
-        if (roleName.equals(ROLE_JOB_SEEKER)) { // Sử dụng hằng số
+        if (roleName.equals(ROLE_JOB_SEEKER)) {
+            boolean shouldAnalyzeResume = false;
+
             // Kiểm tra null cho từng trường để chỉ cập nhật nếu giá trị được cung cấp
             if (request.getEducation() != null) {
                 Education education = educationRepository.findById(request.getEducation().getId())
@@ -69,10 +77,24 @@ public class ProfileService {
                 userDetail.setExperience(experience);
             }
 
-            if (request.getResumeUrl() != null && !request.getResumeUrl().isEmpty()) {
-                String resume = cloudinaryService.uploadFile(request.getResumeUrl());
-                userDetail.setResumeUrl(resume);
+            if (request.getResumeUrl() != null) {
+                if (!request.getResumeUrl().isEmpty()) { // Có URL mới
+                    String newResumeUrl = cloudinaryService.uploadFile(request.getResumeUrl());
+                    if (!newResumeUrl.equals(userDetail.getResumeUrl())) { // Chỉ cập nhật nếu URL thay đổi
+                        userDetail.setResumeUrl(newResumeUrl);
+                        resumeUrlUpdatedOrCleared = true;
+                        log.info("Resume URL updated for user: {}", user.getId());
+                    }
+                } else { // Client gửi chuỗi rỗng để xóa resume
+                    if (userDetail.getResumeUrl() != null) { // Chỉ xóa nếu hiện có resume
+                        userDetail.setResumeUrl(null);
+                        resumeUrlUpdatedOrCleared = true;
+                        log.info("Resume URL cleared for user: {}", user.getId());
+                    }
+                }
             }
+
+
         } else if (roleName.equals(ROLE_EMPLOYER)) { // Sử dụng hằng số
             if (request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
                 throw new AppException(ErrorCode.COMPANY_NAME_REQUIRED); // Thêm ErrorCode này
@@ -86,7 +108,7 @@ public class ProfileService {
                 // Nếu client gửi chuỗi rỗng để xóa banner
                 userDetail.setBanner(null);
             }
-          
+
           if (request.getOrganization() != null) {
                 Organization organization = organizationRepository.findById(request.getOrganization().getId())
                         .orElseThrow(() -> new AppException(ErrorCode.ORGANIZATION_NOT_FOUND));
@@ -135,6 +157,47 @@ public class ProfileService {
         } catch (AppException e) {
             log.error("Failed to perform AI analysis for company profile {}: {}", savedUserDetail.getId(), e.getMessage(), e);
             // Tùy chọn: ném lại lỗi hoặc chỉ log nếu bạn không muốn lỗi AI làm gián đoạn update profile
+        }
+
+        if (roleName.equals(ROLE_JOB_SEEKER)) {
+            boolean shouldAnalyzeResume = false;
+
+            // Điều kiện 1: Resume vừa được cập nhật hoặc xóa trong request này
+            if (resumeUrlUpdatedOrCleared) {
+                shouldAnalyzeResume = true;
+                log.info("Resume URL for job seeker ID {} was updated/cleared. Will trigger AI analysis.", user.getId());
+            }
+            // Điều kiện 2: Resume hiện có và chưa có bản phân tích AI
+            else if (savedUserDetail.getResumeUrl() != null && !savedUserDetail.getResumeUrl().isEmpty()) {
+                boolean hasExistingAnalysis = jobseekerAnalysisRepository.findByUserDetail(savedUserDetail).isPresent();
+                if (!hasExistingAnalysis) {
+                    shouldAnalyzeResume = true;
+                    log.info("Job seeker ID {} has a resume but no existing analysis. Triggering AI analysis.", user.getId());
+                }
+            }
+
+            if (shouldAnalyzeResume) {
+                if (savedUserDetail.getResumeUrl() != null && !savedUserDetail.getResumeUrl().isEmpty()) {
+                    try {
+                        // GỌI HÀM PHÂN TÍCH VỚI USERDETAIL TRỰC TIẾP
+                        jobseekerAnalysisService.analyzeAndSaveJobseekerResume(savedUserDetail);
+                        log.info("Successfully performed AI analysis for job seeker resume for user {} (UserDetail ID {}).", user.getId(), savedUserDetail.getId());
+                    } catch (AppException e) {
+                        log.error("Failed to perform AI analysis for job seeker resume for user {}: {}", user.getId(), e.getMessage(), e);
+                    } catch (Exception e) {
+                        log.error("An unexpected error occurred during AI analysis for job seeker resume for user {}: {}", user.getId(), e.getMessage(), e);
+                    }
+                } else {
+                    // Nếu resumeUrlUpdatedOrCleared là true và resumeUrl là null/empty (người dùng xóa resume)
+                    log.info("Resume URL is empty or null for job seeker ID {} after update. Skipping new AI analysis.", user.getId());
+                    // Tùy chọn: Xóa bản phân tích AI cũ nếu resume đã bị xóa
+                    jobseekerAnalysisRepository.findByUserDetail(savedUserDetail)
+                            .ifPresent(jobseekerAnalysisRepository::delete);
+                    log.info("Deleted existing AI analysis for job seeker ID {} as resume was cleared.", user.getId());
+                }
+            } else {
+                log.info("Resume for job seeker ID {} not updated or no new resume to analyze. Skipping AI analysis.", user.getId());
+            }
         }
         return mapToProfileResponse(user, userDetail);
     }
