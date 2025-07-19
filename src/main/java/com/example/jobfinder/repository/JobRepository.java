@@ -18,6 +18,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     boolean existsByIdAndEmployerId(Long jobId, Long employerId);
 
+    List<Job> findByActiveTrue();
+
     List<Job> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT COUNT(j) FROM Job j WHERE j.employer.id = :employerId")

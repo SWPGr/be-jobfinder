@@ -23,6 +23,7 @@ public interface SearchHistoryMapper {
 
     @Mapping(source = "user.id", target = "userId")
     @Mapping(source = "user.email", target = "userEmail")
+    @Mapping(source = "searchType", target = "searchType")
     SearchHistoryResponse toSearchHistoryResponse(SearchHistory searchHistory);
 
     List<SearchHistoryResponse> toSearchHistoryResponseList(List<SearchHistory> searchHistories);
