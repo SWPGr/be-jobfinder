@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface CompanyAnalysisRepository extends JpaRepository<CompanyAnalysis, Long> {
     Optional<CompanyAnalysis> findByUserDetail(UserDetail userDetail);
+    Optional<CompanyAnalysis> findByUserDetailUserId(Long userId);
 }

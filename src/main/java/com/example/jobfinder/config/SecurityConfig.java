@@ -100,7 +100,8 @@ public class SecurityConfig {
                                 "/api/payos/**",
                                 "/webhook",
                                 "/api/subscription-plans/**",
-                                "/api/payments/**"
+                                "/api/payments/**",
+                                "/api/green-test/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
