@@ -3,15 +3,19 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanCreationRequest;
+import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanUpdateRequest;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.SubscriptionPlan;
+import com.example.jobfinder.model.User;
+import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // Để quản lý quyền truy cập
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,21 +26,21 @@ import java.util.List;
 public class SubscriptionPlanController {
 
     private final SubscriptionPlanService subscriptionPlanService;
+    private final UserRepository userRepository;
 
     @GetMapping
-
-    public ResponseEntity<ApiResponse<List<SubscriptionPlan>>> getAllSubscriptionPlans() {
+    @PreAuthorize("permitAll()") // Cho phép mọi truy cập (kể cả anonymous)
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getAllSubscriptionPlans() { // Sửa kiểu trả về
         try {
-            List<SubscriptionPlan> plans = subscriptionPlanService.getAllSubscriptionPlans();
-            ApiResponse<List<SubscriptionPlan>> apiResponse = ApiResponse.<List<SubscriptionPlan>>builder()
+            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getAllSubscriptionPlans();
+            ApiResponse<List<SubscriptionPlanResponse>> apiResponse = ApiResponse.<List<SubscriptionPlanResponse>>builder() // Sửa kiểu
                     .code(200)
                     .message("Subscription plans retrieved successfully")
                     .result(plans)
                     .build();
             return ResponseEntity.ok(apiResponse);
         } catch (Exception e) {
-            System.err.println("Error retrieving all subscription plans: " + e.getMessage());
-            ApiResponse<List<SubscriptionPlan>> apiResponse = ApiResponse.<List<SubscriptionPlan>>builder()
+            ApiResponse<List<SubscriptionPlanResponse>> apiResponse = ApiResponse.<List<SubscriptionPlanResponse>>builder() // Sửa kiểu
                     .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .message("Failed to retrieve subscription plans: " + e.getMessage())
                     .build();
@@ -44,34 +48,36 @@ public class SubscriptionPlanController {
         }
     }
 
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SubscriptionPlan>> getSubscriptionPlanById(@PathVariable Long id) {
+    @GetMapping("/by-role")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<SubscriptionPlanResponse>>> getSubscriptionPlansByCurrentUserRole(
+            Authentication authentication) {
         try {
-            SubscriptionPlan plan = subscriptionPlanService.getSubscriptionPlanById(id)
-                    .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND)); // Sử dụng ErrorCode mới
+            String currentUserEmail = authentication.getName();
+            User currentUser = userRepository.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            Long currentRoleId = currentUser.getRole().getId();
 
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(200)
-                    .message("Subscription plan retrieved successfully")
-                    .result(plan)
-                    .build();
-            return ResponseEntity.ok(apiResponse);
+            List<SubscriptionPlanResponse> plans = subscriptionPlanService.getSubscriptionPlansByRoleId(currentRoleId);
+            return ResponseEntity.ok(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Subscription plans fetched successfully for current user's role.")
+                    .result(plans)
+                    .build());
         } catch (AppException e) {
-            System.err.println("Application Error getting subscription plan: " + e.getMessage());
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(e.getErrorCode().getErrorCode())
-                    .message(e.getErrorCode().getErrorMessage())
-                    .build();
-            // Trả về HttpStatus tương ứng với lỗi nghiệp vụ
-            return ResponseEntity.status(e.getErrorCode().getErrorCode()).body(apiResponse);
+
+            return ResponseEntity.status(e.getErrorCode().getErrorCode())
+                    .body(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                            .code(e.getErrorCode().getErrorCode())
+                            .message(e.getErrorCode().getErrorMessage())
+                            .build());
         } catch (Exception e) {
-            System.err.println("Internal Server Error getting subscription plan: " + e.getMessage());
-            ApiResponse<SubscriptionPlan> apiResponse = ApiResponse.<SubscriptionPlan>builder()
-                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .message("Failed to retrieve subscription plan: " + e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<List<SubscriptionPlanResponse>>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò của người dùng.")
+                            .build());
         }
     }
 

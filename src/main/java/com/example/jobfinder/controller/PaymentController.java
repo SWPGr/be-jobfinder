@@ -28,10 +28,6 @@ public class PaymentController {
     private final SubscriptionPaymentService subscriptionPaymentService;
     private final UserRepository userRepository;
 
-    /**
-     * Lấy toàn bộ lịch sử thanh toán (chỉ Admin mới có quyền).
-     * Endpoint: GET /api/payments
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getAllPaymentHistory() { // Thay đổi kiểu trả về
@@ -53,10 +49,6 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Lấy lịch sử thanh toán của người dùng hiện tại.
-     * Endpoint: GET /api/payments/my-history
-     */
     @GetMapping("/my-history")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getMyPaymentHistory() { // Thay đổi kiểu trả về
