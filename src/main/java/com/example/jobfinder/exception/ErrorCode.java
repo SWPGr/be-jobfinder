@@ -172,6 +172,8 @@ public enum ErrorCode {
     RESUME_NOT_FOUND_FOR_APPLICATION(2024, "Resume not found for application" ),
     LINKEDIN_SCRAPING_ERROR(2025, "Linkedin scraping error" ),
     LINKEDIN_PROFILE_URL_NOT_FOUND(2026, "Linkedin profile url not found" ),
+    AI_SERVICE_ERROR(2027, "AI service error" ),
+    AI_PARSE_ERROR(2028, "AI parse error" ),
 
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
