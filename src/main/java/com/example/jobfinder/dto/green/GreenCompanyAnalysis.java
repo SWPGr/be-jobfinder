@@ -9,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GreenCompanyAnalysis {
-    private Long employerId;
+    private Long UserDetailId;
     private boolean isGreenCompany;
     private double overallGreenScore;
 

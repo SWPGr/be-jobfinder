@@ -101,7 +101,8 @@ public class SecurityConfig {
                                 "/webhook",
                                 "/api/subscription-plans/**",
                                 "/api/payments/**",
-                                "/api/green-test/**"
+                                "/api/green-test/**",
+                                "api/debug/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()

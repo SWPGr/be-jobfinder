@@ -70,4 +70,39 @@ public class CompanyAnalysis {
 
     @Column(name = "raw_ai_response", columnDefinition = "TEXT")
     private String rawAiResponse;
+
+    // Green company analysis fields
+    @Column(name = "overall_green_score")
+    private Double overallGreenScore;
+
+    @Column(name = "market_positioning_score")
+    private Double marketPositioningScore;
+
+    @Column(name = "csr_sustainability_score")
+    private Double csrSustainabilityScore;
+
+    @Column(name = "green_categories", columnDefinition = "TEXT")
+    private String greenCategories;
+
+    @Column(name = "green_keywords", columnDefinition = "TEXT")
+    private String greenKeywords;
+
+    @Column(name = "green_strengths", columnDefinition = "TEXT")
+    private String greenStrengths;
+
+    @Column(name = "improvement_areas", columnDefinition = "TEXT")
+    private String improvementAreas;
+
+    @Column(name = "recommendations", columnDefinition = "TEXT")
+    private String recommendations;
+
+    @Column(name = "certification_level", length = 100)
+    private String certificationLevel;
+
+    @Column(name = "green_company")
+    private Boolean greenCompany;
+
+    @Column(name = "primary_green_category")
+    private String primaryGreenCategory;
+
 }
