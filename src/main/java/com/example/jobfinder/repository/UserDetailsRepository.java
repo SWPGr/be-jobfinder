@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface UserDetailsRepository extends JpaRepository<UserDetail, Long> {
     Optional<UserDetail> findByUserId(Long userId);
+
     Optional<UserDetail> findByUser(User user);
     List<UserDetail> findByUserRoleName(String roleName);
     List<UserDetail> findByCompanyNameContainingIgnoreCase(String companyName);

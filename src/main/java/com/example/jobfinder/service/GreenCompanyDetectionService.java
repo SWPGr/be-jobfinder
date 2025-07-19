@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -107,18 +108,18 @@ public class GreenCompanyDetectionService {
     /**
      * Main method - Analyze company green credentials
      */
-    public GreenCompanyAnalysis analyzeGreenCompany(Long employerId) {
-        if (employerId == null) {
+    public GreenCompanyAnalysis analyzeGreenCompany(Long UserDetailId) {
+        if (UserDetailId == null) {
             return createDefaultGreenCompanyAnalysis();
         }
 
         try {
             // 1. Get company data
-            CompanyAnalysis companyAnalysis = getCompanyAnalysisByEmployerId(employerId);
-            UserDetail userDetail = getUserDetailByEmployerId(employerId);
+            CompanyAnalysis companyAnalysis = getCompanyAnalysisByUserDetailId(UserDetailId);
+            UserDetail userDetail = getUserDetailById(UserDetailId);
 
             if (companyAnalysis == null && userDetail == null) {
-                log.warn("No company data found for employer: {}", employerId);
+                log.warn("No company data found for employer: {}", UserDetailId);
                 return createDefaultGreenCompanyAnalysis();
             }
 
@@ -135,7 +136,7 @@ public class GreenCompanyDetectionService {
             List<String> recommendations = generateGreenRecommendations(greenMetrics, greenScore);
 
             GreenCompanyAnalysis analysis = GreenCompanyAnalysis.builder()
-                    .employerId(employerId)
+                    .UserDetailId(UserDetailId)
                     .isGreenCompany(isGreenCompany)
                     .overallGreenScore(greenScore.getOverallScore())
                     .marketPositioningScore(greenScore.getMarketPositioningScore())
@@ -151,12 +152,12 @@ public class GreenCompanyDetectionService {
                     .build();
 
             log.debug("Green company analysis completed for employer: {} with score: {}",
-                    employerId, greenScore.getOverallScore());
+                    UserDetailId, greenScore.getOverallScore());
 
             return analysis;
 
         } catch (Exception e) {
-            log.error("Error in green company analysis for employer: {}", employerId, e);
+            log.error("Error in green company analysis for employer: {}", UserDetailId, e);
             return createDefaultGreenCompanyAnalysis();
         }
     }
@@ -517,15 +518,56 @@ public class GreenCompanyDetectionService {
         return "GREEN_STARTER";
     }
 
-    private CompanyAnalysis getCompanyAnalysisByEmployerId(Long employerId) {
+    private CompanyAnalysis getCompanyAnalysisByUserDetailId(Long userDetailId) {
         try {
-            return companyAnalysisRepository.findByUserDetailUserId(employerId)
+            UserDetail userDetail = userDetailsRepository.findById(userDetailId)
                     .orElse(null);
+
+            if (userDetail == null) {
+                log.debug("Could not find user detail for id: {}", userDetailId);
+                return null;
+            }
+
+            return companyAnalysisRepository.findByUserDetail(userDetail)
+                    .orElse(null); // hoặc .orElseThrow(...) nếu bạn muốn xử lý khác
         } catch (Exception e) {
-            log.debug("Could not find company analysis for employer: {}", employerId);
+            log.error("Error while retrieving company analysis for userDetailId {}: {}", userDetailId, e.getMessage(), e);
             return null;
         }
     }
+
+
+    private CompanyAnalysis getCompanyAnalysisByEmployerId(Long employerId) {
+        try {
+            UserDetail userDetail = getUserDetailByEmployerId(employerId);
+            if (userDetail == null) return null;
+
+            Optional<CompanyAnalysis> optional = companyAnalysisRepository.findByUserDetail(userDetail);
+
+            if (optional.isPresent()) {
+                return optional.get();
+            } else {
+                // Nếu chưa có -> tạo mới
+                CompanyAnalysis newAnalysis = new CompanyAnalysis();
+                newAnalysis.setUserDetail(userDetail);
+                return companyAnalysisRepository.save(newAnalysis);
+            }
+        } catch (Exception e) {
+            log.error("Error getting company analysis for employer: {}", employerId, e);
+            return null;
+        }
+    }
+
+    private UserDetail getUserDetailById(Long employerId) {
+        try {
+            return userDetailsRepository.findById(employerId)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.debug("Could not find user detail for id: {}", employerId, e);
+            return null; // <-- bạn cần thêm dòng này để đảm bảo method luôn trả về giá trị
+        }
+    }
+
 
     private UserDetail getUserDetailByEmployerId(Long employerId) {
         try {
