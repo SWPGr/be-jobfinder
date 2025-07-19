@@ -7,6 +7,7 @@ import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.Optional; // Import Optional
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProfileService {
     private final UserRepository userRepository;
     private final UserDetailsRepository userDetailsRepository;
@@ -25,6 +27,7 @@ public class ProfileService {
     private final ExperienceRepository experienceRepository;
     private final OrganizationRepository organizationRepository;
     private final CategoryRepository categoryRepository;
+    private final AICompanyAnalysisService aiCompanyAnalysisService;
 
     // Constants for role names - better practice
     private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
@@ -119,7 +122,20 @@ public class ProfileService {
             userDetail.setAvatarUrl(null);
         }
 
-        userDetailsRepository.save(userDetail);
+        UserDetail savedUserDetail = userDetailsRepository.save(userDetail);
+
+        try {
+            // Chỉ phân tích nếu có đủ thông tin cơ bản
+            if (savedUserDetail.getCompanyName() != null && !savedUserDetail.getCompanyName().isEmpty() &&
+                    savedUserDetail.getDescription() != null && !savedUserDetail.getDescription().isEmpty()) {
+                aiCompanyAnalysisService.analyzeAndSaveCompanyProfile(savedUserDetail);
+            } else {
+                log.warn("Company profile for UserDetail ID {} is incomplete. Skipping AI analysis.", savedUserDetail.getId());
+            }
+        } catch (AppException e) {
+            log.error("Failed to perform AI analysis for company profile {}: {}", savedUserDetail.getId(), e.getMessage(), e);
+            // Tùy chọn: ném lại lỗi hoặc chỉ log nếu bạn không muốn lỗi AI làm gián đoạn update profile
+        }
         return mapToProfileResponse(user, userDetail);
     }
 
