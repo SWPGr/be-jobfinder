@@ -27,6 +27,8 @@ public class ApplicationResponse {
 
     private JobSeekerResponse jobSeeker;
 
+    private String resumeSummary;
+
     // Thông tin chi tiết về công việc đã ứng tuyển
     private JobResponse job;
 }

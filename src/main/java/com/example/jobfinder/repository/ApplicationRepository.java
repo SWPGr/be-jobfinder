@@ -21,6 +21,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     List<Application> findByJobSeekerId(Long jobSeekerId);
 
+
     List<Application> findByAppliedAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<Application> findByJob_Id(Long jobId);

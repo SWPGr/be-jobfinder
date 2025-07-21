@@ -142,7 +142,9 @@ public class ApplicationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<ApplicationResponse>> getApplicationDetail(
             @PathVariable Long applicationId,
-            Authentication authentication) {
+            Authentication authentication) throws IOException {
+
+        String resumeSummary = applicationService.summarizeResumeWithGemini(applicationId);
 
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
@@ -157,7 +159,7 @@ public class ApplicationController {
 
         try {
             ApplicationResponse applicationDetail = applicationService.getApplicationDetails(
-                    applicationId, currentUserId, currentUserRole);
+                    applicationId, currentUserId, currentUserRole, resumeSummary);
 
             return ResponseEntity.ok(ApiResponse.<ApplicationResponse>builder()
                     .code(HttpStatus.OK.value())

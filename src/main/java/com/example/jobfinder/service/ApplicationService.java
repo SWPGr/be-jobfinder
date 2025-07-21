@@ -405,7 +405,7 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public ApplicationResponse getApplicationDetails(Long applicationId, Long currentUserId, String currentUserRole) {
+    public ApplicationResponse getApplicationDetails(Long applicationId, Long currentUserId, String currentUserRole, String resumeSummary) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
@@ -428,8 +428,13 @@ public class ApplicationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
+        ApplicationResponse response = applicationMapper.toApplicationResponse(application);
+
+        // Set thêm resumeSummary từ tham số truyền vào
+        response.setResumeSummary(resumeSummary);
+
         // Sử dụng MapStruct mapper để chuyển đổi Entity sang DTO
-        return applicationMapper.toApplicationResponse(application);
+        return response;
     }
 
 
@@ -446,6 +451,7 @@ public class ApplicationService {
                 .isLast(applicationsPage.isLast())
                 .isFirst(applicationsPage.isFirst())
                 .content(applicationResponses)
+
                 .build();
     }
 
