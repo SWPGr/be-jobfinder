@@ -35,27 +35,27 @@ public class GreenCompanyDetectionService {
                     "sustainability champion", "clean technology leader", "ESG leader",
                     "carbon neutral", "net zero", "climate leader", "green transformation",
                     "sustainable solutions provider", "environmental excellence", "green business model",
-                    "sustainable development", "eco-innovation", "climate positive", "regenerative business"
+                    "sustainable development", "eco-innovation", "climate positive", "regenerative business", "green"
             ),
             "GREEN_PRODUCTS_SERVICES", Set.of(
                     "eco-friendly products", "green services", "sustainable offerings",
                     "environmentally responsible", "clean technology solutions",
                     "renewable energy solutions", "green infrastructure", "sustainable supply chain",
                     "circular business model", "green product portfolio", "sustainable manufacturing",
-                    "clean production", "green technology", "eco-design", "sustainable innovation"
+                    "clean production", "green technology", "eco-design", "sustainable innovation", "green"
             ),
             "ENVIRONMENTAL_IMPACT", Set.of(
                     "positive environmental impact", "environmental stewardship", "ecological footprint",
                     "environmental responsibility", "sustainable practices", "green operations",
                     "environmental compliance", "pollution reduction", "resource efficiency",
                     "carbon footprint reduction", "environmental restoration", "ecosystem protection",
-                    "biodiversity conservation", "climate impact", "environmental preservation"
+                    "biodiversity conservation", "climate impact", "environmental preservation", "green"
             ),
             "CIRCULAR_ECONOMY", Set.of(
                     "circular economy", "waste to value", "zero waste", "material recovery",
                     "product lifecycle", "cradle to cradle", "regenerative design", "upcycling",
                     "resource circularity", "closed loop", "waste minimization", "material efficiency",
-                    "industrial symbiosis", "sharing economy", "product as service"
+                    "industrial symbiosis", "sharing economy", "product as service", "green"
             )
     );
 
@@ -68,27 +68,27 @@ public class GreenCompanyDetectionService {
                     "environmental management system", "climate action", "biodiversity protection",
                     "carbon offsetting", "clean energy transition", "environmental monitoring",
                     "pollution prevention", "resource conservation", "ecosystem restoration",
-                    "green initiatives"
+                    "green initiatives", "green"
             ),
             "SOCIAL_RESPONSIBILITY", Set.of(
                     "community engagement", "social impact", "stakeholder engagement",
                     "employee wellbeing", "diversity and inclusion", "fair trade",
                     "ethical sourcing", "community development", "social investment",
                     "responsible business practices", "sustainable development goals",
-                    "social equity", "community partnership", "local sourcing", "fair labor practices"
+                    "social equity", "community partnership", "local sourcing", "fair labor practices", "green"
             ),
             "GOVERNANCE_SUSTAINABILITY", Set.of(
                     "ESG reporting", "sustainability reporting", "transparent governance",
                     "ethical business practices", "sustainable governance", "accountability",
                     "stakeholder capitalism", "long-term value creation", "responsible leadership",
                     "sustainability metrics", "impact measurement", "ESG integration",
-                    "sustainable finance", "green bonds", "impact investing", "B-Corp certification"
+                    "sustainable finance", "green bonds", "impact investing", "B-Corp certification", "green"
             ),
             "GREEN_INNOVATION", Set.of(
                     "green R&D", "sustainable innovation", "clean technology development",
                     "environmental technology", "green patents", "eco-innovation labs",
                     "sustainable product development", "green digitalization", "clean tech startups",
-                    "environmental solutions", "climate technology", "green investments"
+                    "environmental solutions", "climate technology", "green investments", "green"
             )
     );
 
@@ -108,59 +108,66 @@ public class GreenCompanyDetectionService {
     /**
      * Main method - Analyze company green credentials
      */
-    public GreenCompanyAnalysis analyzeGreenCompany(Long UserDetailId) {
-        if (UserDetailId == null) {
-            return createDefaultGreenCompanyAnalysis();
-        }
-
-        try {
-            // 1. Get company data
-            CompanyAnalysis companyAnalysis = getCompanyAnalysisByUserDetailId(UserDetailId);
-            UserDetail userDetail = getUserDetailById(UserDetailId);
-
-            if (companyAnalysis == null && userDetail == null) {
-                log.warn("No company data found for employer: {}", UserDetailId);
-                return createDefaultGreenCompanyAnalysis();
-            }
-
-            // 2. Analyze company green data
-            CompanyGreenMetrics greenMetrics = analyzeCompanyGreenData(companyAnalysis, userDetail);
-
-            // 3. Calculate overall green score
-            CompanyGreenScore greenScore = calculateOverallGreenScore(greenMetrics, userDetail);
-
-            // 4. Determine green company status
-            boolean isGreenCompany = greenScore.getOverallScore() >= 0.4; // Threshold for green company
-
-            // 5. Generate recommendations
-            List<String> recommendations = generateGreenRecommendations(greenMetrics, greenScore);
-
-            GreenCompanyAnalysis analysis = GreenCompanyAnalysis.builder()
-                    .UserDetailId(UserDetailId)
-                    .isGreenCompany(isGreenCompany)
-                    .overallGreenScore(greenScore.getOverallScore())
-                    .marketPositioningScore(greenScore.getMarketPositioningScore())
-                    .csrSustainabilityScore(greenScore.getCsrSustainabilityScore())
-                    .greenCategories(greenMetrics.getAllCategories())
-                    .greenKeywords(greenMetrics.getAllKeywords())
-                    .primaryGreenCategory(determinePrimaryGreenCategory(greenMetrics))
-                    .greenStrengths(identifyGreenStrengths(greenMetrics))
-                    .improvementAreas(identifyImprovementAreas(greenMetrics))
-                    .recommendations(recommendations)
-                    .industryBenchmark(calculateIndustryBenchmark(userDetail))
-                    .certificationLevel(determineCertificationLevel(greenScore.getOverallScore()))
-                    .build();
-
-            log.debug("Green company analysis completed for employer: {} with score: {}",
-                    UserDetailId, greenScore.getOverallScore());
-
-            return analysis;
-
-        } catch (Exception e) {
-            log.error("Error in green company analysis for employer: {}", UserDetailId, e);
-            return createDefaultGreenCompanyAnalysis();
-        }
+   public GreenCompanyAnalysis analyzeGreenCompany(Long employerId) {
+    if (employerId == null) {
+        return createDefaultGreenCompanyAnalysis();
     }
+
+    try {
+        log.info("Starting green analysis for employerId (userId): {}", employerId);
+        
+        // 1. Find UserDetail by userId field (NOT primary key)
+        UserDetail userDetail = getUserDetailByEmployerId(employerId);
+        if (userDetail == null) {
+            log.warn("UserDetail not found for employerId: {}", employerId);
+            return createDefaultGreenCompanyAnalysis();
+        }
+        
+        log.info("Found UserDetail: id={}, userId={}, companyName={}", 
+                userDetail.getId(), userDetail.getCompanyName());
+        
+        // 2. Find CompanyAnalysis by UserDetail entity
+        CompanyAnalysis companyAnalysis = getCompanyAnalysisByUserDetail(userDetail);
+        
+        log.info("CompanyAnalysis found: {}", companyAnalysis != null);
+        
+        if (companyAnalysis == null) {
+            log.warn("CompanyAnalysis not found for UserDetail.id: {}", userDetail.getId());
+            // Option: Create default or return with partial analysis
+        }
+
+        // 3. Analyze (even if companyAnalysis is null)
+        CompanyGreenMetrics greenMetrics = analyzeCompanyGreenData(companyAnalysis, userDetail);
+        CompanyGreenScore greenScore = calculateOverallGreenScore(greenMetrics, userDetail);
+        boolean isGreenCompany = greenScore.getOverallScore() >= 0.4;
+        List<String> recommendations = generateGreenRecommendations(greenMetrics, greenScore);
+
+        GreenCompanyAnalysis analysis = GreenCompanyAnalysis.builder()
+                .UserDetailId(employerId) // FIX: Use correct field name
+                .isGreenCompany(isGreenCompany)
+                .overallGreenScore(greenScore.getOverallScore())
+                .marketPositioningScore(greenScore.getMarketPositioningScore())
+                .csrSustainabilityScore(greenScore.getCsrSustainabilityScore())
+                .greenCategories(greenMetrics.getAllCategories())
+                .greenKeywords(greenMetrics.getAllKeywords())
+                .primaryGreenCategory(determinePrimaryGreenCategory(greenMetrics))
+                .greenStrengths(identifyGreenStrengths(greenMetrics))
+                .improvementAreas(identifyImprovementAreas(greenMetrics))
+                .recommendations(recommendations)
+                .industryBenchmark(calculateIndustryBenchmark(userDetail))
+                .certificationLevel(determineCertificationLevel(greenScore.getOverallScore()))
+                .build();
+
+        log.info("Analysis completed - employerId: {}, isGreen: {}, score: {}", 
+                employerId, isGreenCompany, greenScore.getOverallScore());
+
+        return analysis;
+
+    } catch (Exception e) {
+        log.error("Error in green company analysis for employerId: {}", employerId, e);
+        return createDefaultGreenCompanyAnalysis();
+    }
+}
 
     /**
      * Analyze Company Green Data từ CompanyAnalysis và UserDetail
@@ -518,23 +525,16 @@ public class GreenCompanyDetectionService {
         return "GREEN_STARTER";
     }
 
-    private CompanyAnalysis getCompanyAnalysisByUserDetailId(Long userDetailId) {
-        try {
-            UserDetail userDetail = userDetailsRepository.findById(userDetailId)
-                    .orElse(null);
-
-            if (userDetail == null) {
-                log.debug("Could not find user detail for id: {}", userDetailId);
-                return null;
-            }
-
-            return companyAnalysisRepository.findByUserDetail(userDetail)
-                    .orElse(null); // hoặc .orElseThrow(...) nếu bạn muốn xử lý khác
-        } catch (Exception e) {
-            log.error("Error while retrieving company analysis for userDetailId {}: {}", userDetailId, e.getMessage(), e);
-            return null;
-        }
+    private CompanyAnalysis getCompanyAnalysisByUserDetail(UserDetail userDetail) {
+    if (userDetail == null) return null;
+    
+    try {
+        return companyAnalysisRepository.findByUserDetail(userDetail).orElse(null);
+    } catch (Exception e) {
+        log.error("Error finding CompanyAnalysis for UserDetail.id: {}", userDetail.getId(), e);
+        return null;
     }
+}
 
 
     private CompanyAnalysis getCompanyAnalysisByEmployerId(Long employerId) {
@@ -580,12 +580,34 @@ public class GreenCompanyDetectionService {
     }
 
     private String normalizeText(String input) {
-        CoreDocument document = new CoreDocument(input.toLowerCase());
-        pipeline.annotate(document);
-        return document.tokens().stream()
-                .map(token -> token.lemma())
-                .collect(Collectors.joining(" "));
+    if (input == null || input.trim().isEmpty()) {
+        return "";
     }
+
+    try {
+        String cleanInput = input.toLowerCase().trim();
+        
+        CoreDocument document = new CoreDocument(cleanInput);
+        pipeline.annotate(document);
+        
+        String result = document.tokens().stream()
+                .map(token -> token.lemma())
+                .filter(lemma -> lemma != null && lemma.length() > 1)
+                .collect(Collectors.joining(" "));
+                
+        // Fallback to simple processing if Stanford fails
+        if (result.trim().isEmpty()) {
+            log.warn("Stanford NLP returned empty result, using simple normalization");
+            return cleanInput;
+        }
+        
+        return result;
+        
+    } catch (Exception e) {
+        log.warn("Stanford NLP failed, using simple normalization: {}", e.getMessage());
+        return input.toLowerCase().trim();
+    }
+}
 
     public String lemmatizeText(String input) {
         CoreDocument doc = new CoreDocument(input.toLowerCase());
