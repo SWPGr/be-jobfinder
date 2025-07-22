@@ -22,7 +22,7 @@ JobFinder là một ứng dụng web được xây dựng bằng Spring Boot gi�
 - **Lombok** – Giảm boilerplate code
 - **MapStruct** – Mapping DTO <-> Entity
 - **JWT** – Xác thực người dùng
-- **ReactJS / Angular** *(frontend nếu có)*
+- **ReactJS / Angular** _(frontend nếu có)_
 
 ## 📂 Cấu trúc thư mục
 
@@ -51,21 +51,35 @@ cd jobfinder
 application.properties
 # Database configuration
 spring.datasource.url=jdbc:mysql://localhost:3306/jobfinder?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=root
+# Database configuration
+spring.datasource.url=jdbc:mysql://localhost:3306/jobfinder?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
 # Mail properties
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=phihung19022003@gmail.com
-spring.mail.password=xxdy adlt oqic wnyh
+spring.mail.username=${MAIL_USERNAME}
+spring.mail.password=${MAIL_PASSWORD}
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
-
+google.gemini.api-key=${GEMINI_API_KEY}
+google.gemini.model-name=gemini-1.5-flash-latest
 logging.level.org.springframework.security=DEBUG
 logging.level.com.jobplatform=DEBUG
 debug=true
 
+# ==== Google OAuth2 Configuration ====
+spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET}
+spring.security.oauth2.client.registration.google.scope=openid,profile,email
+spring.security.oauth2.client.registration.google.redirect-uri=http://localhost:8080/api/auth/google/callback
+
+spring.security.oauth2.client.provider.google.authorization-uri=https://accounts.google.com/o/oauth2/v2/auth
+spring.security.oauth2.client.provider.google.token-uri=https://oauth2.googleapis.com/token
+spring.security.oauth2.client.provider.google.user-info-uri=https://www.googleapis.com/oauth2/v3/userinfo
+spring.security.oauth2.client.provider.google.user-name-attribute=email
+```
