@@ -101,7 +101,7 @@ jobs:
     name: Integration Tests (MySQL + External Services)
     runs-on: ubuntu-latest
     needs: minimal-tests
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/phihung')
 
     services:
       mysql:
