@@ -10,6 +10,7 @@ import com.example.jobfinder.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,12 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Profile("!test") // Chỉ chạy trong các môi trường không phải test
+@Profile("!test")
+@ConditionalOnProperty(
+    value = "app.scheduler.enabled", 
+    havingValue = "true", 
+    matchIfMissing = true
+) 
 public class SubscriptionSchedulerService {
 
     private final SubscriptionRepository subscriptionRepository;
