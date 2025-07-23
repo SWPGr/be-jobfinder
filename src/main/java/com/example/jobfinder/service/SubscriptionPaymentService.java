@@ -172,14 +172,40 @@ public class SubscriptionPaymentService {
         System.out.println("Frontend Callback: Xử lý thành công giao dịch cho order " + orderCode + ". User " + user.getEmail() + " giờ là Premium.");
     }
 
-    public PageResponse<PaymentResponse> getAllPaymentHistory(Pageable pageable) {
-        Page<Payment> paymentsPage = paymentRepository.findAll(pageable);
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getAllPaymentHistory(
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBetween(fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtAfter(fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBefore(toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findAll(pageable);
+        }
         return buildPageResponse(paymentsPage);
     }
 
-    // Thay đổi kiểu trả về thành PageResponse<PaymentResponse>
-    public PageResponse<PaymentResponse> getUserPaymentHistory(Long userId, Pageable pageable) {
-        Page<Payment> paymentsPage = paymentRepository.findByUserId(userId, pageable);
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getMyPaymentHistory(
+            Long userId,
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBetween(userId, fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtAfter(userId, fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBefore(userId, toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findByUserId(userId, pageable);
+        }
         return buildPageResponse(paymentsPage);
     }
 
