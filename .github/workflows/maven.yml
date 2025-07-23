@@ -102,9 +102,9 @@ jobs:
         curl -s http://localhost:9200/_cat/nodes?v
 
     - name: Run tests
-        working-directory: be_jobfinder
-        run: ./mvnw clean test -Dspring.profiles.active=test
-¥
+      working-directory: be_jobfinder
+      run: ./mvnw clean test -Dspring.profiles.active=test
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
