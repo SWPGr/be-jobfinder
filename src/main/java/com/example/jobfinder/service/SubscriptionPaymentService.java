@@ -174,34 +174,22 @@ public class SubscriptionPaymentService {
 
     public PageResponse<PaymentResponse> getAllPaymentHistory(Pageable pageable) {
         Page<Payment> paymentsPage = paymentRepository.findAll(pageable);
-
-        // Xây dựng PageResponse từ Page
-        return PageResponse.<PaymentResponse>builder()
-                .content(paymentsPage.getContent().stream()
-                        .map(paymentMapper::toPaymentResponse)
-                        .collect(Collectors.toList()))
-                .pageNumber(paymentsPage.getNumber()) // Spring Page là 0-indexed
-                .pageSize(paymentsPage.getSize())
-                .totalElements(paymentsPage.getTotalElements())
-                .totalPages(paymentsPage.getTotalPages())
-                .isLast(paymentsPage.isLast())
-                .isFirst(paymentsPage.isFirst())
-                .build();
+        return buildPageResponse(paymentsPage);
     }
 
     // Thay đổi kiểu trả về thành PageResponse<PaymentResponse>
     public PageResponse<PaymentResponse> getUserPaymentHistory(Long userId, Pageable pageable) {
         Page<Payment> paymentsPage = paymentRepository.findByUserId(userId, pageable);
+        return buildPageResponse(paymentsPage);
+    }
 
-        if (paymentsPage.isEmpty()) {
-           throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
-        }
+    private PageResponse<PaymentResponse> buildPageResponse(Page<Payment> paymentsPage) {
+        List<PaymentResponse> content = paymentsPage.getContent().stream()
+                .map(paymentMapper::toPaymentResponse)
+                .collect(Collectors.toList());
 
-        // Xây dựng PageResponse từ Page
         return PageResponse.<PaymentResponse>builder()
-                .content(paymentsPage.getContent().stream()
-                        .map(paymentMapper::toPaymentResponse)
-                        .collect(Collectors.toList()))
+                .content(content) // Nếu paymentsPage.getContent() rỗng, thì content cũng rỗng
                 .pageNumber(paymentsPage.getNumber())
                 .pageSize(paymentsPage.getSize())
                 .totalElements(paymentsPage.getTotalElements())
