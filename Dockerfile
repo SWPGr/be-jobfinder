@@ -1,11 +1,10 @@
 # Build stage
-FROM  eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
-# Install curl for healthcheck
-RUN apt-get update && \
-    apt-get install -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install curl for healthcheck (Alpine uses apk, not apt-get)
+RUN apk update && \
+    apk add --no-cache curl && \
+    rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
@@ -25,24 +24,23 @@ COPY src ./src
 # Build application
 RUN ./mvnw clean package -DskipTests
 
-# Runtime stage
-FROM  eclipse-temurin:21-jdk-alpine
+# Runtime stage - Use JRE for smaller image
+FROM eclipse-temurin:21-jre-alpine
 
-# Install curl for healthcheck
-RUN apt-get update && \
-    apt-get install -y curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install curl for healthcheck (Alpine uses apk)
+RUN apk update && \
+    apk add --no-cache curl && \
+    rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
 # Copy JAR file from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Create non-root user for security
-RUN groupadd -r appuser && \
-    useradd --no-log-init -r -g appuser appuser && \
-    chown -R appuser:appuser /app
+# Create non-root user for security (Alpine way)
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
 
 USER appuser
 
