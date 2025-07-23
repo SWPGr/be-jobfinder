@@ -65,48 +65,5 @@ public class PaymentController {
         }
     }
 
-    @GetMapping("/my-history")
-    @PreAuthorize("isAuthenticated()")
-    // Thay đổi kiểu generic của ApiResponse thành PageResponse<PaymentResponse>
-    public ResponseEntity<ApiResponse<PageResponse<PaymentResponse>>> getMyPaymentHistory(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "paidAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String currentUserEmail = authentication.getName();
-
-            User currentUser = userRepository.findByEmail(currentUserEmail)
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-            Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
-            // Nhận PageResponse từ Service
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getUserPaymentHistory(currentUser.getId(), pageable);
-
-            // Xây dựng ApiResponse, đặt PageResponse vào trường result
-            ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
-                    .code(200)
-                    .message("My payment history retrieved successfully")
-                    .result(paymentsPageResponse) // Đặt toàn bộ PageResponse vào đây
-                    .build();
-            return ResponseEntity.ok(apiResponse);
-        } catch (AppException e) {
-            System.err.println("Application Error retrieving user payment history: " + e.getMessage());
-            ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
-                    .code(e.getErrorCode().getErrorCode())
-                    .message(e.getErrorCode().getErrorMessage())
-                    .build();
-            return ResponseEntity.status(e.getErrorCode().getErrorCode()).body(apiResponse);
-        } catch (Exception e) {
-            System.err.println("Internal Server Error retrieving user payment history: " + e.getMessage());
-            ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
-                    .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .message("Failed to retrieve my payment history: " + e.getMessage())
-                    .build();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
-        }
-    }
+   aacc
 }
