@@ -4,6 +4,8 @@ import com.example.jobfinder.model.Payment;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.Subscription;
 import com.example.jobfinder.util.QueryConstants;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +23,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // Tìm kiếm các khoản thanh toán của một user
     List<Payment> findByUser(User user);
     List<Payment> findByUser_Id(Long userId);
+
+    Page<Payment> findByUserId(Long userId, Pageable pageable);
 
     // Tìm kiếm khoản thanh toán cho một subscription cụ thể
     Optional<Payment> findBySubscription(Subscription subscription);

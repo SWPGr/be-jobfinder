@@ -18,7 +18,7 @@ public class SubscriptionPlanResponse {
     private Integer maxApplicationsView;
     private Boolean highlightJobs;
     private LocalDateTime createdAt;
-    private SimpleNameResponse role; // THAY THẾ BẰNG SimpleNameResponse
+    private SimpleNameResponse role;
 
     private Boolean isActive;
 }
