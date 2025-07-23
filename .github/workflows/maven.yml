@@ -62,17 +62,16 @@ jobs:
           echo "Waiting for Elasticsearch..."
           timeout 120 bash -c 'until curl -s http://localhost:9200 > /dev/null; do sleep 5; done'
 
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
       - name: Run unit tests with H2
-        run: |
-          cd be_jobfinder
-          ./mvnw clean test -Dspring.profiles.active=test
+        run: ./mvnw clean test -Dspring.profiles.active=test
         env:
           MAVEN_OPTS: -Xmx1024m
 
       - name: Run integration tests with MySQL
-        run: |
-          cd be_jobfinder
-          ./mvnw test -Dspring.profiles.active=integration-test
+        run: ./mvnw test -Dspring.profiles.active=integration-test
         env:
           DB_USERNAME: root
           DB_PASSWORD: root
@@ -87,7 +86,7 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: be_jobfinder/target/surefire-reports/
+          path: target/surefire-reports/
 
   # Job 2: Security Scanning
   security:
@@ -103,7 +102,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
-          scan-ref: "be_jobfinder"
+          scan-ref: "."
           format: "sarif"
           output: "trivy-results.sarif"
 
@@ -152,8 +151,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./be_jobfinder
-          file: ./be_jobfinder/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -209,7 +208,7 @@ jobs:
             sleep 30
             curl -f http://localhost:8080/actuator/health || exit 1
 
-  # Job 5: Deploy to Production
+  # Job 5: Deploy to Production  
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
@@ -226,10 +225,10 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             # Blue-Green Deployment
-
+            
             # Pull latest image
             docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-
+            
             # Start new container (green)
             docker run -d \
               --name jobfinder-backend-green \
@@ -256,22 +255,35 @@ jobs:
             if curl -f http://localhost:8081/actuator/health; then
               echo "Green deployment healthy"
               
-              # Switch traffic (update nginx/load balancer config)
-              # Stop old container
+              # Switch traffic
               docker stop jobfinder-backend || true
               docker rm jobfinder-backend || true
               
-              # Rename green to blue
-              docker rename jobfinder-backend-green jobfinder-backend
-              
-              # Update port mapping
-              docker stop jobfinder-backend
+              # Rename green to production
+              docker stop jobfinder-backend-green
               docker run -d \
                 --name jobfinder-backend \
                 --restart unless-stopped \
                 -p 8080:8080 \
+                -e SPRING_PROFILES_ACTIVE=production \
+                -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+                -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                -e MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} \
+                -e MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} \
+                -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+                -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+                -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+                -e CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }} \
+                -e CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }} \
+                -e CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }} \
+                -e PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }} \
+                -e PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }} \
+                -e PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }} \
                 ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
                 
+              # Clean up green container
+              docker rm jobfinder-backend-green
+              
               echo "Production deployment successful"
             else
               echo "Green deployment failed"
@@ -291,11 +303,13 @@ jobs:
       - name: Notify success
         if: needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success'
         run: |
-          echo "Deployment successful!"
-          # Add Slack/Discord/Email notification here
+          echo "✅ Deployment successful!"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
 
       - name: Notify failure
         if: needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure'
         run: |
-          echo "Deployment failed!"
-          # Add notification here
+          echo "❌ Deployment failed!"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
