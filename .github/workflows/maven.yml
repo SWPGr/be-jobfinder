@@ -2,24 +2,27 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop, phihung ]
+    branches: [main, develop, phihung]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 env:
   JAVA_VERSION: 21
+  REGISTRY: docker.io
+  IMAGE_NAME: jobfinder-backend
 
 jobs:
+  # Job 1: Testing
   test:
-    runs-on: ubuntu-latest
     name: Run Tests
-    
+    runs-on: ubuntu-latest
+
     services:
       mysql:
-        image: mysql:8.0.36-debian
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: jobfinder
+          MYSQL_DATABASE: jobfinder_test
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -29,147 +32,270 @@ jobs:
         env:
           discovery.type: single-node
           xpack.security.enabled: false
-          xpack.security.http.ssl.enabled: false
           ES_JAVA_OPTS: -Xms512m -Xmx512m
         ports:
           - 9200:9200
-        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
+        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: "temurin"
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-maven-
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
 
-    - name: Create test environment file
-      run: |
-        cat > .env << EOF
-        DB_USERNAME=root
-        DB_PASSWORD=root
-        MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-        MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-        ELASTIC_URI=http://localhost:9200
-        GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-        GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-        PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }}
-        PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }}
-        PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }}
-        CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-        CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-        CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-        EOF
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for MySQL..."
+          timeout 60 bash -c 'until mysqladmin ping -h127.0.0.1 -P3306 -uroot -proot --silent; do sleep 2; done'
 
-    - name: Wait for services
-      run: |
-        echo "Waiting for MySQL..."
-        while ! mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; do
-          echo 'Waiting for MySQL...'
-          sleep 2
-        done
-        
-        echo "Waiting for Elasticsearch..."
-        for i in {1..30}; do
-          if curl -s http://localhost:9200/_cluster/health > /dev/null; then
-            echo "Elasticsearch is ready!"
-            break
-          fi
-          echo "Waiting for Elasticsearch... ($i/30)"
-          sleep 5
-        done
+          echo "Waiting for Elasticsearch..."
+          timeout 120 bash -c 'until curl -s http://localhost:9200 > /dev/null; do sleep 5; done'
 
-    - name: Verify services
-      run: |
-        echo "=== MySQL Status ==="
-        mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot
-        
-        echo "=== Elasticsearch Status ==="
-        curl -s http://localhost:9200/_cluster/health | jq '.'
-        
-        echo "=== Elasticsearch Nodes ==="
-        curl -s http://localhost:9200/_cat/nodes?v
+      - name: Run unit tests with H2
+        run: |
+          cd be_jobfinder
+          ./mvnw clean test -Dspring.profiles.active=test
+        env:
+          MAVEN_OPTS: -Xmx1024m
 
-    - name: Run tests
-      run: ./mvnw clean test -Dspring.profiles.active=test
-      env:
-         SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/jobfinder?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+      - name: Run integration tests with MySQL
+        run: |
+          cd be_jobfinder
+          ./mvnw test -Dspring.profiles.active=integration-test
+        env:
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/jobfinder_test
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: be_jobfinder/target/surefire-reports/
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: be_jobfinder/target/surefire-reports/
 
-  build:
+  # Job 2: Security Scanning
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
     needs: test
-    name: Build Application
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "be_jobfinder"
+          format: "sarif"
+          output: "trivy-results.sarif"
 
-    - name: Build application
-      run: |
-        cd be_jobfinder
-        ./mvnw clean package -DskipTests
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
 
-    - name: Upload JAR artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: jar-artifact
-        path: be_jobfinder/target/*.jar
-
-  docker-build:
+  # Job 3: Build and Push Docker Image
+  build-and-push:
+    name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: build
+    needs: [test, security]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download JAR artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: jar-artifact
-        path: be_jobfinder/target/
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v4
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./be_jobfinder
-        file: ./be_jobfinder/Dockerfile
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/jobfinder:${{ github.ref_name }}
-          ${{ secrets.DOCKER_USERNAME }}/jobfinder:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./be_jobfinder
+          file: ./be_jobfinder/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # Job 4: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            # Stop existing container
+            docker stop jobfinder-backend || true
+            docker rm jobfinder-backend || true
+
+            # Pull latest image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:develop
+
+            # Run new container
+            docker run -d \
+              --name jobfinder-backend \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              -e SPRING_PROFILES_ACTIVE=staging \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} \
+              -e MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} \
+              -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+              -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+              -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+              -e CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }} \
+              -e CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }} \
+              -e CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }} \
+              -e PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }} \
+              -e PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }} \
+              -e PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }} \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:develop
+
+            # Health check
+            sleep 30
+            curl -f http://localhost:8080/actuator/health || exit 1
+
+  # Job 5: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            # Blue-Green Deployment
+
+            # Pull latest image
+            docker pull ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            # Start new container (green)
+            docker run -d \
+              --name jobfinder-backend-green \
+              --restart unless-stopped \
+              -p 8081:8080 \
+              -e SPRING_PROFILES_ACTIVE=production \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} \
+              -e MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} \
+              -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+              -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+              -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+              -e CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }} \
+              -e CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }} \
+              -e CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }} \
+              -e PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }} \
+              -e PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }} \
+              -e PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }} \
+              ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+            # Wait for health check
+            sleep 60
+            if curl -f http://localhost:8081/actuator/health; then
+              echo "Green deployment healthy"
+              
+              # Switch traffic (update nginx/load balancer config)
+              # Stop old container
+              docker stop jobfinder-backend || true
+              docker rm jobfinder-backend || true
+              
+              # Rename green to blue
+              docker rename jobfinder-backend-green jobfinder-backend
+              
+              # Update port mapping
+              docker stop jobfinder-backend
+              docker run -d \
+                --name jobfinder-backend \
+                --restart unless-stopped \
+                -p 8080:8080 \
+                ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+                
+              echo "Production deployment successful"
+            else
+              echo "Green deployment failed"
+              docker stop jobfinder-backend-green
+              docker rm jobfinder-backend-green
+              exit 1
+            fi
+
+  # Job 6: Notify
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+      - name: Notify success
+        if: needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success'
+        run: |
+          echo "Deployment successful!"
+          # Add Slack/Discord/Email notification here
+
+      - name: Notify failure
+        if: needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure'
+        run: |
+          echo "Deployment failed!"
+          # Add notification here
