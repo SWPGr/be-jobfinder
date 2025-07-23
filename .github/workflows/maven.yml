@@ -102,7 +102,7 @@ jobs:
         curl -s http://localhost:9200/_cat/nodes?v
 
     - name: Run tests
-      working-directory: be_jobfinder
+      working-directory: src
       run: ./mvnw clean test -Dspring.profiles.active=test
 
     - name: Upload test results
