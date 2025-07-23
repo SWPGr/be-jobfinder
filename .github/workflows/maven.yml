@@ -1,0 +1,178 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, phihung ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  JAVA_VERSION: 21
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    services:
+      mysql:
+        image: mysql:8.0.36-debian
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: jobfinder
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      elasticsearch:
+        image: elasticsearch:8.15.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.http.ssl.enabled: false
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: --health-cmd="curl http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=5s --health-retries=10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+
+    - name: Create test environment file
+      run: |
+        cd be_jobfinder
+        cat > .env << EOF
+        DB_USERNAME=root
+        DB_PASSWORD=root
+        MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+        MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        ELASTIC_URI=http://localhost:9200
+        GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+        PAYOS_CLIENT_ID=${{ secrets.PAYOS_CLIENT_ID }}
+        PAYOS_API_KEY=${{ secrets.PAYOS_API_KEY }}
+        PAYOS_CHECKSUM_KEY=${{ secrets.PAYOS_CHECKSUM_KEY }}
+        CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+        CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+        EOF
+
+    - name: Wait for services
+      run: |
+        echo "Waiting for MySQL..."
+        while ! mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; do
+          echo 'Waiting for MySQL...'
+          sleep 2
+        done
+        
+        echo "Waiting for Elasticsearch..."
+        for i in {1..30}; do
+          if curl -s http://localhost:9200/_cluster/health > /dev/null; then
+            echo "Elasticsearch is ready!"
+            break
+          fi
+          echo "Waiting for Elasticsearch... ($i/30)"
+          sleep 5
+        done
+
+    - name: Verify services
+      run: |
+        echo "=== MySQL Status ==="
+        mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot
+        
+        echo "=== Elasticsearch Status ==="
+        curl -s http://localhost:9200/_cluster/health | jq '.'
+        
+        echo "=== Elasticsearch Nodes ==="
+        curl -s http://localhost:9200/_cat/nodes?v
+
+    - name: Run tests
+      run: |
+        cd be_jobfinder
+        ./mvnw clean test -Dspring.profiles.active=test
+      env:
+        SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/jobfinder?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: be_jobfinder/target/surefire-reports/
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    name: Build Application
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Build application
+      run: |
+        cd be_jobfinder
+        ./mvnw clean package -DskipTests
+
+    - name: Upload JAR artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: jar-artifact
+        path: be_jobfinder/target/*.jar
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download JAR artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: jar-artifact
+        path: be_jobfinder/target/
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./be_jobfinder
+        file: ./be_jobfinder/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/jobfinder:${{ github.ref_name }}
+          ${{ secrets.DOCKER_USERNAME }}/jobfinder:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
