@@ -102,6 +102,8 @@ jobs:
 
     - name: Run tests
       run: ./mvnw clean test -Dspring.profiles.active=test
+      env:
+         SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/jobfinder?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
