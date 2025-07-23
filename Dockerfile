@@ -1,5 +1,5 @@
 # Build stage
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM  eclipse-temurin:21-jdk-alpine AS builder
 
 # Install curl for healthcheck
 RUN apt-get update && \
@@ -26,7 +26,7 @@ COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
 # Runtime stage
-FROM openjdk:21-jre-slim
+FROM  eclipse-temurin:21-jdk-alpine
 
 # Install curl for healthcheck
 RUN apt-get update && \
