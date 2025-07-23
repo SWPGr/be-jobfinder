@@ -54,7 +54,7 @@ jobs:
           name: minimal-test-results
           path: target/surefire-reports/
 
-  # Job 2: Build and Push (Fast Deployment)
+  # Job 2: Build and Push Docker Image
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -96,9 +96,9 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-  # Job 3: Full Integration Tests (Optional - only for main/develop)
+  # Job 3: Integration Tests (Enhanced with Real Services)
   integration-tests:
-    name: Integration Tests (MySQL)
+    name: Integration Tests (MySQL + External Services)
     runs-on: ubuntu-latest
     needs: minimal-tests
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
@@ -112,6 +112,16 @@ jobs:
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      elasticsearch:
+        image: elasticsearch:8.15.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: --health-cmd="curl -f http://localhost:9200/_cluster/health" --health-interval=10s --health-timeout=10s --health-retries=10
 
     steps:
       - name: Checkout code
@@ -129,30 +139,69 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
-      - name: Wait for MySQL
+      - name: Wait for services
         run: |
           echo "Waiting for MySQL..."
           timeout 60 bash -c 'until mysqladmin ping -h127.0.0.1 -P3306 -uroot -proot --silent; do sleep 2; done'
           echo "MySQL is ready!"
 
+          echo "Waiting for Elasticsearch..."
+          timeout 120 bash -c 'until curl -f http://localhost:9200/_cluster/health; do sleep 5; done'
+          echo "Elasticsearch is ready!"
+
       - name: Create integration test configuration
         run: |
           mkdir -p src/test/resources
           cat > src/test/resources/application-integration.properties << EOF
-          spring.datasource.url=jdbc:mysql://127.0.0.1:3306/jobfinder_test?createDatabaseIfNotExist=true&useSSL=false
+          # Database
+          spring.datasource.url=jdbc:mysql://127.0.0.1:3306/jobfinder_test?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
           spring.datasource.username=root
           spring.datasource.password=root
           spring.jpa.hibernate.ddl-auto=create-drop
           spring.jpa.show-sql=false
-          app.scheduler.enabled=false
-          logging.level.root=WARN
+
+          # External Services (using real credentials from secrets)
+          spring.mail.host=smtp.gmail.com
+          spring.mail.port=587
+          spring.mail.username=${{ secrets.MAIL_USERNAME }}
+          spring.mail.password=${{ secrets.MAIL_PASSWORD }}
+          spring.mail.properties.mail.smtp.auth=true
+          spring.mail.properties.mail.smtp.starttls.enable=true
+
+          google.gemini.api-key=${{ secrets.GEMINI_API_KEY }}
+          google.gemini.model-name=gemini-1.5-flash-latest
+
+          spring.elasticsearch.uris=http://127.0.0.1:9200
+
+          spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}
+          spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+          payos.client-id=${{ secrets.PAYOS_CLIENT_ID }}
+          payos.api-key=${{ secrets.PAYOS_API_KEY }}
+          payos.checksum-key=${{ secrets.PAYOS_CHECKSUM_KEY }}
+
+          cloudinary.cloud-name=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          cloudinary.api-key=${{ secrets.CLOUDINARY_API_KEY }}
+          cloudinary.api-secret=${{ secrets.CLOUDINARY_API_SECRET }}
+
+          # App config
+          app.scheduler.enabled=true
+          app.frontend.url=http://localhost:3030
+          jwt.secret=integration-test-jwt-secret-key-for-testing-purposes-only-must-be-long-enough
+          jwt.expiration=3600000
+
+          # Logging
+          logging.level.root=INFO
+          logging.level.com.example.jobfinder=DEBUG
           EOF
 
-      - name: Run basic application test with MySQL
+      - name: Run integration tests with real services
         run: |
-          ./mvnw test -Dtest=JobfinderApplicationTests \
-                     -Dspring.profiles.active=integration \
-                     -DfailIfNoTests=false || echo "Integration test failed but continuing..."
+          ./mvnw test -Dspring.profiles.active=integration \
+                     -Dtest="**/*IntegrationTest*" \
+                     -DfailIfNoTests=false
+        env:
+          MAVEN_OPTS: -Xmx1024m
 
   # Job 4: Notify Results
   notify:
@@ -170,8 +219,12 @@ jobs:
           echo "Build & Push: ${{ needs.build-and-push.result }}"
           echo "Integration Tests: ${{ needs.integration-tests.result }}"
           echo ""
-          echo "🚀 Application is ready for deployment!"
-          echo "📋 Note: Full application testing should be done in staging environment"
+          if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+            echo "🚀 Docker image pushed to: ${{ secrets.DOCKER_USERNAME }}/jobfinder-backend:phihung"
+            echo "📦 Pull with: docker pull ${{ secrets.DOCKER_USERNAME }}/jobfinder-backend:phihung"
+          fi
+          echo ""
+          echo "🎉 Application is ready for deployment!"
 
       - name: Notify failure
         if: needs.minimal-tests.result == 'failure'
