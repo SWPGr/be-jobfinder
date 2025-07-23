@@ -4,12 +4,8 @@ import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Role;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.RoleRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -41,6 +38,8 @@ public class AuthService {
     JwtUtil jwtUtil;
     EmailService emailService;
     GoogleTokenVerifierService googleTokenVerifierService;
+    SubscriptionRepository subscriptionRepository;
+    SubscriptionPlanRepository subscriptionPlanRepository;
 
 
     public void register(RegisterRequest request) throws Exception {
@@ -66,6 +65,8 @@ public class AuthService {
 
         userDetailsRepository.save(userDetail);
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
+        assignDefaultBasicSubscription(user);
+        log.info("Assigned default BASIC plan to new user: {}", user.getEmail());
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -214,5 +215,37 @@ public class AuthService {
         String userEmail = authentication.getName();
         return userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Transactional
+    public void assignDefaultBasicSubscription(User user) {
+        // 1. Lấy role ID của người dùng
+        Long userRoleId = user.getRole().getId(); // Giả định User có trường Role và Role có ID
+
+        // 2. Tìm gói Basic mặc định dựa trên tên gói VÀ role ID
+        SubscriptionPlan basicPlan = subscriptionPlanRepository
+                .findBySubscriptionPlanNameAndRoleId("Basic Plan", userRoleId)
+                .orElseThrow(() -> {
+                    log.error("CRITICAL: Default BASIC subscription plan not found for role ID {} in database!", userRoleId);
+                    return new AppException(ErrorCode.PLAN_NOT_FOUND);
+                });
+
+        // 3. Đảm bảo giá gói basic là 0
+        if (basicPlan.getPrice() != 0) {
+            log.error("CRITICAL: BASIC plan for role ID {} has price {}. It must be 0. Please correct the SubscriptionPlan data.", userRoleId, basicPlan.getPrice());
+            throw new AppException(ErrorCode.INVALID_PLAN_CONFIGURATION);
+        }
+
+        // 4. Tạo Subscription mới cho người dùng
+        Subscription newSubscription = Subscription.builder()
+                .user(user)
+                .plan(basicPlan) // Đổi tên trường từ .plan thành .subscriptionPlan nếu Entity của bạn là subscriptionPlan
+                .startDate(LocalDateTime.now())
+                .endDate(LocalDateTime.now().plusYears(100))
+                .isActive(true)
+                .build();
+
+        subscriptionRepository.save(newSubscription);
+        log.info("Assigned default BASIC plan (ID: {}) to new user: {} with role ID: {}", basicPlan.getId(), user.getEmail(), userRoleId);
     }
 }

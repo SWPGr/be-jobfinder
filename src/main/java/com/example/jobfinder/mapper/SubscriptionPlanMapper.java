@@ -17,5 +17,8 @@ public interface SubscriptionPlanMapper {
     @Mapping(source = "role", target = "role") // Ánh xạ từ Role entity sang SimpleNameResponse
     SubscriptionPlanResponse toSubscriptionPlanResponse(SubscriptionPlan subscriptionPlan);
 
+    @Mapping(target = "name", source = "name")
+    SimpleNameResponse toSimpleNameResponse(Role role);
+
     List<SubscriptionPlanResponse> toSubscriptionPlanResponseList(List<SubscriptionPlan> subscriptionPlans);
 }
