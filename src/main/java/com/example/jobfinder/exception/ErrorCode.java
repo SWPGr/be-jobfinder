@@ -174,6 +174,7 @@ public enum ErrorCode {
     LINKEDIN_PROFILE_URL_NOT_FOUND(2026, "Linkedin profile url not found" ),
     AI_SERVICE_ERROR(2027, "AI service error" ),
     AI_PARSE_ERROR(2028, "AI parse error" ),
+    INVALID_PLAN_CONFIGURATION(2029, "Invalid plan configuration" ),
 
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
