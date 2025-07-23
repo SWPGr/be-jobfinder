@@ -54,7 +54,6 @@ jobs:
 
     - name: Create test environment file
       run: |
-        cd be_jobfinder
         cat > .env << EOF
         DB_USERNAME=root
         DB_PASSWORD=root
