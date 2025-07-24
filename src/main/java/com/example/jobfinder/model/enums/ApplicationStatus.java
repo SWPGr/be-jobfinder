@@ -4,10 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum ApplicationStatus {
-    PENDING("PENDING"),       // Chờ duyệt
-    REVIEWED("REVIEWED"),     // Đã xem xét
-    ACCEPTED("ACCEPTED"),     // Đã chấp nhận đề nghị
-    REJECTED("REJECTED");   // Đã từ chối
+    PENDING("PENDING"),
+    REVIEWED("REVIEWED"),
+    ACCEPTED("ACCEPTED"),
+    REJECTED("REJECTED");
 
     private final String value;
 
