@@ -1,7 +1,6 @@
 // src/main/java/com/example/jobfinder/mapper/UserMapper.java
 package com.example.jobfinder.mapper;
 
-import com.example.jobfinder.dto.user.UserDto;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.dto.user.UserCreationRequest;
@@ -127,8 +126,6 @@ public interface UserMapper {
     @Mapping(target = "totalApplications", ignore = true) // Not available in UserDocument
     UserResponse toUserResponse(UserDocument userDocument);
 
-    @Mapping(source = "role.name", target = "roleName")
-    UserDto toUserDto(User user);
 
     default Boolean map(Integer value) {
         if (value == null) {
