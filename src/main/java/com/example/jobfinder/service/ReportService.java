@@ -115,7 +115,13 @@ public class ReportService {
 
     public Page<ReportResponse> searchReportsByType(String reportTypeName, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Report> reports = reportRepository.findByReportTypeNameContainingIgnoreCase(reportTypeName, pageable);
+        Page<Report> reports;
+
+        if (reportTypeName == null || reportTypeName.trim().isEmpty()) {
+            reports = reportRepository.findAll(pageable);
+        } else {
+            reports = reportRepository.findByReportTypeNameContainingIgnoreCase(reportTypeName, pageable);
+        }
 
         return reports.map(report -> ReportResponse.builder()
                 .id(report.getId())
