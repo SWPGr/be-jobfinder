@@ -116,6 +116,7 @@ jobs:
           - 3306:3306
         env:
           MYSQL_DATABASE: jobfinder
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_USER: ${{ secrets.DB_USERNAME }}
           MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
         options: >-
