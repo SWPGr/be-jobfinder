@@ -2,6 +2,7 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.report.ReportRequest;
 import com.example.jobfinder.dto.report.ReportResponse;
+import com.example.jobfinder.dto.report.ReportTypeResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Job;
@@ -23,6 +24,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -97,6 +100,19 @@ public class ReportService {
                 .createdAt(report.getCreatedAt())
                 .type(report.getReportType())
                 .build());
+    }
+
+    public List<ReportTypeResponse> getAllReportTypes() {
+        List<ReportType> reportTypes = reportTypeRepository.findAll();
+
+        return reportTypes.stream()
+                .map(type -> ReportTypeResponse.builder()
+                        .id(type.getId())
+                        .name(type.getName())
+                        .build())
+                .collect(Collectors.toList());
+
+
     }
 
 }
