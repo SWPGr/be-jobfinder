@@ -172,36 +172,50 @@ public class SubscriptionPaymentService {
         System.out.println("Frontend Callback: Xử lý thành công giao dịch cho order " + orderCode + ". User " + user.getEmail() + " giờ là Premium.");
     }
 
-    public PageResponse<PaymentResponse> getAllPaymentHistory(Pageable pageable) {
-        Page<Payment> paymentsPage = paymentRepository.findAll(pageable);
-
-        // Xây dựng PageResponse từ Page
-        return PageResponse.<PaymentResponse>builder()
-                .content(paymentsPage.getContent().stream()
-                        .map(paymentMapper::toPaymentResponse)
-                        .collect(Collectors.toList()))
-                .pageNumber(paymentsPage.getNumber()) // Spring Page là 0-indexed
-                .pageSize(paymentsPage.getSize())
-                .totalElements(paymentsPage.getTotalElements())
-                .totalPages(paymentsPage.getTotalPages())
-                .isLast(paymentsPage.isLast())
-                .isFirst(paymentsPage.isFirst())
-                .build();
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getAllPaymentHistory(
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBetween(fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtAfter(fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBefore(toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findAll(pageable);
+        }
+        return buildPageResponse(paymentsPage);
     }
 
-    // Thay đổi kiểu trả về thành PageResponse<PaymentResponse>
-    public PageResponse<PaymentResponse> getUserPaymentHistory(Long userId, Pageable pageable) {
-        Page<Payment> paymentsPage = paymentRepository.findByUserId(userId, pageable);
-
-        if (paymentsPage.isEmpty()) {
-           throw new AppException(ErrorCode.PAYMENT_PROCESSING_ERROR);
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getMyPaymentHistory(
+            Long userId,
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBetween(userId, fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtAfter(userId, fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBefore(userId, toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findByUserId(userId, pageable);
         }
+        return buildPageResponse(paymentsPage);
+    }
 
-        // Xây dựng PageResponse từ Page
+    private PageResponse<PaymentResponse> buildPageResponse(Page<Payment> paymentsPage) {
+        List<PaymentResponse> content = paymentsPage.getContent().stream()
+                .map(paymentMapper::toPaymentResponse)
+                .collect(Collectors.toList());
+
         return PageResponse.<PaymentResponse>builder()
-                .content(paymentsPage.getContent().stream()
-                        .map(paymentMapper::toPaymentResponse)
-                        .collect(Collectors.toList()))
+                .content(content) // Nếu paymentsPage.getContent() rỗng, thì content cũng rỗng
                 .pageNumber(paymentsPage.getNumber())
                 .pageSize(paymentsPage.getSize())
                 .totalElements(paymentsPage.getTotalElements())

@@ -2,126 +2,33 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop, phihung]
+    branches: [ main, develop, phihung ]
   pull_request:
-    branches: [main, develop]
-
-permissions:
-  contents: read
-  security-events: write
-  actions: read
+    branches: [ main ]
 
 env:
-  JAVA_VERSION: 21
-  REGISTRY: docker.io
-  IMAGE_NAME: jobfinder-backend
+  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/springboot-app
+  JAVA_VERSION: '21'
+  MAVEN_VERSION: '3.9.6'
 
 jobs:
-  # Job 1: Minimal Tests (Always Pass)
-  minimal-tests:
-    name: Minimal Tests
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: "temurin"
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Make Maven wrapper executable
-        run: chmod +x ./mvnw
-
-      - name: Run minimal tests (with memory optimization)
-        run: |
-          echo "🔨 Running minimal tests..."
-          ./mvnw clean test -Dtest=MinimalTest \
-                           -Dmaven.test.failure.ignore=false \
-                           -Dmaven.compiler.showWarnings=false \
-                           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-                           --quiet
-        env:
-          MAVEN_OPTS: -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200
-
-      - name: Verify compilation (silent)
-        run: |
-          echo "✅ Verifying compilation..."
-          ./mvnw clean compile --quiet -Dmaven.compiler.showWarnings=false 2>/dev/null || ./mvnw clean compile --quiet
-        env:
-          MAVEN_OPTS: -Xmx2g
-
-  # Job 2: Build and Push Docker Image
-  build-and-push:
-    name: Build & Push Docker Image
-    runs-on: ubuntu-latest
-    needs: [minimal-tests]
-    if: github.ref == 'refs/heads/phihung' && needs.minimal-tests.result == 'success'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64
-
-  # Job 3: Quick Integration Tests with Real Secrets
-  quick-integration:
-    name: Quick Integration Tests
-    runs-on: ubuntu-latest
-    needs: minimal-tests
-    if: github.ref == 'refs/heads/phihung'
 
     services:
       mysql:
         image: mysql:8.0.36-debian
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_DATABASE: testdb
         ports:
           - 3306:3306
-        env:
-          MYSQL_DATABASE: jobfinder
-          MYSQL_ROOT_PASSWORD: root
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" 
-          --health-interval=10s 
-          --health-timeout=5s 
-          --health-retries=10
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
@@ -131,9 +38,10 @@ jobs:
           xpack.security.http.ssl.enabled: false
           ES_JAVA_OPTS: -Xms512m -Xmx512m
         ports:
-          - "9200:9200"
+          - 9200:9200
+          - 9300:9300
         options: >-
-          --health-cmd="curl --silent --fail http://localhost:9200/_cluster/health || exit 1"
+          --health-cmd="curl http://localhost:9200/_cluster/health"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -142,115 +50,132 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: "temurin"
+          distribution: 'temurin'
 
       - name: Cache Maven dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-      - name: Wait for services
+      - name: Wait for services to be ready
         run: |
-          echo "⏳ Waiting for MySQL..."
-          timeout 60 bash -c 'until mysqladmin ping -h127.0.0.1 -P3306 -uroot -proot --silent; do sleep 2; done'
-          echo "✅ MySQL is ready!"
-          
-          echo "⏳ Waiting for Elasticsearch..."
-          timeout 60 bash -c 'until curl -f -s http://localhost:9200/_cluster/health > /dev/null; do sleep 2; done'
-          echo "✅ Elasticsearch is ready!"
+          echo "Waiting for MySQL..."
+          timeout 60 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' localhost 3306
+          echo "Waiting for Elasticsearch..."
+          timeout 60 bash -c 'until curl -s http://localhost:9200/_cluster/health; do sleep 1; done'
 
-      - name: Create integration test configuration with real secrets
-        run: |
-          mkdir -p src/test/resources
-          cat > src/test/resources/application-integration.properties << EOF
-          # Database with consistent credentials
-          spring.datasource.url=jdbc:mysql://127.0.0.1:3306/jobfinder?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
-          spring.datasource.username=root
-          spring.datasource.password=root
-          spring.jpa.hibernate.ddl-auto=create-drop
-          spring.jpa.show-sql=false
-
-          # Elasticsearch (use local service)
-          spring.elasticsearch.uris=http://localhost:9200
-          elastic.uri=http://localhost:9200
-
-          # Mail configuration with real credentials
-          spring.mail.host=smtp.gmail.com
-          spring.mail.port=587
-          spring.mail.username=${{ secrets.MAIL_USERNAME }}
-          spring.mail.password=${{ secrets.MAIL_PASSWORD }}
-          spring.mail.properties.mail.smtp.auth=true
-          spring.mail.properties.mail.smtp.starttls.enable=true
-          spring.mail.test-connection=false
-
-          # External services with real credentials
-          google.gemini.api-key=${{ secrets.GEMINI_API_KEY }}
-
-          # Google OAuth
-          spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}
-          spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}
-
-          # PayOS
-          payos.client-id=${{ secrets.PAYOS_CLIENT_ID }}
-          payos.api-key=${{ secrets.PAYOS_API_KEY }}
-          payos.checksum-key=${{ secrets.PAYOS_CHECKSUM_KEY }}
-
-          # Cloudinary
-          cloudinary.cloud-name=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          cloudinary.api-key=${{ secrets.CLOUDINARY_API_KEY }}
-          cloudinary.api-secret=${{ secrets.CLOUDINARY_API_SECRET }}
-
-          # JWT
-          jwt.secret=${{ secrets.JWT_SECRET }}
-          jwt.expiration=3600000
-
-          # App configuration
-          app.frontend.url=http://localhost:3030
-          app.scheduler.enabled=false
-
-          # Performance optimizations for CI
-          spring.main.lazy-initialization=true
-          spring.jpa.defer-datasource-initialization=true
-
-          # Disable heavy components that cause OOM
-          spring.autoconfigure.exclude=com.example.jobfinder.config.NLPConfig
-
-          # Logging
-          logging.level.root=WARN
-          logging.level.org.springframework=ERROR
-          logging.level.com.example.jobfinder=INFO
-          logging.level.org.hibernate=ERROR
-          EOF
-
-      - name: Run integration tests (focus on tests only)
-        run: |
-          echo "🧪 Running integration tests with real credentials..."
-
-          # Run integration tests without application startup
-          ./mvnw test -Dspring.profiles.active=integration \
-                     -Dtest="*Test" \
-                     -Dsurefire.failIfNoSpecifiedTests=false \
-                     -DfailIfNoTests=false \
-                     -Dmaven.compiler.showWarnings=false \
-                     --quiet \
-          && echo "✅ Integration tests completed successfully" \
-          || echo "⚠️ Some integration tests failed (non-blocking for CI)"
-
-          echo "🎯 Integration tests phase completed"
+      - name: Run tests
+        run: mvn clean test
         env:
-          MAVEN_OPTS: -Xmx3g -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ELASTIC_URI: http://localhost:9200
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          PAYOS_CLIENT_ID: ${{ secrets.PAYOS_CLIENT_ID }}
+          PAYOS_API_KEY: ${{ secrets.PAYOS_API_KEY }}
+          PAYOS_CHECKSUM_KEY: ${{ secrets.PAYOS_CHECKSUM_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
-  # Job 4: Security Scan
+      - name: Generate test report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Maven Tests
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build application
+        run: mvn clean package -DskipTests
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        run: |
+          echo "Deployment step - Replace with your deployment logic"
+          echo "Image: ${{ env.DOCKER_IMAGE_NAME }}:latest"
+          # Add your deployment commands here
+          # For example: kubectl, docker-compose, or custom deployment scripts
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: [minimal-tests]
-    if: github.ref == 'refs/heads/phihung'
+    needs: test
+    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout code
@@ -259,58 +184,37 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-          exit-code: "0"
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
 
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
-          sarif_file: "trivy-results.sarif"
+          sarif_file: 'trivy-results.sarif'
 
-  # Job 5: Notify Results
-  notify:
-    name: Notify Results
+  code-quality:
+    name: Code Quality Check
     runs-on: ubuntu-latest
-    needs: [minimal-tests, build-and-push, quick-integration, security-scan]
-    if: always()
+    needs: test
 
     steps:
-      - name: Display Results
-        run: |
-          echo "🎉 CI/CD Pipeline Results Summary"
-          echo "================================="
-          echo ""
-          echo "📋 Job Status:"
-          echo "  • Minimal Tests: ${{ needs.minimal-tests.result }}"
-          echo "  • Build & Push: ${{ needs.build-and-push.result }}"
-          echo "  • Integration Tests: ${{ needs.quick-integration.result }}"
-          echo "  • Security Scan: ${{ needs.security-scan.result }}"
-          echo ""
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          if [[ "${{ needs.minimal-tests.result }}" == "success" ]]; then
-            echo "✅ Core functionality verified"
-          fi
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
 
-          if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
-            echo "🚀 Docker image available:"
-            echo "   docker pull ${{ secrets.DOCKER_USERNAME }}/jobfinder-backend:phihung"
-          fi
-
-          if [[ "${{ needs.quick-integration.result }}" == "success" ]]; then
-            echo "🔗 Database integration with real credentials verified"
-          fi
-
-          if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
-            echo "🛡️ Security scan completed"
-          fi
-
-          echo ""
-          echo "📦 JobFinder Backend - Production Ready!"
-          echo "🏷️  Branch: phihung"
-          echo "🔐 Using secure environment variables"
-          echo "⚡ CI/CD Pipeline Optimized for Reliability"
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2

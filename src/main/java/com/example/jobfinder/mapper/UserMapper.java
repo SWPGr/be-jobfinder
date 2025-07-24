@@ -126,6 +126,7 @@ public interface UserMapper {
     @Mapping(target = "totalApplications", ignore = true) // Not available in UserDocument
     UserResponse toUserResponse(UserDocument userDocument);
 
+
     default Boolean map(Integer value) {
         if (value == null) {
             return null; // Trả về null nếu giá trị gốc là null

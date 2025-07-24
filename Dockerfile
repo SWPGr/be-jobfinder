@@ -1,58 +1,56 @@
-# Build stage
+# Multi-stage build
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
-# Install curl for healthcheck (Alpine uses apk, not apt-get)
-RUN apk update && \
-    apk add --no-cache curl && \
-    rm -rf /var/cache/apk/*
-
+# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (for better caching)
+# Copy Maven wrapper and pom.xml
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 
 # Make mvnw executable
 RUN chmod +x ./mvnw
 
-# Download dependencies (this layer will be cached)
-RUN ./mvnw dependency:resolve
+# Download dependencies (this layer will be cached if pom.xml doesn't change)
+RUN ./mvnw dependency:go-offline -B
 
 # Copy source code
 COPY src ./src
 
-# Build application
+# Build the application
 RUN ./mvnw clean package -DskipTests
 
-# Runtime stage - Use JRE for smaller image
-FROM eclipse-temurin:21-jre-alpine
+# Production stage
+FROM eclipse-temurin:21-jre-alpine AS production
 
-# Install curl for healthcheck (Alpine uses apk)
-RUN apk update && \
-    apk add --no-cache curl && \
-    rm -rf /var/cache/apk/*
+# Install additional packages if needed
+RUN apk add --no-cache curl
 
+# Create non-root user for security
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Set working directory
 WORKDIR /app
 
-# Copy JAR file from builder stage
+# Copy the jar from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Create non-root user for security (Alpine way)
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
 
+# Switch to non-root user
 USER appuser
 
 # Expose port
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# JVM optimization
-ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseContainerSupport"
+# JVM optimization for containerized environments
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
-# Run application
+# Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
