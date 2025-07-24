@@ -3,7 +3,9 @@ import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.job.JobCreationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobStatusUpdateRequest;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
+import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.service.JobService;
 import jakarta.validation.Valid;
@@ -96,5 +98,30 @@ public class JobController {
                 .message("Jobs for current employer fetched successfully with pagination.")
                 .result(response)
                 .build());
+    }
+
+    @PutMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> updateJobStatus(@RequestBody @Valid JobStatusUpdateRequest request) {
+        try {
+            jobService.updateJobStatus(request);
+            String message = request.getIsActive() ? "Job activated successfully." : "Job deactivated successfully.";
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .code(HttpStatus.OK.value())
+                    .message(message)
+                    .build());
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getErrorCode().getErrorCode())
+                    .body(ApiResponse.<Void>builder()
+                            .code(e.getErrorCode().getErrorCode())
+                            .message(e.getErrorCode().getErrorMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<Void>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Failed to update job status: " + e.getMessage())
+                            .build());
+        }
     }
 }

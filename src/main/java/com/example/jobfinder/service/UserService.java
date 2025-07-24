@@ -1,13 +1,8 @@
 // src/main/java/com/example/jobfinder/service/UserService.java
 package com.example.jobfinder.service;
 
-import com.example.jobfinder.dto.user.UserCreationRequest;
-import com.example.jobfinder.dto.user.UserResponse;
-import com.example.jobfinder.dto.user.UserUpdateRequest;
-import com.example.jobfinder.dto.user.JobSeekerResponse;
+import com.example.jobfinder.dto.user.*;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
-import com.example.jobfinder.dto.user.EmployerResponse;
-import com.example.jobfinder.dto.user.UserSearchRequest; // Thêm DTO tìm kiếm người dùng
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserMapper;
@@ -35,26 +30,18 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class UserService {
-
-    // Dependencies (các Repository và Mapper cần thiết)
     UserRepository userRepository;
     RoleRepository roleRepository;
-    PasswordEncoder passwordEncoder; // Để mã hóa mật khẩu
-    UserMapper userMapper; // Để chuyển đổi giữa User entity và User DTO
-    UserDetailsRepository userDetailRepository; // Để thao tác với UserDetail
-    JobSeekerMapper jobSeekerMapper; // Để chuyển đổi UserDetail sang JobSeekerResponse
-    EmployerMapper employerMapper; // Để chuyển đổi UserDetail sang EmployerResponse
-    EducationRepository educationRepository; // Cần nếu UserDetail có Education và bạn cần lấy/lưu Education
+    PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
+    UserDetailsRepository userDetailRepository;
+    EducationRepository educationRepository;
     JobRepository jobRepository;
     ExperienceRepository experienceRepository;
     ApplicationRepository applicationRepository;
 
-    // --- Phương thức CRUD cho User (Chủ yếu dành cho Admin) ---
-
     public List<UserResponse> getAllUsers() {
-        // Gọi findAll() từ UserRepository để lấy tất cả User entities
         List<User> users = userRepository.findAll();
-        // Chuyển đổi danh sách User entities sang danh sách UserResponse DTOs bằng UserMapper
         return userMapper.toUserResponseList(users);
     }
 
@@ -66,7 +53,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @Transactional // Đảm bảo các thao tác với User và UserDetail được thực hiện trong cùng một transaction.
+    @Transactional
     public UserResponse createUser(UserCreationRequest request) {
         // 1. Kiểm tra xem email đã tồn tại chưa để tránh trùng lặp.
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -136,12 +123,6 @@ public class UserService {
         return userMapper.toUserResponse(savedUser);
     }
 
-    @Transactional // Đảm bảo thao tác xóa được thực hiện trong một transaction.
-    public void deleteUser(Long userId) {
-        User userToDelete = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        userRepository.delete(userToDelete); // Xóa User.
-    }
 
     @Transactional(readOnly = true)
     public List<UserResponse> searchUsers(UserSearchRequest request) {
@@ -191,69 +172,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public List<UserResponse> getUsersByRole(String roleName) {
-        // Tùy chọn: Kiểm tra xem roleName có tồn tại trong hệ thống không
-        // Điều này giúp tránh lỗi nếu roleName được truyền vào không hợp lệ.
-        if (!roleRepository.findByName(roleName).isPresent()) {
-            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
-        }
-
-        // Gọi phương thức findByRoleName từ UserRepository để lấy danh sách User.
-        List<User> users = userRepository.findByRoleName(roleName);
-        // Chuyển đổi danh sách User entities sang danh sách UserResponse DTOs.
-        return userMapper.toUserResponseList(users);
-    }
-
-    @Transactional(readOnly = true)
-    public JobSeekerResponse getJobSeekerInfo(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        if (!user.getRole().getName().equals("JOB_SEEKER")) {
-            throw new AppException(ErrorCode.USER_IS_NOT_JOB_SEEKER);
-        }
-
-        UserDetail userDetail = userDetailRepository.findByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
-
-        long totalApplications = applicationRepository.countByApplicantId(userId);
-        JobSeekerResponse jobSeekerResponse = jobSeekerMapper.toJobSeekerResponse(userDetail);
-
-        // Gán thông tin từ User Entity
-        jobSeekerResponse.setUserId(user.getId());
-        jobSeekerResponse.setUserEmail(user.getEmail());
-        jobSeekerResponse.setResumeUrl(userDetail.getResumeUrl());
-        jobSeekerResponse.setTotalApplications(totalApplications); // <-- Gán giá trị vào DTO
-
-        return jobSeekerResponse;
-    }
-
-    /**
-     * Lấy thông tin chi tiết hồ sơ của một nhà tuyển dụng (Employer) theo User ID.
-     *
-     * @param userId ID của người dùng (phải có vai trò EMPLOYER).
-     * @return {@link EmployerResponse} chứa thông tin hồ sơ nhà tuyển dụng.
-     * @throws AppException Nếu người dùng không tìm thấy (ErrorCode.USER_NOT_FOUND),
-     * người dùng không phải là Employer (ErrorCode.USER_IS_NOT_EMPLOYER),
-     * hoặc profile UserDetail không tìm thấy (ErrorCode.PROFILE_NOT_FOUND).
-     */
-    public EmployerResponse getEmployerInfo(Long userId) {
-        // 1. Tìm User entity theo ID.
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // 2. Kiểm tra xem vai trò của User có phải là EMPLOYER hay không.
-        if (!user.getRole().getName().equals("EMPLOYER")) {
-            throw new AppException(ErrorCode.USER_IS_NOT_EMPLOYER); // Cần định nghĩa ErrorCode này.
-        }
-
-        // 3. Lấy UserDetail liên quan đến User. findByUserId sẽ tải eager User.
-        UserDetail userDetail = userDetailRepository.findByUserId(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND)); // UserDetail phải tồn tại.;
-
-        // 4. Chuyển đổi UserDetail entity sang EmployerResponse DTO.
-        return employerMapper.toEmployerResponse(userDetail);
-    }
-
     @Transactional(readOnly = true)
     public long getTotalUsers() {
         log.info("Service: Đếm tổng số người dùng.");
@@ -270,5 +188,15 @@ public class UserService {
     public long getTotalEmployers() {
         log.info("Service: Đếm tổng số Employers.");
         return userRepository.countUsersByRoleName("EMPLOYER");
+    }
+
+    @Transactional
+    public void updateUserStatus(UserStatusUpdateRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        user.setIsActive(request.getIsActive()); // Cập nhật trạng thái active
+        userRepository.save(user);
+        log.info("User with ID {} active status updated to {}", request.getUserId(), request.getIsActive());
     }
 }

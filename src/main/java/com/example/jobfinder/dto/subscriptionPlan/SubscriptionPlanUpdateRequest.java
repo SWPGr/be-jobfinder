@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto.SubscriptionPlan;
+package com.example.jobfinder.dto.subscriptionPlan;
 
 import lombok.Builder;
 import lombok.Data;
