@@ -117,8 +117,8 @@ jobs:
         env:
           MYSQL_DATABASE: jobfinder
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_USER: ${{ secrets.DB_USERNAME }}
-          MYSQL_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_USER: jobuser
+          MYSQL_PASSWORD: jobpassword
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=10
 
