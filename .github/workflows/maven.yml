@@ -117,9 +117,27 @@ jobs:
         env:
           MYSQL_DATABASE: jobfinder
           MYSQL_ROOT_PASSWORD: root
-
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=10
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=10
+
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.http.ssl.enabled: false
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - "9200:9200"
+          - "9300:9300"
+        options: >-
+          --health-cmd="curl --silent --fail http://localhost:9200/_cluster/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout code
@@ -223,7 +241,7 @@ jobs:
           sleep 30
 
           # Test if application started successfully
-          if curl -f -s http://localhost:8081/actuator/health > /dev/null 2>&1; then
+          if curl -f -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
             echo "✅ Application started successfully with real configuration"
             kill $APP_PID 2>/dev/null || true
           else
