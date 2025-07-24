@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto.SubscriptionPlan;
+package com.example.jobfinder.dto.subscriptionPlan;
 
 import com.example.jobfinder.dto.simple.SimpleNameResponse; // THÊM IMPORT NÀY
 import lombok.*;

@@ -53,6 +53,9 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "active", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean isActive;
+
     // --- Mối quan hệ ---
 
     // Một User có một Role

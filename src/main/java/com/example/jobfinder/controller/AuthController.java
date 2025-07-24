@@ -34,8 +34,8 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(request);
 
         ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
-                .code(200)
-                .message("Login successful")
+                .code(loginResponse.getCode())
+                .message(loginResponse.getMessage())
                 .result(loginResponse)
                 .build();
         return ResponseEntity.ok(response);

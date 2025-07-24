@@ -1,10 +1,8 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.user.UserCreationRequest;
-import com.example.jobfinder.dto.user.UserResponse;
-import com.example.jobfinder.dto.user.UserSearchRequest;
-import com.example.jobfinder.dto.user.UserUpdateRequest;
+import com.example.jobfinder.dto.user.*;
+import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.service.UserService;
 import jakarta.validation.Valid; // Để kích hoạt Bean Validation
 import lombok.AccessLevel;
@@ -13,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -127,15 +126,28 @@ public class UserController {
                 .build();
     }
 
-
-    @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xóa người dùng
-    public ApiResponse<Void> deleteUser(@PathVariable Long userId) {
-        log.info("API: Xóa người dùng với ID: {}", userId);
-        userService.deleteUser(userId);
-        return ApiResponse.<Void>builder()
-                .code(HttpStatus.OK.value())
-                .message("User deleted successfully")
-                .build();
+    @PutMapping("/status") // Dùng PUT vì đây là cập nhật trạng thái của tài nguyên đã tồn tại
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có quyền này
+    public ResponseEntity<ApiResponse<Void>> updateUserStatus(@RequestBody @Valid UserStatusUpdateRequest request) {
+        try {
+            userService.updateUserStatus(request);
+            String message = request.getIsActive() ? "User activated successfully." : "User deactivated successfully.";
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .code(HttpStatus.OK.value())
+                    .message(message)
+                    .build());
+        } catch (AppException e) {
+            return ResponseEntity.status(e.getErrorCode().getErrorCode())
+                    .body(ApiResponse.<Void>builder()
+                            .code(e.getErrorCode().getErrorCode())
+                            .message(e.getErrorCode().getErrorMessage())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<Void>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Failed to update user status: " + e.getMessage())
+                            .build());
+        }
     }
 }
