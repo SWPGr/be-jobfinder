@@ -1,13 +1,13 @@
 package com.example.jobfinder.exception;
 
 import com.example.jobfinder.dto.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-// @ControllerAdvice: Đánh dấu lớp này là một bộ xử lý ngoại lệ toàn cục.
-// Nó sẽ "lắng nghe" và xử lý các ngoại lệ ném ra từ bất kỳ Controller nào trong ứng dụng.
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
     // @ExceptionHandler(value = RuntimeException.class): Chỉ định rằng phương thức này sẽ bắt
@@ -78,4 +78,5 @@ public class GlobalExceptionHandler {
         // và body chứa đối tượng ApiResponse với thông tin lỗi validation.
         return ResponseEntity.badRequest().body(apiResponse);
     }
+
 }

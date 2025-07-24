@@ -1,27 +1,21 @@
 package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.PageResponse;
-import com.example.jobfinder.dto.application.ApplicantResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
-import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
 import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
 import com.example.jobfinder.dto.user.JobSeekerResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.ApplicationMapper;
 import com.example.jobfinder.mapper.JobMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
-import com.example.jobfinder.repository.ApplicationRepository;
-import com.example.jobfinder.repository.JobRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -67,6 +61,7 @@ public class ApplicationService {
      final UserDetailsRepository userDetailsRepository;
      final CloudinaryService cloudinaryService;
      final GeminiService geminiService;
+     final ResumeSummaryRepository resumeSummaryRepository;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
@@ -194,11 +189,17 @@ public class ApplicationService {
         // Sử dụng phương thức mới từ repository để lấy User cùng với SeekerDetail
         List<User> applicants = applicationRepository.findApplicantsWithDetailsByJobId(jobId);
 
+
+
+
         // Chuyển đổi List<User> sang List<CandidateDetailResponse>
         return applicants.stream().map(user -> {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
             Experience experience = user.getUserDetail().getExperience();
+            Long applicationId = applicationRepository.findByJobSeekerIdAndJobId(user.getId(), jobId)
+                    .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
+                    .getId();
             jobSeekerResponse = JobSeekerResponse.builder()
                     .userId(user.getUserDetail().getId())
                     .phone(user.getUserDetail().getPhone())
@@ -212,6 +213,7 @@ public class ApplicationService {
 
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
+                    .applicationId(applicationId)
                     .fullname(user.getUsername())
                     .email(user.getEmail())
                     .role(user.getRole().getName()) // Lấy tên role
@@ -335,36 +337,32 @@ public class ApplicationService {
         return buildPageResponse(applicationsPage);
     }
 
-    @Transactional(readOnly = true)
-    public String summarizeResumeWithGemini(Long applicationId) throws IOException {
+    @Transactional(readOnly = true) // Có thể cần @Transactional nếu bạn lưu tóm tắt
+    public String summarizeResumeWithGemini(Long applicationId) throws IOException { // IOException được ném nếu có lỗi từ PDFBox/Gemini
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
+        // 1. Kiểm tra xem bản tóm tắt đã tồn tại trong DB chưa
+        Optional<ResumeSummary> existingSummary = resumeSummaryRepository.findByApplication(application);
+        if (existingSummary.isPresent()) {
+            log.info("Returning cached resume summary for application ID: {}", applicationId);
+            return existingSummary.get().getSummaryContent(); // Trả về nội dung đã lưu
+        }
+
+        // 2. Nếu chưa có, tiến hành phân tích và tóm tắt
         String resumeUrl = application.getResume(); // Giả sử trường resumeUrl trong Application là 'resume'
         if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
-            throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION); // Bạn cần định nghĩa ErrorCode này
+            throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION);
         }
 
         String resumeContent = "";
         try {
-            // Tạo đối tượng URL từ resumeUrl
             URL url = new URL(resumeUrl);
-
-            // Tải tài liệu PDF từ URL và mở nó
-            // .openStream() sẽ tải nội dung của URL dưới dạng InputStream
             PDDocument document = PDDocument.load(url.openStream());
-
-            // Tạo đối tượng PDFTextStripper để trích xuất văn bản
             PDFTextStripper pdfStripper = new PDFTextStripper();
-
-            // Lấy toàn bộ văn bản từ tài liệu PDF
             resumeContent = pdfStripper.getText(document);
-
-            // Đóng tài liệu sau khi hoàn tất
             document.close();
-
             log.info("Successfully extracted content from resume URL: {}", resumeUrl);
-
         } catch (IOException e) {
             log.error("Error reading resume content from URL {} using PDFBox: {}", resumeUrl, e.getMessage(), e);
             throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
@@ -374,9 +372,8 @@ public class ApplicationService {
         }
 
         if (resumeContent.trim().isEmpty()) {
-            throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT); // Định nghĩa ErrorCode này
+            throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT);
         }
-
 
         String prompt = """
             Bạn là một chuyên gia tóm tắt hồ sơ ứng viên.
@@ -391,17 +388,30 @@ public class ApplicationService {
                 - Chỉ liệt kê các kỹ năng được đề cập rõ ràng trong resume.
             - **Học vấn**: Liệt kê bằng cấp cao nhất, tên trường và thời gian tốt nghiệp.
             - **Dự án/Hoạt động (nếu có)**: Tóm tắt 1-2 dự án hoặc hoạt động nổi bật, nêu rõ vai trò và kết quả chính.
-            
+
             Đảm bảo tóm tắt bằng tiếng Việt, mạch lạc, chuyên nghiệp và không thêm thông tin suy diễn.
             Nếu một phần thông tin không có trong resume, hãy bỏ qua phần đó.
-            
+
             --- Bắt đầu Resume ---
             """ + resumeContent + """
             --- Kết thúc Resume ---
             """;
 
-        // Gọi GeminiService để lấy tóm tắt
-        return geminiService.getGeminiResponse(prompt);
+        String resumeSummary = geminiService.getGeminiResponse(prompt);
+
+        // 3. Lưu bản tóm tắt vào DB để sử dụng lần sau
+        // Thay đổi @Transactional(readOnly = true) thành @Transactional (hoặc bỏ readOnly) nếu bạn muốn lưu trong cùng một transaction.
+        // Hoặc tạo một phương thức riêng @Transactional để lưu.
+        ResumeSummary newSummary = ResumeSummary.builder()
+                .application(application)
+                .summaryContent(resumeSummary)
+                .createdAt(LocalDateTime.now()) // Đảm bảo tự động điền nếu không dùng @PrePersist
+                .updatedAt(LocalDateTime.now()) // Đảm bảo tự động điền nếu không dùng @PrePersist
+                .build();
+        resumeSummaryRepository.save(newSummary);
+        log.info("Saved new resume summary for application ID: {}", applicationId);
+
+        return resumeSummary;
     }
 
     @Transactional(readOnly = true)

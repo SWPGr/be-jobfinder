@@ -2,13 +2,8 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanCreationRequest;
-import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanResponse;
-import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanUpdateRequest;
+import com.example.jobfinder.dto.subscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.exception.AppException;
-import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.SubscriptionPlan;
-import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;

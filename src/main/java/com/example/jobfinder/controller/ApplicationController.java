@@ -13,6 +13,7 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.ApplicationService;
@@ -34,13 +35,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.log;
@@ -208,6 +206,21 @@ public class ApplicationController {
             log.error("Unexpected error summarizing resume for ID {}: {}", applicationId, e.getMessage(), e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi không xác định khi tóm tắt resume.", e);
         }
+    }
+
+    @GetMapping("/statuses")
+    public ResponseEntity<ApiResponse<List<String>>> getAllApplicationStatuses() {
+        List<String> statuses = Arrays.stream(ApplicationStatus.values())
+                .map(ApplicationStatus::getValue) // Hoặc .name() nếu bạn muốn tên enum
+                .collect(Collectors.toList());
+
+        ApiResponse<List<String>> apiResponse = ApiResponse.<List<String>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Successfully retrieved all application statuses")
+                .result(statuses)
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
     }
 
 

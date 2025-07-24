@@ -1,7 +1,7 @@
 package com.example.jobfinder.mapper;
 
 import com.example.jobfinder.dto.simple.SimpleNameResponse; // THÊM IMPORT NÀY
-import com.example.jobfinder.dto.SubscriptionPlan.SubscriptionPlanResponse;
+import com.example.jobfinder.dto.subscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.model.Role; // THÊM IMPORT NÀY
 import com.example.jobfinder.model.SubscriptionPlan;
 import org.mapstruct.Mapper;
