@@ -2,6 +2,8 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.auth.*;
+import com.example.jobfinder.exception.AppException;
+import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -33,32 +35,25 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         LoginResponse loginResponse = authService.login(request);
 
-        ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
-                .code(loginResponse.getCode())
-                .message(loginResponse.getMessage())
+        ApiResponse<LoginResponse> apiResponse = ApiResponse.<LoginResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Login successful")
                 .result(loginResponse)
                 .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(apiResponse);
     }
 
-//    @GetMapping("google/success")
-//    public ApiResponse<LoginResponse> googleLoginSuccess(@AuthenticationPrincipal OidcUser oidcUser) {
-//        log.debug("Google login callback received for user: {}", oidcUser.getEmail());
-//        LoginResponse loginResponse = authService.handleGoogleLogin(oidcUser);
-//        return new ApiResponse<>(200, "Google login successful", loginResponse);
-//    }
 @PostMapping("/google")
 public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogleToken(@RequestBody Map<String, String> body) {
     String idToken = body.get("credential");
     LoginResponse loginResponse = authService.loginWithGoogleToken(idToken);
 
-    ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
-            .code(200)
-            .message("Google login successful")
+    ApiResponse<LoginResponse> apiResponse = ApiResponse.<LoginResponse>builder()
+            .code(HttpStatus.OK.value())
+            .message("Login successful with Google")
             .result(loginResponse)
             .build();
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(apiResponse);
 }
 
 

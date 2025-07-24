@@ -2,7 +2,6 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
-import com.example.jobfinder.dto.user.UserDto;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserMapper;
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -88,98 +86,76 @@ public class AuthService {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + authenticatedEmail));
 
         } catch (BadCredentialsException e) {
+            // Ném lỗi BadCredentialsException thành AppException
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
-        UserDto userDto = userMapper.toUserDto(user);
+
+        // Kiểm tra trạng thái đã xác minh email
         if (user.getVerified() == 0) {
-            return LoginResponse.builder()
-                    .code(ErrorCode.EMAIL_INVALID.getErrorCode())
-                    .message(ErrorCode.EMAIL_INVALID.getErrorMessage())
-                    .user(userDto) // Vẫn trả về thông tin user
-                    .build();
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED); // Ném lỗi
         }
+
+        // Kiểm tra trạng thái isActive (bị block)
         if (user.getIsActive() == false) {
-            return LoginResponse.builder()
-                    .code(ErrorCode.ACCOUNT_BLOCKED.getErrorCode())
-                    .message(ErrorCode.ACCOUNT_BLOCKED.getErrorMessage())
-                    .user(userDto)
-                    .build();
+            throw new AppException(ErrorCode.ACCOUNT_BLOCKED); // Ném lỗi
         }
+
+        // Đăng nhập thành công
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
 
         return LoginResponse.builder()
-                .code(HttpStatus.OK.value())
-                .message("Login successfully")
                 .token(token)
-                .roleName(user.getRole().getName())
-                .user(userDto)
+                .role(user.getRole().getName())
                 .build();
     }
 
-    @Transactional // Đảm bảo việc tạo user và lưu là một transaction
+    @Transactional
     public LoginResponse loginWithGoogleToken(String idToken) {
         GoogleUserInfo userInfo = googleTokenVerifierService.verify(idToken);
 
         if (userInfo == null || userInfo.getEmail() == null) {
-            return LoginResponse.builder()
-                    .code(ErrorCode.INVALID_EMAIL.getErrorCode())
-                    .message(ErrorCode.INVALID_EMAIL.getErrorMessage())
-                    .build();
+            throw new AppException(ErrorCode.INVALID_EMAIL); // Ném lỗi
         }
 
         User user = userRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewGoogleUser(userInfo.getEmail(), userInfo.getName()));
 
-        UserDto userDto = userMapper.toUserDto(user);
 
         if (user.getVerified() == 0) {
             return LoginResponse.builder()
-                    .code(ErrorCode.EMAIL_INVALID.getErrorCode())
-                    .message(ErrorCode.EMAIL_INVALID.getErrorMessage())
-                    .user(userDto)
                     .build();
         }
 
+        // 4. Kiểm tra trạng thái tài khoản: bị block (isActive)
         if (user.getIsActive() == false) {
             return LoginResponse.builder()
-                    .code(ErrorCode.ACCOUNT_BLOCKED.getErrorCode())
-                    .message(ErrorCode.ACCOUNT_BLOCKED.getErrorMessage())
-                    .user(userDto)
                     .build();
         }
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
 
         return LoginResponse.builder()
-                .code(HttpStatus.OK.value()) // Mã HTTP 200 OK
-                .message("Login successfully with Google")
                 .token(token)
-                .roleName(user.getRole().getName())
-                .user(userDto)
+                .role(user.getRole().getName())
                 .build();
     }
 
     private User createNewGoogleUser(String email, String name) {
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(""); // hoặc null
-        Role role = roleRepository.findByName("JOB_SEEKER")
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRole(role);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        user.setIsPremium(false);
-        user.setVerified(1);
-        user.setIsActive(true);
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        newUser.setIsPremium(false);
+        newUser.setVerified(1); // Google email được coi là đã xác minh
+        newUser.setIsActive(true);
+        newUser.setCreatedAt(LocalDateTime.now());
+        newUser.setUpdatedAt(LocalDateTime.now());
 
-        userRepository.save(user);
+        Role defaultRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
 
-        UserDetail userDetail = new UserDetail();
-        userDetail.setUser(user);
-        userDetail.setFullName(name); // nếu bạn có field này
-        userDetailsRepository.save(userDetail);
-
-        return user;
+        newUser.setRole(defaultRole);
+        return userRepository.save(newUser);
     }
+
 
 
     public void verifyEmail(String token) throws Exception {
