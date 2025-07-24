@@ -3,6 +3,8 @@ package com.example.jobfinder.dto.job;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class JobRecommendationResponse {
@@ -13,4 +15,11 @@ public class JobRecommendationResponse {
     private String jobLevel;
     private String jobType;
     private float score;
+
+    private Boolean isGreenJob;
+    private Double greenScore;
+    private List<String> greenCategories;
+    private List<String> greenKeywords;
+    private String primaryGreenCategory;
+    private String greenJobBadge;
 }

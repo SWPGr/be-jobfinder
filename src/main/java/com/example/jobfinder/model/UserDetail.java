@@ -56,7 +56,7 @@ public class UserDetail {
     @Column(name = "map_location", length = 255)
     private String mapLocation;
 
-    @Column(name = "company_vision")
+    @Column(name = "company_vision", columnDefinition = "TEXT")
     private String companyVision;
   
 

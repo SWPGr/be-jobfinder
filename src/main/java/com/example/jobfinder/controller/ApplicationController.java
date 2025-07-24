@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.io.IOException;
 import java.util.LinkedHashMap;
 
 
@@ -135,6 +137,79 @@ public class ApplicationController {
                 .result(totalApplications)
                 .build();
     }
+
+    @GetMapping("/{applicationId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<ApplicationResponse>> getApplicationDetail(
+            @PathVariable Long applicationId,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+
+        Long currentUserId = currentUser.getId();
+        String currentUserRole = currentUser.getRole().getName();
+
+        try {
+            ApplicationResponse applicationDetail = applicationService.getApplicationDetails(
+                    applicationId, currentUserId, currentUserRole);
+
+            return ResponseEntity.ok(ApiResponse.<ApplicationResponse>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Application details fetched successfully.")
+                    .result(applicationDetail)
+                    .build());
+        } catch (AppException e) {
+            log.error("Error fetching application details for ID {}: {}", applicationId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.valueOf(e.getErrorCode().getErrorCode()), e.getErrorCode().getErrorMessage(), e);
+        } catch (Exception e) {
+            log.error("An unexpected error occurred while fetching application details for ID {}: {}", applicationId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/{applicationId}/summarize-resume")
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')") // Chỉ EMPLOYER hoặc ADMIN được tóm tắt resume
+    public ResponseEntity<ApiResponse<String>> summarizeResume(
+            @PathVariable Long applicationId,
+            Authentication authentication) {
+
+        // Kiểm tra xác thực và lấy thông tin người dùng (tương tự các API khác của bạn)
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+        if (currentUser.getRole().getName().equals("EMPLOYER")) {
+            log.warn("Lưu ý: Đối với EMPLOYER, bạn nên thêm kiểm tra quyền sở hữu job cho application ID {}.", applicationId);
+        }
+
+        try {
+            String resumeSummary = applicationService.summarizeResumeWithGemini(applicationId);
+            return ResponseEntity.ok(ApiResponse.<String>builder()
+                    .code(HttpStatus.OK.value())
+                    .message("Resume summarized successfully.")
+                    .result(resumeSummary)
+                    .build());
+        } catch (AppException e) {
+            log.error("Application error summarizing resume for ID {}: {}", applicationId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.valueOf(e.getErrorCode().getErrorCode()), e.getErrorCode().getErrorMessage(), e);
+        } catch (IOException e) {
+            log.error("IO error when calling Gemini API for resume summary (ID {}): {}", applicationId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi giao tiếp với AI để tóm tắt resume.", e);
+        } catch (Exception e) {
+            log.error("Unexpected error summarizing resume for ID {}: {}", applicationId, e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi không xác định khi tóm tắt resume.", e);
+        }
+    }
+
 
 
     private Long getUserIdFromAuthentication(Authentication authentication) {

@@ -2,7 +2,7 @@
 package com.example.jobfinder.dto.statistic_admin;
 
 import lombok.*;
-
+import lombok.Builder;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

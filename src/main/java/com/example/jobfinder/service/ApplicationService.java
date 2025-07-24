@@ -25,6 +25,7 @@ import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.sql.Date;
+import java.net.URL;
+
+import org.apache.pdfbox.pdmodel.*;
 
 @Service
 @RequiredArgsConstructor
@@ -62,32 +66,27 @@ public class ApplicationService {
      final ApplicationMapper applicationMapper;
      final UserDetailsRepository userDetailsRepository;
      final CloudinaryService cloudinaryService;
+     final GeminiService geminiService;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
         log.debug("Processing apply job request: {}", request);
 
-        // 1. Xác thực người dùng và vai trò
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getName() == null) {
-            // Sử dụng ErrorCode.UNAUTHENTICATED
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
-            // Hoặc nếu bạn có một cơ chế exception cụ thể hơn để truyền ErrorCode object
-            // throw new AppException(ErrorCode.UNAUTHENTICATED); // Nếu bạn có lớp AppException
         }
         String email = authentication.getName();
         log.debug("Authenticated email: {}", email);
 
         User jobSeeker = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
-        // Hoặc nếu bạn muốn chi tiết hơn với UsernameNotFoundException,
-        // GlobalExceptionHandler của bạn cần handle nó để trả về USER_NOT_FOUND.
         UserDetail userDetail = userDetailsRepository.findByUserId(jobSeeker.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
 
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
-            // Sử dụng ErrorCode.UNAUTHORIZED
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
@@ -95,7 +94,6 @@ public class ApplicationService {
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.JOB_NOT_FOUND.getErrorMessage()));
 
-        // 3. Kiểm tra xem người dùng đã nộp đơn cho công việc này chưa
         Optional<Application> existingApplication = applicationRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId());
         if (existingApplication.isPresent()) {
             // Sử dụng ErrorCode.APPLICATION_ALREADY_SUBMITTED
@@ -113,7 +111,7 @@ public class ApplicationService {
         application.setEmail(request.getEmail());
         application.setPhone(request.getPhone());
         if (resumeFile != null && !resumeFile.isEmpty()) {
-            resumeUrl = cloudinaryService.uploadFile(resumeFile); // bạn cần triển khai service này
+            resumeUrl = cloudinaryService.uploadFile(resumeFile);
         } else {
             resumeUrl = userDetail.getResumeUrl();
         }
@@ -201,18 +199,16 @@ public class ApplicationService {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
             Experience experience = user.getUserDetail().getExperience();
-            if (user.getUserDetail() != null) {
-                jobSeekerResponse = JobSeekerResponse.builder()
-                        .userId(user.getUserDetail().getId())
-                        .phone(user.getUserDetail().getPhone())
-                        .location(user.getUserDetail().getLocation())
-                        .resumeUrl(user.getUserDetail().getResumeUrl())
-                        .userEmail(user.getEmail())
-                        .fullName(user.getUserDetail().getFullName())
-                        .educationName(education != null ? education.getName() : null)
-                        .experienceName(experience != null ? experience.getName() : null)
-                        .build();
-            }
+            jobSeekerResponse = JobSeekerResponse.builder()
+                    .userId(user.getUserDetail().getId())
+                    .phone(user.getUserDetail().getPhone())
+                    .location(user.getUserDetail().getLocation())
+                    .resumeUrl(user.getUserDetail().getResumeUrl())
+                    .userEmail(user.getEmail())
+                    .fullName(user.getUserDetail().getFullName())
+                    .educationName(education != null ? education.getName() : null)
+                    .experienceName(experience != null ? experience.getName() : null)
+                    .build();
 
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
@@ -339,104 +335,109 @@ public class ApplicationService {
         return buildPageResponse(applicationsPage);
     }
 
+    @Transactional(readOnly = true)
+    public String summarizeResumeWithGemini(Long applicationId) throws IOException {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        String resumeUrl = application.getResume(); // Giả sử trường resumeUrl trong Application là 'resume'
+        if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
+            throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION); // Bạn cần định nghĩa ErrorCode này
+        }
+
+        String resumeContent = "";
+        try {
+            // Tạo đối tượng URL từ resumeUrl
+            URL url = new URL(resumeUrl);
+
+            // Tải tài liệu PDF từ URL và mở nó
+            // .openStream() sẽ tải nội dung của URL dưới dạng InputStream
+            PDDocument document = PDDocument.load(url.openStream());
+
+            // Tạo đối tượng PDFTextStripper để trích xuất văn bản
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+
+            // Lấy toàn bộ văn bản từ tài liệu PDF
+            resumeContent = pdfStripper.getText(document);
+
+            // Đóng tài liệu sau khi hoàn tất
+            document.close();
+
+            log.info("Successfully extracted content from resume URL: {}", resumeUrl);
+
+        } catch (IOException e) {
+            log.error("Error reading resume content from URL {} using PDFBox: {}", resumeUrl, e.getMessage(), e);
+            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+        } catch (Exception e) {
+            log.error("An unexpected error occurred while processing resume URL {}: {}", resumeUrl, e.getMessage(), e);
+            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+        }
+
+        if (resumeContent.trim().isEmpty()) {
+            throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT); // Định nghĩa ErrorCode này
+        }
+
+
+        String prompt = """
+            Bạn là một chuyên gia tóm tắt hồ sơ ứng viên.
+            Hãy đọc kỹ và tóm tắt nội dung resume dưới đây một cách chi tiết nhưng súc tích, tập trung vào những điểm chính sau:
+            - **Thông tin liên hệ cơ bản**: Tên, email, số điện thoại (nếu có).
+            - **Mục tiêu nghề nghiệp/Tóm tắt bản thân**: Tóm tắt ngắn gọn nếu có.
+            - **Kinh nghiệm làm việc**:
+                - Liệt kê các vị trí công việc gần đây nhất (tối đa 3 vị trí).
+                - Với mỗi vị trí, nêu tên công ty, chức danh, thời gian làm việc và 1-2 gạch đầu dòng mô tả các trách nhiệm chính hoặc thành tựu nổi bật nhất.
+            - **Kỹ năng**:
+                - Phân loại và liệt kê các kỹ năng chính (ví dụ: Ngôn ngữ lập trình, Frameworks, Cơ sở dữ liệu, Công cụ, Kỹ năng mềm).
+                - Chỉ liệt kê các kỹ năng được đề cập rõ ràng trong resume.
+            - **Học vấn**: Liệt kê bằng cấp cao nhất, tên trường và thời gian tốt nghiệp.
+            - **Dự án/Hoạt động (nếu có)**: Tóm tắt 1-2 dự án hoặc hoạt động nổi bật, nêu rõ vai trò và kết quả chính.
+            
+            Đảm bảo tóm tắt bằng tiếng Việt, mạch lạc, chuyên nghiệp và không thêm thông tin suy diễn.
+            Nếu một phần thông tin không có trong resume, hãy bỏ qua phần đó.
+            
+            --- Bắt đầu Resume ---
+            """ + resumeContent + """
+            --- Kết thúc Resume ---
+            """;
+
+        // Gọi GeminiService để lấy tóm tắt
+        return geminiService.getGeminiResponse(prompt);
+    }
+
+    @Transactional(readOnly = true)
+    public ApplicationResponse getApplicationDetails(Long applicationId, Long currentUserId, String currentUserRole) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        // Kiểm tra phân quyền (giữ nguyên logic này)
+        boolean authorized = false;
+        if ("ADMIN".equals(currentUserRole)) {
+            authorized = true;
+        } else if ("JOB_SEEKER".equals(currentUserRole)) {
+            if (application.getJobSeeker().getId().equals(currentUserId)) {
+                authorized = true;
+            }
+        } else if ("EMPLOYER".equals(currentUserRole)) {
+            if (application.getJob().getEmployer().getId().equals(currentUserId)) {
+                authorized = true;
+            }
+        }
+
+        if (!authorized) {
+            log.warn("Unauthorized access attempt to application {}. User ID: {}, Role: {}", applicationId, currentUserId, currentUserRole);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        // Sử dụng MapStruct mapper để chuyển đổi Entity sang DTO
+        return applicationMapper.toApplicationResponse(application);
+    }
+
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
-                .map(application -> {
-                    // Map JobSimpleResponse details
-                    JobResponse jobSimpleResponse = null;
-                    Job jobEntity = application.getJob(); // Get associated Job entity
-                    if (jobEntity != null) {
-                        User employerEntity = jobEntity.getEmployer(); // Get associated Employer (User)
-                        UserResponse employerResponse = null;
-                        if (employerEntity != null) {
-                            employerResponse = UserResponse.builder()
-                                    .id(employerEntity.getId())
-                                    .email(employerEntity.getEmail())
-                                    .build(); // Build employer DTO
-                        }
-
-                        SimpleNameResponse categoryResponse = null;
-                        if (jobEntity.getCategory() != null) {
-                            categoryResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getCategory().getId())
-                                    .name(jobEntity.getCategory().getName())
-                                    .build(); // Build category DTO
-                        }
-
-                        SimpleNameResponse jobLevelResponse = null;
-                        if (jobEntity.getJobLevel() != null) {
-                            jobLevelResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getJobLevel().getId())
-                                    .name(jobEntity.getJobLevel().getName())
-                                    .build(); // Build job level DTO
-                        }
-
-                        SimpleNameResponse jobTypeResponse = null;
-                        if (jobEntity.getJobType() != null) {
-                            jobTypeResponse = SimpleNameResponse.builder()
-                                    .id(jobEntity.getJobType().getId())
-                                    .name(jobEntity.getJobType().getName())
-                                    .build(); // Build job type DTO
-                        }
-
-                        jobSimpleResponse = JobResponse.builder()
-                                .id(jobEntity.getId())
-                                .title(jobEntity.getTitle())
-                                .description(jobEntity.getDescription())
-                                .location(jobEntity.getLocation())
-                                .salaryMin(jobEntity.getSalaryMin())
-                                .salaryMax(jobEntity.getSalaryMax())
-                                .responsibility(jobEntity.getResponsibility())
-                                .expiredDate(jobEntity.getExpiredDate())
-                                .createdAt(jobEntity.getCreatedAt())
-                                .employer(employerResponse)
-                                .category(categoryResponse)
-                                .jobLevel(jobLevelResponse)
-                                .jobType(jobTypeResponse)
-                                // .jobApplicationCounts(jobApplicationCountForJob) // Remove or calculate if needed
-                                .isSave(false) // Assuming default or determined logic
-                                .build();
-                    }
-
-                    // Map ApplicantResponse (JobSeeker) details
-                    ApplicantResponse applicantResponse = null;
-                    // **IMPORTANT:** Replace 'getJobSeeker()' with 'getApplicant()' if your Application entity uses 'applicant'
-                    User applicantUser = application.getJobSeeker();
-                    if (applicantUser != null) {
-                        UserDetail applicantDetail = applicantUser.getUserDetail();
-                        SimpleNameResponse educationResponse = null;
-                        if (applicantDetail != null && applicantDetail.getEducation() != null) {
-                            educationResponse = SimpleNameResponse.builder()
-                                    .id(applicantDetail.getEducation().getId())
-                                    .name(applicantDetail.getEducation().getName())
-                                    .build();
-                        }
-
-                        applicantResponse = ApplicantResponse.builder()
-                                .id(applicantUser.getId())
-                                .email(applicantUser.getEmail())
-                                .fullName(applicantDetail != null ? applicantDetail.getFullName() : null)
-                                .location(applicantDetail != null ? applicantDetail.getLocation() : null)
-                                .phone(applicantDetail != null ? applicantDetail.getPhone() : null)
-                                .education(educationResponse)
-                                // Removed salary fields as per requirement
-                                .build();
-                    }
-
-                    // Build the main ApplicationResponse DTO
-                    return ApplicationResponse.builder()
-                            .id(application.getId())
-                            .jobSeeker(applicantResponse) // Assuming ApplicationResponse has a jobSeeker field
-                            .job(jobSimpleResponse)
-                            .status(application.getStatus())
-                            .appliedAt(application.getAppliedAt())
-
-                            .build();
-                })
+                .map(applicationMapper::toApplicationResponse) // Sử dụng ApplicationMapper
                 .collect(Collectors.toList());
 
-        // Build and return the PageResponse metadata and content
         return PageResponse.<ApplicationResponse>builder()
                 .pageNumber(applicationsPage.getNumber())
                 .pageSize(applicationsPage.getSize())

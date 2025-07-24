@@ -95,7 +95,14 @@ public class SecurityConfig {
                                 "/api/categories/**",
                                 "/api/analytics/employer/**",
                                 "/api/employers/**",
-                                "/api/job-seekers/**"
+                                "/api/job-seekers/**",
+                                "/api/employers/**",
+                                "/api/payos/**",
+                                "/webhook",
+                                "/api/subscription-plans/**",
+                                "/api/payments/**",
+                                "/api/green-test/**",
+                                "api/debug/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
@@ -125,6 +132,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
                 "http://localhost:3030",
                 "http://localhost:8080"
         ));

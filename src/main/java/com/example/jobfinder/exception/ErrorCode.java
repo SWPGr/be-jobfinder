@@ -1,6 +1,10 @@
 package com.example.jobfinder.exception;
 
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
 public enum ErrorCode {
 
     //1000 _> Success
@@ -157,6 +161,20 @@ public enum ErrorCode {
     TOKEN_EXPIRED(2014, "Token has expired"),
 
     ORGANIZATION_NOT_FOUND(2015, "Organization not found"),
+    PLAN_NOT_FOUND(2016,"PLAN_NOT_FOUND"),
+    INVALID_PAYMENT_FOR_FREE_PLAN(2017, "Invalid payment for free plan"),
+    PAYMENT_PROCESSING_ERROR(2018, "Payment processing error"),
+    PAYMENT_INFO_NOT_FOUND_PAYOS(2019, "Payment info not found for payos"),
+    PAYMENT_FAILED_OR_PENDING(2020, "Payment failed or pending"),
+    PLAN_NAME_DUPLICATED(2021, "Plan name already exists" ),
+    RESUME_PROCESSING_ERROR(2022, "Resume processing error" ),
+    EMPTY_RESUME_CONTENT(2023, "Empty resume content" ),
+    RESUME_NOT_FOUND_FOR_APPLICATION(2024, "Resume not found for application" ),
+    LINKEDIN_SCRAPING_ERROR(2025, "Linkedin scraping error" ),
+    LINKEDIN_PROFILE_URL_NOT_FOUND(2026, "Linkedin profile url not found" ),
+    AI_SERVICE_ERROR(2027, "AI service error" ),
+    AI_PARSE_ERROR(2028, "AI parse error" ),
+
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
 
@@ -167,22 +185,7 @@ public enum ErrorCode {
         this.errorMessage = errorMessage;
     }
 
-    private int errorCode;
-    private String errorMessage;
+    private final int errorCode;
+    private final String errorMessage;
 
-    public void setErrorCode(int errorCode) {
-        this.errorCode = errorCode;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public int getErrorCode() {
-        return errorCode;
-    }
 }
