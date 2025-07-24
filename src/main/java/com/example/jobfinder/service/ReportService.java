@@ -113,14 +113,14 @@ public class ReportService {
                 .collect(Collectors.toList());
     }
 
-    public Page<ReportResponse> searchReportsByType(String reportTypeName, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public Page<ReportResponse> searchReportsByType(Long reportTypeId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<Report> reports;
 
-        if (reportTypeName == null || reportTypeName.trim().isEmpty()) {
+        if (reportTypeId == null) {
             reports = reportRepository.findAll(pageable);
         } else {
-            reports = reportRepository.findByReportTypeNameContainingIgnoreCase(reportTypeName, pageable);
+            reports = reportRepository.findByReportTypeId(reportTypeId, pageable);
         }
 
         return reports.map(report -> ReportResponse.builder()
