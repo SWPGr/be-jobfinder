@@ -111,8 +111,21 @@ public class ReportService {
                         .name(type.getName())
                         .build())
                 .collect(Collectors.toList());
+    }
 
+    public Page<ReportResponse> searchReportsByType(String reportTypeName, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Report> reports = reportRepository.findByReportTypeNameContainingIgnoreCase(reportTypeName, pageable);
 
+        return reports.map(report -> ReportResponse.builder()
+                .id(report.getId())
+                .email(report.getUser().getEmail())
+                .jobId(report.getJob().getId())
+                .subject(report.getSubject())
+                .content(report.getContent())
+                .createdAt(report.getCreatedAt())
+                .type(report.getReportType())
+                .build());
     }
 
 }
