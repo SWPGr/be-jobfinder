@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CandidateDetailResponse {
     private Long userId;
+    private Long applicationId;
     private String fullname;
     private String email;
     private String role;
