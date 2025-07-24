@@ -14,6 +14,7 @@ public enum ErrorCode {
     INVALID_KEY(1001, "Invalid key"), // Key không hợp lệ (ví dụ: trong JWT)
     INVALID_PARAMETER(1002, "Invalid parameter"), // Tham số không hợp lệ (có thể kèm thông tin chi tiết từ validation)
     INVALID_INPUT_DATA(1003, "Invalid input data"), // Dữ liệu đầu vào chung không hợp lệ (validation tổng quát)
+    ACCOUNT_BLOCKED(1004, "Account is blocked"), // Tài khoản bị khóa (có thể do vi phạm quy định)
 
     // -----------------------------------------------------------
     // Nhóm lỗi xác thực & phân quyền (Authentication & Authorization Errors) - Mã từ 2000 đến 2999

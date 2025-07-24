@@ -2,8 +2,10 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
+import com.example.jobfinder.dto.user.UserDto;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
+import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,6 +43,7 @@ public class AuthService {
     GoogleTokenVerifierService googleTokenVerifierService;
     SubscriptionRepository subscriptionRepository;
     SubscriptionPlanRepository subscriptionPlanRepository;
+    UserMapper userMapper;
 
 
     public void register(RegisterRequest request) throws Exception {
@@ -69,7 +73,9 @@ public class AuthService {
         log.info("Assigned default BASIC plan to new user: {}", user.getEmail());
     }
 
+    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
+        User user;
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -77,49 +83,80 @@ public class AuthService {
                             request.getPassword()
                     )
             );
-        }catch (BadCredentialsException e) {
+            String authenticatedEmail = authentication.getName();
+            user = userRepository.findByEmail(authenticatedEmail)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + authenticatedEmail));
+
+        } catch (BadCredentialsException e) {
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
-        if(user.getVerified() == 0) {
-            throw new RuntimeException("Please verify your email first");
+        UserDto userDto = userMapper.toUserDto(user);
+        if (user.getVerified() == 0) {
+            return LoginResponse.builder()
+                    .code(ErrorCode.EMAIL_INVALID.getErrorCode())
+                    .message(ErrorCode.EMAIL_INVALID.getErrorMessage())
+                    .user(userDto) // Vẫn trả về thông tin user
+                    .build();
         }
-
+        if (user.getIsActive() == false) {
+            return LoginResponse.builder()
+                    .code(ErrorCode.ACCOUNT_BLOCKED.getErrorCode())
+                    .message(ErrorCode.ACCOUNT_BLOCKED.getErrorMessage())
+                    .user(userDto)
+                    .build();
+        }
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-        return new LoginResponse(token, user.getRole().getName());
+
+        return LoginResponse.builder()
+                .code(HttpStatus.OK.value())
+                .message("Login successfully")
+                .token(token)
+                .roleName(user.getRole().getName())
+                .user(userDto)
+                .build();
     }
 
+    @Transactional // Đảm bảo việc tạo user và lưu là một transaction
     public LoginResponse loginWithGoogleToken(String idToken) {
         GoogleUserInfo userInfo = googleTokenVerifierService.verify(idToken);
+
         if (userInfo == null || userInfo.getEmail() == null) {
-            throw new AppException(ErrorCode.INVALID_EMAIL);
+            return LoginResponse.builder()
+                    .code(ErrorCode.INVALID_EMAIL.getErrorCode())
+                    .message(ErrorCode.INVALID_EMAIL.getErrorMessage())
+                    .build();
         }
 
         User user = userRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewGoogleUser(userInfo.getEmail(), userInfo.getName()));
 
-        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
+        UserDto userDto = userMapper.toUserDto(user);
 
-        return new LoginResponse(jwt, user.getRole().getName());
+        if (user.getVerified() == 0) {
+            return LoginResponse.builder()
+                    .code(ErrorCode.EMAIL_INVALID.getErrorCode())
+                    .message(ErrorCode.EMAIL_INVALID.getErrorMessage())
+                    .user(userDto)
+                    .build();
+        }
+
+        if (user.getIsActive() == false) {
+            return LoginResponse.builder()
+                    .code(ErrorCode.ACCOUNT_BLOCKED.getErrorCode())
+                    .message(ErrorCode.ACCOUNT_BLOCKED.getErrorMessage())
+                    .user(userDto)
+                    .build();
+        }
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
+
+        return LoginResponse.builder()
+                .code(HttpStatus.OK.value()) // Mã HTTP 200 OK
+                .message("Login successfully with Google")
+                .token(token)
+                .roleName(user.getRole().getName())
+                .user(userDto)
+                .build();
     }
-
-//    @Transactional
-//    public LoginResponse handleGoogleLogin(OidcUser oidcUser) {
-//        String email = oidcUser.getEmail();
-//        if (email == null || email.trim().isEmpty()) {
-//            throw new AppException(ErrorCode.INVALID_EMAIL);
-//        }
-//        log.debug("Processing Google login for email: {}", email);
-//
-//        User user = userRepository.findByEmail(email)
-//                .orElseGet(() -> createNewGoogleUser(email, oidcUser));
-//
-//        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-//        log.debug("Generated JWT for user: {}", email);
-//        return new LoginResponse(jwt, user.getRole().getName());
-//    }
 
     private User createNewGoogleUser(String email, String name) {
         User user = new User();
@@ -130,6 +167,9 @@ public class AuthService {
         user.setRole(role);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+        user.setIsPremium(false);
+        user.setVerified(1);
+        user.setIsActive(true);
 
         userRepository.save(user);
 

@@ -10,6 +10,7 @@ import com.example.jobfinder.mapper.JobSeekerMapper;
 import com.example.jobfinder.mapper.EmployerMapper;
 import com.example.jobfinder.model.*; // Import tất cả các model cần thiết
 import com.example.jobfinder.repository.*; // Import tất cả các repository cần thiết
+import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,6 +40,7 @@ public class UserService {
     JobRepository jobRepository;
     ExperienceRepository experienceRepository;
     ApplicationRepository applicationRepository;
+    EmailService emailService;
 
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -194,9 +196,17 @@ public class UserService {
     public void updateUserStatus(UserStatusUpdateRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
+        boolean oldStatus = user.getIsActive(); // Lưu trạng thái cũ
         user.setIsActive(request.getIsActive()); // Cập nhật trạng thái active
         userRepository.save(user);
         log.info("User with ID {} active status updated to {}", request.getUserId(), request.getIsActive());
+        if (oldStatus && request.getIsActive() == false) {
+            try {
+                emailService.sendAccountBlockedEmail(user.getEmail(), "Vi phạm quy tắc cộng đồng về nội dung đăng tải."); // Ví dụ về lý do
+                log.info("Sent account blocked email to user: {}", user.getEmail());
+            } catch (MessagingException e) {
+                log.error("Failed to send account blocked email to {}: {}", user.getEmail(), e.getMessage());
+            }
+        }
     }
 }
