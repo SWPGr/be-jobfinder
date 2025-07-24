@@ -37,4 +37,12 @@ public class ReportController {
         List<ReportTypeResponse> response = reportService.getAllReportTypes();
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/reports/search")
+    public ResponseEntity<Page<ReportResponse>> searchReportsByTypeName(
+            @RequestParam String typeName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(reportService.searchReportsByType(typeName, page, size));
+    }
 }
