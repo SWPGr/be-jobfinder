@@ -2,12 +2,15 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.report.ReportRequest;
 import com.example.jobfinder.dto.report.ReportResponse;
+import com.example.jobfinder.dto.report.ReportTypeResponse;
 import com.example.jobfinder.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/report")
@@ -27,5 +30,11 @@ public class ReportController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return reportService.getAllReports(page, size);
+    }
+
+    @GetMapping("/report-type")
+    public ResponseEntity<List<ReportTypeResponse>> getReportTypes() {
+        List<ReportTypeResponse> response = reportService.getAllReportTypes();
+        return ResponseEntity.ok(response);
     }
 }
