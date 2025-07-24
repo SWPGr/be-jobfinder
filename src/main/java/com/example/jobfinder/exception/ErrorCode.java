@@ -178,7 +178,9 @@ public enum ErrorCode {
     INVALID_PLAN_CONFIGURATION(2029, "Invalid plan configuration" ),
 
 
-    EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED");
+    EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED"),
+    REPORT_TYPE_NOT_FOUND(2016,  "Report type not found"),
+    ALREADY_REPORTED(2017, "You have already reported this job with the same content.");
 
 
 
