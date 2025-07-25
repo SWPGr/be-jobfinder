@@ -50,7 +50,6 @@ public class AuthService {
         }
 
         Role role = roleRepository.findByName(request.getRoleName()).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
