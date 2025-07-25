@@ -59,6 +59,7 @@ public class AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         user.setVerificationToken(UUID.randomUUID().toString());
         user.setVerified(0);
+        user.setIsActive(true);
 
         userRepository.save(user);
 
@@ -75,18 +76,11 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user;
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(),
-                            request.getPassword()
-                    )
-            );
-            String authenticatedEmail = authentication.getName();
+            String authenticatedEmail = request.getEmail();
             user = userRepository.findByEmail(authenticatedEmail)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + authenticatedEmail));
 
         } catch (BadCredentialsException e) {
-            // Ném lỗi BadCredentialsException thành AppException
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
