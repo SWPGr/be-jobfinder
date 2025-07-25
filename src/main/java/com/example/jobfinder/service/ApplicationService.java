@@ -160,7 +160,8 @@ public class ApplicationService {
         return applicationMapper.toApplicationResponse(updatedApplication);
     }
 
-    public Page<JobResponse> getAppliedJobsByUserId(Long userId, Pageable pageable) {
+    @Transactional(readOnly = true) // Thêm chú thích này vì đây là một thao tác chỉ đọc
+    public Page<ApplicationResponse> getApplicationsByJobSeekerId(Long userId, Pageable pageable) {
 
         User jobSeeker = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
@@ -169,20 +170,17 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // Thay đổi từ findByJobSeekerId thành findByJobSeekerId (trả về Page)
-        // Spring Data JPA sẽ tự động tạo query phân trang
-        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable);
+        // Lấy danh sách các đơn ứng tuyển của jobSeeker
+        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable); // Điều chỉnh nếu tên phương thức trong repo là findByJobSeeker_Id
 
-        // Lấy danh sách Job từ Page<Application>
-        List<Job> appliedJobs = applicationsPage.getContent().stream()
-                .map(Application::getJob)
+        // Chuyển đổi List<Application> sang List<ApplicationResponse>
+        // SỬ DỤNG PHƯƠNG THỨC MAPPER MỚI: toApplicationResponseListWithoutJobSeeker
+        List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
+                .map(applicationMapper::toApplicationResponseWithoutJobSeeker)
                 .collect(Collectors.toList());
 
-        // Chuyển đổi List<Job> sang List<JobResponse>
-        List<JobResponse> jobResponses = jobMapper.toJobResponseList(appliedJobs);
-
-        // Tạo một đối tượng Page<JobResponse> mới từ List<JobResponse> và thông tin phân trang của applicationsPage
-        return new PageImpl<>(jobResponses, pageable, applicationsPage.getTotalElements());
+        // Tạo một đối tượng Page<ApplicationResponse> mới
+        return new PageImpl<>(applicationResponses, pageable, applicationsPage.getTotalElements());
     }
 
     public List<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId) {
