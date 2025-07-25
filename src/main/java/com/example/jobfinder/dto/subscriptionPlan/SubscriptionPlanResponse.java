@@ -1,4 +1,4 @@
-package com.example.jobfinder.dto.SubscriptionPlan;
+package com.example.jobfinder.dto.subscriptionPlan;
 
 import com.example.jobfinder.dto.simple.SimpleNameResponse; // THÊM IMPORT NÀY
 import lombok.*;
@@ -18,7 +18,7 @@ public class SubscriptionPlanResponse {
     private Integer maxApplicationsView;
     private Boolean highlightJobs;
     private LocalDateTime createdAt;
-    private SimpleNameResponse role; // THAY THẾ BẰNG SimpleNameResponse
+    private SimpleNameResponse role;
 
     private Boolean isActive;
 }

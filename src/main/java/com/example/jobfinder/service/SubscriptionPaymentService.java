@@ -1,11 +1,15 @@
 package com.example.jobfinder.service;
 
+import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.payment.PaymentResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
+import com.example.jobfinder.mapper.PaymentMapper;
 import com.example.jobfinder.model.*; // Import tất cả các model
 import com.example.jobfinder.repository.*; // Import tất cả các repository
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.type.*;
@@ -25,6 +29,7 @@ public class SubscriptionPaymentService {
     private final SubscriptionRepository subscriptionRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final PaymentMapper paymentMapper;
 
     @Transactional
     public CheckoutResponseData createPremiumSubscriptionPaymentLink(
@@ -167,67 +172,57 @@ public class SubscriptionPaymentService {
         System.out.println("Frontend Callback: Xử lý thành công giao dịch cho order " + orderCode + ". User " + user.getEmail() + " giờ là Premium.");
     }
 
-    private PaymentResponse mapToPaymentResponse(Payment payment) {
-        // Truy cập các mối quan hệ lazy-loaded trước khi ánh xạ
-        // Điều này đảm bảo chúng được khởi tạo nếu session còn mở
-        String userEmail = null;
-        Long userId = null;
-        if (payment.getUser() != null) {
-            userId = payment.getUser().getId();
-            userEmail = payment.getUser().getEmail();
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getAllPaymentHistory(
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBetween(fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtAfter(fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByPaidAtBefore(toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findAll(pageable);
         }
+        return buildPageResponse(paymentsPage);
+    }
 
-        String intendedPlanName = null;
-        Long intendedPlanId = null;
-        if (payment.getIntendedPlan() != null) {
-            intendedPlanId = payment.getIntendedPlan().getId();
-            intendedPlanName = payment.getIntendedPlan().getSubscriptionPlanName();
+    @Transactional(readOnly = true)
+    public PageResponse<PaymentResponse> getMyPaymentHistory(
+            Long userId,
+            Pageable pageable,
+            LocalDateTime fromDate, // <-- Thêm fromDate
+            LocalDateTime toDate) {  // <-- Thêm toDate
+        Page<Payment> paymentsPage;
+        if (fromDate != null && toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBetween(userId, fromDate, toDate, pageable);
+        } else if (fromDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtAfter(userId, fromDate, pageable);
+        } else if (toDate != null) {
+            paymentsPage = paymentRepository.findByUserIdAndPaidAtBefore(userId, toDate, pageable);
+        } else {
+            paymentsPage = paymentRepository.findByUserId(userId, pageable);
         }
+        return buildPageResponse(paymentsPage);
+    }
 
-        Long subscriptionId = null;
-        if (payment.getSubscription() != null) {
-            subscriptionId = payment.getSubscription().getId();
-        }
+    private PageResponse<PaymentResponse> buildPageResponse(Page<Payment> paymentsPage) {
+        List<PaymentResponse> content = paymentsPage.getContent().stream()
+                .map(paymentMapper::toPaymentResponse)
+                .collect(Collectors.toList());
 
-        return PaymentResponse.builder()
-                .id(payment.getId())
-                .userId(userId)
-                .userEmail(userEmail)
-                .subscriptionId(subscriptionId)
-                .amount(payment.getAmount())
-                .paymentMethod(payment.getPaymentMethod())
-                .paidAt(payment.getPaidAt())
-                .intendedPlanId(intendedPlanId)
-                .intendedPlanName(intendedPlanName)
-                .payosOrderCode(payment.getPayosOrderCode())
-                .payosPaymentLinkId(payment.getPayosPaymentLinkId())
-                .payosTransactionRef(payment.getPayosTransactionRef())
-                .payosStatus(payment.getPayosStatus())
+        return PageResponse.<PaymentResponse>builder()
+                .content(content) // Nếu paymentsPage.getContent() rỗng, thì content cũng rỗng
+                .pageNumber(paymentsPage.getNumber())
+                .pageSize(paymentsPage.getSize())
+                .totalElements(paymentsPage.getTotalElements())
+                .totalPages(paymentsPage.getTotalPages())
+                .isLast(paymentsPage.isLast())
+                .isFirst(paymentsPage.isFirst())
                 .build();
-    }
-
-    /**
-     * Lấy toàn bộ lịch sử thanh toán (dành cho Admin).
-     * @return Danh sách tất cả các bản ghi Payment được ánh xạ sang PaymentResponse DTO.
-     */
-    public List<PaymentResponse> getAllPaymentHistory() {
-        return paymentRepository.findAll().stream()
-                .map(this::mapToPaymentResponse) // Ánh xạ từng Payment sang PaymentResponse
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Lấy lịch sử thanh toán của một người dùng cụ thể.
-     * @param userId ID của người dùng.
-     * @return Danh sách các bản ghi Payment được ánh xạ sang PaymentResponse DTO của người dùng đó.
-     * @throws AppException nếu không tìm thấy người dùng.
-     */
-    public List<PaymentResponse> getUserPaymentHistory(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return paymentRepository.findByUser(user).stream()
-                .map(this::mapToPaymentResponse) // Ánh xạ từng Payment sang PaymentResponse
-                .collect(Collectors.toList());
     }
 
     //Triển khai sau khi deploy dự án:

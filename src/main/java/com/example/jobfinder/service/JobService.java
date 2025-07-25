@@ -4,6 +4,7 @@ package com.example.jobfinder.service;
 import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.job.JobCreationRequest;
 import com.example.jobfinder.dto.job.JobResponse;
+import com.example.jobfinder.dto.job.JobStatusUpdateRequest;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.dto.user.UserResponse;
@@ -51,23 +52,14 @@ public class JobService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
 
-
         User employer = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException(currentUsername));
 
         String location = employer.getUserDetail().getLocation();
 
-        if (employer == null ||
-                (!employer.getRole().getName().equals("EMPLOYER") &&
-                        !employer.getRole().getName().equals("COMPANY_ADMIN"))) {
+        if (!employer.getRole().getName().equals("EMPLOYER") && !employer.getRole().getName().equals("COMPANY_ADMIN")) {
             throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
         }
-
-//        if (jobRepository.existsByTitleAndEmployerId(jobCreationRequest.getTitle(), employer.getId())) {
-//            throw new AppException(ErrorCode.JOB_ALREADY_EXISTS);
-//        }
-
-        // 3. Lấy Category Entity từ ID
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         System.out.println("DEBUG: Fetched Category: ID=" + category.getId() + ", Name=" + category.getName());
@@ -278,5 +270,14 @@ public class JobService {
                 .isFirst(jobsPage.isFirst())
                 .content(jobResponses)
                 .build();
+    }
+
+    @Transactional
+    public void updateJobStatus(JobStatusUpdateRequest request) {
+        Job job = jobRepository.findById(request.getJobId())
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+        job.setActive(request.getIsActive());
+        jobRepository.save(job);
+        log.info("Job with ID {} active status updated to {}", request.getJobId(), request.getIsActive());
     }
 }

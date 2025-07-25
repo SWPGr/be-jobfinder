@@ -4,12 +4,9 @@ import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Role;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.RoleRepository;
-import com.example.jobfinder.repository.UserDetailsRepository;
-import com.example.jobfinder.repository.UserRepository;
+import com.example.jobfinder.mapper.UserMapper;
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -41,14 +39,17 @@ public class AuthService {
     JwtUtil jwtUtil;
     EmailService emailService;
     GoogleTokenVerifierService googleTokenVerifierService;
+    SubscriptionRepository subscriptionRepository;
+    SubscriptionPlanRepository subscriptionPlanRepository;
+    UserMapper userMapper;
 
 
     public void register(RegisterRequest request) throws Exception {
         if(userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new Exception("Email already exists");
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
-        Role role = roleRepository.findByName(request.getRoleName()).orElseThrow(() -> new Exception("Role not found"));
+        Role role = roleRepository.findByName(request.getRoleName()).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -66,9 +67,13 @@ public class AuthService {
 
         userDetailsRepository.save(userDetail);
         emailService.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
+        assignDefaultBasicSubscription(user);
+        log.info("Assigned default BASIC plan to new user: {}", user.getEmail());
     }
 
+    @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
+        User user;
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -76,69 +81,81 @@ public class AuthService {
                             request.getPassword()
                     )
             );
-        }catch (BadCredentialsException e) {
+            String authenticatedEmail = authentication.getName();
+            user = userRepository.findByEmail(authenticatedEmail)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + authenticatedEmail));
+
+        } catch (BadCredentialsException e) {
+            // Ném lỗi BadCredentialsException thành AppException
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(request.getEmail()));
-        if(user.getVerified() == 0) {
-            throw new RuntimeException("Please verify your email first");
+        // Kiểm tra trạng thái đã xác minh email
+        if (user.getVerified() == 0) {
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED); // Ném lỗi
         }
 
+        // Kiểm tra trạng thái isActive (bị block)
+        if (user.getIsActive() == false) {
+            throw new AppException(ErrorCode.ACCOUNT_BLOCKED); // Ném lỗi
+        }
+
+        // Đăng nhập thành công
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-        return new LoginResponse(token, user.getRole().getName());
+
+        return LoginResponse.builder()
+                .token(token)
+                .role(user.getRole().getName())
+                .build();
     }
 
+    @Transactional
     public LoginResponse loginWithGoogleToken(String idToken) {
         GoogleUserInfo userInfo = googleTokenVerifierService.verify(idToken);
+
         if (userInfo == null || userInfo.getEmail() == null) {
-            throw new AppException(ErrorCode.INVALID_EMAIL);
+            throw new AppException(ErrorCode.INVALID_EMAIL); // Ném lỗi
         }
 
         User user = userRepository.findByEmail(userInfo.getEmail())
                 .orElseGet(() -> createNewGoogleUser(userInfo.getEmail(), userInfo.getName()));
 
-        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
 
-        return new LoginResponse(jwt, user.getRole().getName());
+        if (user.getVerified() == 0) {
+            return LoginResponse.builder()
+                    .build();
+        }
+
+        // 4. Kiểm tra trạng thái tài khoản: bị block (isActive)
+        if (user.getIsActive() == false) {
+            return LoginResponse.builder()
+                    .build();
+        }
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
+
+        return LoginResponse.builder()
+                .token(token)
+                .role(user.getRole().getName())
+                .build();
     }
-
-//    @Transactional
-//    public LoginResponse handleGoogleLogin(OidcUser oidcUser) {
-//        String email = oidcUser.getEmail();
-//        if (email == null || email.trim().isEmpty()) {
-//            throw new AppException(ErrorCode.INVALID_EMAIL);
-//        }
-//        log.debug("Processing Google login for email: {}", email);
-//
-//        User user = userRepository.findByEmail(email)
-//                .orElseGet(() -> createNewGoogleUser(email, oidcUser));
-//
-//        String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-//        log.debug("Generated JWT for user: {}", email);
-//        return new LoginResponse(jwt, user.getRole().getName());
-//    }
 
     private User createNewGoogleUser(String email, String name) {
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(""); // hoặc null
-        Role role = roleRepository.findByName("JOB_SEEKER")
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        user.setRole(role);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        newUser.setIsPremium(false);
+        newUser.setVerified(1); // Google email được coi là đã xác minh
+        newUser.setIsActive(true);
+        newUser.setCreatedAt(LocalDateTime.now());
+        newUser.setUpdatedAt(LocalDateTime.now());
 
-        userRepository.save(user);
+        Role defaultRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
 
-        UserDetail userDetail = new UserDetail();
-        userDetail.setUser(user);
-        userDetail.setFullName(name); // nếu bạn có field này
-        userDetailsRepository.save(userDetail);
-
-        return user;
+        newUser.setRole(defaultRole);
+        return userRepository.save(newUser);
     }
+
 
 
     public void verifyEmail(String token) throws Exception {
@@ -214,5 +231,37 @@ public class AuthService {
         String userEmail = authentication.getName();
         return userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Transactional
+    public void assignDefaultBasicSubscription(User user) {
+        // 1. Lấy role ID của người dùng
+        Long userRoleId = user.getRole().getId(); // Giả định User có trường Role và Role có ID
+
+        // 2. Tìm gói Basic mặc định dựa trên tên gói VÀ role ID
+        SubscriptionPlan basicPlan = subscriptionPlanRepository
+                .findBySubscriptionPlanNameAndRoleId("Basic Plan", userRoleId)
+                .orElseThrow(() -> {
+                    log.error("CRITICAL: Default BASIC subscription plan not found for role ID {} in database!", userRoleId);
+                    return new AppException(ErrorCode.PLAN_NOT_FOUND);
+                });
+
+        // 3. Đảm bảo giá gói basic là 0
+        if (basicPlan.getPrice() != 0) {
+            log.error("CRITICAL: BASIC plan for role ID {} has price {}. It must be 0. Please correct the SubscriptionPlan data.", userRoleId, basicPlan.getPrice());
+            throw new AppException(ErrorCode.INVALID_PLAN_CONFIGURATION);
+        }
+
+        // 4. Tạo Subscription mới cho người dùng
+        Subscription newSubscription = Subscription.builder()
+                .user(user)
+                .plan(basicPlan) // Đổi tên trường từ .plan thành .subscriptionPlan nếu Entity của bạn là subscriptionPlan
+                .startDate(LocalDateTime.now())
+                .endDate(LocalDateTime.now().plusYears(100))
+                .isActive(true)
+                .build();
+
+        subscriptionRepository.save(newSubscription);
+        log.info("Assigned default BASIC plan (ID: {}) to new user: {} with role ID: {}", basicPlan.getId(), user.getEmail(), userRoleId);
     }
 }
