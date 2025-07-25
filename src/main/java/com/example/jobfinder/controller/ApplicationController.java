@@ -54,25 +54,20 @@ public class ApplicationController {
     UserRepository userRepository;
     ApplicationRepository applicationRepository;
 
-    @GetMapping("/my-applied-jobs")
-    public ResponseEntity<Page<JobResponse>> getAppliedJobsForUser(Pageable pageable) {
+    @GetMapping("/my-applied-jobs") // Tên endpoint có thể giữ nguyên hoặc đổi thành /my-applications
+    public ResponseEntity<Page<ApplicationResponse>> getMyApplications(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
         }
-
         String userEmail = authentication.getName();
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
-
         if (!currentUser.getRole().getName().equals("JOB_SEEKER") && !currentUser.getRole().getName().equals("ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
-
-        // Thay đổi kiểu trả về từ List<JobResponse> sang Page<JobResponse>
-        Page<JobResponse> appliedJobsPage = applicationService.getAppliedJobsByUserId(currentUser.getId(), pageable);
-        return ResponseEntity.ok(appliedJobsPage);
+        Page<ApplicationResponse> myApplicationsPage = applicationService.getApplicationsByJobSeekerId(currentUser.getId(), pageable);
+        return ResponseEntity.ok(myApplicationsPage);
     }
 
     @GetMapping("/candidates/{jobId}")
