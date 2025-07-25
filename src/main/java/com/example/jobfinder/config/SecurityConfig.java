@@ -102,7 +102,8 @@ public class SecurityConfig {
                                 "/api/subscription-plans/**",
                                 "/api/payments/**",
                                 "/api/green-test/**",
-                                "api/debug/**"
+                                "api/debug/**",
+                                "api/report/**"
                         ).permitAll()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()

@@ -12,11 +12,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "cloudinary")
 public class CloudinaryProperties {
-    @Value("${cloudinary.cloud-name}")
     private String cloudName;
-    @Value("${cloudinary.api-key}")
     private String apiKey;
-    @Value("${cloudinary.api-secret}")
     private String apiSecret;
 
     @Bean
