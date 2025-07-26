@@ -26,7 +26,7 @@ public class ReportController {
 
     @GetMapping
     public Page<ReportResponse> getReports(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         return reportService.getAllReports(page, size);
@@ -40,9 +40,9 @@ public class ReportController {
 
     @GetMapping("/reports/search")
     public ResponseEntity<Page<ReportResponse>> searchReportsByTypeName(
-            @RequestParam(required = false) String typeName,
+            @RequestParam(required = false) Long typeId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(reportService.searchReportsByType(typeName, page, size));
+        return ResponseEntity.ok(reportService.searchReportsByType(typeId, page, size));
     }
 }

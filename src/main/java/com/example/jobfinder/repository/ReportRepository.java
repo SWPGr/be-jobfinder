@@ -13,6 +13,6 @@ import org.springframework.stereotype.Repository;
 public interface ReportRepository extends JpaRepository<Report, Long> {
     boolean existsByUserAndJobAndSubjectAndContent(User user, Job job, String subject, String content);
 
-    Page<Report> findByReportTypeNameContainingIgnoreCase(String name, Pageable pageable);
+    Page<Report> findByReportTypeId(Long id, Pageable pageable);
 
 }
