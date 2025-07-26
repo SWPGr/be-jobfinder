@@ -33,6 +33,11 @@ public interface ApplicationMapper {
     @Mapping(source = "coverLetter", target = "coverLetter")
     ApplicationResponse toApplicationResponse(Application application);
 
+    @Mapping(source = "job.id", target = "job.id") // Đảm bảo map đúng JobResponse
+    @Mapping(target = "jobSeeker", ignore = true) // Bỏ qua việc map trường jobSeeker
+    @Mapping(source = "resume", target = "resume") // Nếu tên trường trong Entity là resumeUrl
+    ApplicationResponse toApplicationResponseWithoutJobSeeker(Application application);
+
     // Thêm phương thức ánh xạ list nếu cần
     // List<ApplicationResponse> toApplicationResponseList(List<Application> applications);
 }

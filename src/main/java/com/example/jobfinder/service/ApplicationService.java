@@ -160,7 +160,8 @@ public class ApplicationService {
         return applicationMapper.toApplicationResponse(updatedApplication);
     }
 
-    public Page<JobResponse> getAppliedJobsByUserId(Long userId, Pageable pageable) {
+    @Transactional(readOnly = true) // Thêm chú thích này vì đây là một thao tác chỉ đọc
+    public Page<ApplicationResponse> getApplicationsByJobSeekerId(Long userId, Pageable pageable) {
 
         User jobSeeker = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
@@ -169,20 +170,17 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // Thay đổi từ findByJobSeekerId thành findByJobSeekerId (trả về Page)
-        // Spring Data JPA sẽ tự động tạo query phân trang
-        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable);
+        // Lấy danh sách các đơn ứng tuyển của jobSeeker
+        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable); // Điều chỉnh nếu tên phương thức trong repo là findByJobSeeker_Id
 
-        // Lấy danh sách Job từ Page<Application>
-        List<Job> appliedJobs = applicationsPage.getContent().stream()
-                .map(Application::getJob)
+        // Chuyển đổi List<Application> sang List<ApplicationResponse>
+        // SỬ DỤNG PHƯƠNG THỨC MAPPER MỚI: toApplicationResponseListWithoutJobSeeker
+        List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
+                .map(applicationMapper::toApplicationResponseWithoutJobSeeker)
                 .collect(Collectors.toList());
 
-        // Chuyển đổi List<Job> sang List<JobResponse>
-        List<JobResponse> jobResponses = jobMapper.toJobResponseList(appliedJobs);
-
-        // Tạo một đối tượng Page<JobResponse> mới từ List<JobResponse> và thông tin phân trang của applicationsPage
-        return new PageImpl<>(jobResponses, pageable, applicationsPage.getTotalElements());
+        // Tạo một đối tượng Page<ApplicationResponse> mới
+        return new PageImpl<>(applicationResponses, pageable, applicationsPage.getTotalElements());
     }
 
     public List<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId) {
@@ -310,22 +308,15 @@ public class ApplicationService {
 
         // --- 3. Prepare Pagination and Sorting ---
         Sort sort;
-        // Determine sorting direction based on 'sortOrder' parameter
         if ("newest".equalsIgnoreCase(sortOrder)) {
-            // For "newest", sort by 'appliedAt' in descending order
             sort = Sort.by("appliedAt").descending();
         } else if ("latest".equalsIgnoreCase(sortOrder)) {
-            // For "latest", sort by 'appliedAt' in ascending order
             sort = Sort.by("appliedAt").ascending();
         } else {
-            // Default sort order if 'sortOrder' is neither "newest" nor "latest"
-            sort = Sort.by("appliedAt").descending(); // Default to newest if invalid input
+            sort = Sort.by("appliedAt").descending();
         }
-        // Create a Pageable object for pagination and sorting
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // --- 4. Call Repository to Fetch Filtered and Paginated Data ---
-        // This is the call you specifically asked for, with the exact method name
         Page<Application> applicationsPage = applicationRepository.getEmployerJobApplicationsForSpecificJob(
                 employerId, jobId,
                 name, minExperience, maxExperience,
@@ -337,7 +328,7 @@ public class ApplicationService {
         return buildPageResponse(applicationsPage);
     }
 
-    @Transactional(readOnly = true) // Có thể cần @Transactional nếu bạn lưu tóm tắt
+    @Transactional
     public String summarizeResumeWithGemini(Long applicationId) throws IOException { // IOException được ném nếu có lỗi từ PDFBox/Gemini
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
@@ -399,9 +390,6 @@ public class ApplicationService {
 
         String resumeSummary = geminiService.getGeminiResponse(prompt);
 
-        // 3. Lưu bản tóm tắt vào DB để sử dụng lần sau
-        // Thay đổi @Transactional(readOnly = true) thành @Transactional (hoặc bỏ readOnly) nếu bạn muốn lưu trong cùng một transaction.
-        // Hoặc tạo một phương thức riêng @Transactional để lưu.
         ResumeSummary newSummary = ResumeSummary.builder()
                 .application(application)
                 .summaryContent(resumeSummary)
