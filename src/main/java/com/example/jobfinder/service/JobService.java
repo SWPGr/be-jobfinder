@@ -103,21 +103,45 @@ public class JobService {
         return jobRepository.save(newJob);
     }
 
+    @Transactional // Đảm bảo giao dịch được quản lý
     public JobResponse updateJob(Long jobId, JobUpdateRequest request) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
-
         jobMapper.updateJob(job, request);
-
         if (request.getEmployerId() != null && !request.getEmployerId().equals(job.getEmployer().getId())) {
             User newEmployer = userRepository.findById(request.getEmployerId())
                     .orElseThrow(() -> new AppException(ErrorCode.EMPLOYER_NOT_FOUND));
 
-            if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"COMPANY_ADMIN".equals(newEmployer.getRole().getName())) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+            // Đảm bảo vai trò đúng cho Employer mới
+            if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"ADMIN".equals(newEmployer.getRole().getName())) { // Added ADMIN check for flexibility
+                throw new AppException(ErrorCode.UNAUTHORIZED); // Hoặc một ErrorCode cụ thể hơn như FORBIDDEN_ROLE
             }
-
             job.setEmployer(newEmployer);
+        }
+        if (request.getCategoryId() != null && (job.getCategory() == null || !request.getCategoryId().equals(job.getCategory().getId()))) {
+            Category newCategory = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+            job.setCategory(newCategory);
+        }
+        if (request.getJobLevelId() != null && (job.getJobLevel() == null || !request.getJobLevelId().equals(job.getJobLevel().getId()))) {
+            JobLevel newJobLevel = jobLevelRepository.findById(request.getJobLevelId())
+                    .orElseThrow(() -> new AppException(ErrorCode.JOB_LEVEL_NOT_FOUND));
+            job.setJobLevel(newJobLevel);
+        }
+        if (request.getJobTypeId() != null && (job.getJobType() == null || !request.getJobTypeId().equals(job.getJobType().getId()))) {
+            JobType newJobType = jobTypeRepository.findById(request.getJobTypeId())
+                    .orElseThrow(() -> new AppException(ErrorCode.JOB_TYPE_NOT_FOUND));
+            job.setJobType(newJobType);
+        }
+        if (request.getJobEducationId() != null && (job.getEducation() == null || !request.getJobEducationId().equals(job.getEducation().getId()))) {
+            Education newEducation = educationRepository.findById(request.getJobEducationId())
+                    .orElseThrow(() -> new AppException(ErrorCode.EDUCATION_NOT_FOUND));
+            job.setEducation(newEducation);
+        }
+        if (request.getJobExperienceId() != null && (job.getExperience() == null || !request.getJobExperienceId().equals(job.getExperience().getId()))) {
+            Experience newExperience = experienceRepository.findById(request.getJobExperienceId())
+                    .orElseThrow(() -> new AppException(ErrorCode.EXPERIENCE_NOT_FOUND));
+            job.setExperience(newExperience);
         }
         return jobMapper.toJobResponse(jobRepository.save(job));
     }

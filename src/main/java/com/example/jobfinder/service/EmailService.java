@@ -6,6 +6,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+
 @Service
 public class EmailService {
 
@@ -72,6 +74,48 @@ public class EmailService {
                 "<p>Trân trọng,<br>Đội ngũ JobFinder</p>";
 
         helper.setText(emailContent, true);
+        mailSender.send(message);
+    }
+
+    public void sendApplicationStatusUpdateEmail(String toEmail, String jobTitle,
+                                                 String newStatusDisplayName, String employerCompanyName,
+                                                 String employerMessage) throws MessagingException { // <-- Thêm employerMessage
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        try {
+            helper.setFrom("no-reply@jobfinder.com", "JobFinder Support");
+        } catch (UnsupportedEncodingException e) {
+            throw new MessagingException("Could not set sender email address", e);
+        }
+
+        helper.setTo(toEmail);
+        helper.setSubject("Cập nhật trạng thái đơn ứng tuyển của bạn - " + jobTitle);
+
+        StringBuilder emailContent = new StringBuilder();
+        emailContent.append("<h1>Thông báo cập nhật đơn ứng tuyển của bạn</h1>")
+                .append("<p>Chào bạn,</p>")
+                .append("<p>Chúng tôi muốn thông báo rằng trạng thái đơn ứng tuyển của bạn cho vị trí <b>")
+                .append(jobTitle).append("</b> tại <b>").append(employerCompanyName)
+                .append("</b> đã được cập nhật.</p>")
+                .append("<p>Trạng thái hiện tại của đơn ứng tuyển của bạn là: <b>")
+                .append(newStatusDisplayName).append("</b></p>");
+
+        // Thêm tin nhắn của nhà tuyển dụng nếu có
+        if (employerMessage != null && !employerMessage.trim().isEmpty()) {
+            emailContent.append("<p><b>Tin nhắn từ nhà tuyển dụng:</b></p>")
+                    .append("<div style=\"background-color: #f0f0f0; padding: 10px; border-left: 5px solid #007bff; margin: 15px 0;\">")
+                    .append("<p>").append(employerMessage).append("</p>")
+                    .append("</div>");
+        }
+
+        emailContent.append("<p>Tùy thuộc vào trạng thái, bạn có thể nhận được thông tin chi tiết hơn về các bước tiếp theo trong email này hoặc trong hệ thống JobFinder.</p>")
+                .append("<p>Vui lòng đăng nhập vào tài khoản JobFinder của bạn để xem chi tiết đơn ứng tuyển và bất kỳ tin nhắn mới nào từ nhà tuyển dụng.</p>")
+                .append("<p><a href=\"[URL_TO_YOUR_APPLICATION_DETAIL_PAGE]\">Xem chi tiết đơn ứng tuyển của bạn</a></p>")
+                .append("<p>Chúc bạn may mắn!</p>")
+                .append("<p>Trân trọng,<br>Đội ngũ JobFinder</p>");
+
+        helper.setText(emailContent.toString(), true);
         mailSender.send(message);
     }
 }

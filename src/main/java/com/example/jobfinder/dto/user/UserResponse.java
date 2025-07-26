@@ -25,6 +25,7 @@ public class UserResponse {
     private String location;
     private Integer verified;
     private String avatarUrl;
+    private Boolean active;
 
     // Các trường Employer
     private String companyName;

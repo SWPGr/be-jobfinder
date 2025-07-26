@@ -16,6 +16,7 @@ import com.example.jobfinder.mapper.JobMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.*;
+import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -62,6 +63,7 @@ public class ApplicationService {
      final CloudinaryService cloudinaryService;
      final GeminiService geminiService;
      final ResumeSummaryRepository resumeSummaryRepository;
+        final EmailService emailService;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
@@ -85,20 +87,17 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // 2. Tìm kiếm Job
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.JOB_NOT_FOUND.getErrorMessage()));
 
         Optional<Application> existingApplication = applicationRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId());
         if (existingApplication.isPresent()) {
-            // Sử dụng ErrorCode.APPLICATION_ALREADY_SUBMITTED
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ErrorCode.APPLICATION_ALREADY_SUBMITTED.getErrorMessage());
         }
 
         MultipartFile resumeFile = request.getResume();
         String resumeUrl;
 
-        // 4. Tạo đối tượng Application
         Application application = new Application();
         application.setJobSeeker(jobSeeker);
         application.setJob(job);
@@ -134,33 +133,47 @@ public class ApplicationService {
     @Transactional
     public ApplicationResponse updateApplicationStatus(Long applicationId,
                                                        ApplicationStatusUpdateRequest request,
-                                                       Long employerId) { // EmployerId là người đang đăng nhập
-
-        // 1. Tìm Application
+                                                       Long employerId) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        // 2. Kiểm tra quyền: Đảm bảo nhà tuyển dụng đang đăng nhập là chủ sở hữu của Job này
         if (!application.getJob().getEmployer().getId().equals(employerId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED_APPLICATION_UPDATE);
         }
 
-        // 3. Chuyển đổi String status từ request sang Enum
         ApplicationStatus newStatus;
         try {
-            newStatus = ApplicationStatus.fromString(request.getStatus());//Lấy giá trị status từ request gửi đi
+            newStatus = ApplicationStatus.fromString(request.getStatus());
         } catch (IllegalArgumentException e) {
             throw new AppException(ErrorCode.INVALID_APPLICATION_STATUS);
         }
 
-        // 4. Cập nhật trạng thái
         application.setStatus(newStatus);
         Application updatedApplication = applicationRepository.save(application);
 
+        try {
+            String jobSeekerEmail = updatedApplication.getJobSeeker().getEmail();
+            String jobTitle = updatedApplication.getJob().getTitle();
+            String employerCompanyName = updatedApplication.getJob().getEmployer().getUserDetail().getCompanyName();
+            String statusDisplayName = newStatus.getValue();
+
+            emailService.sendApplicationStatusUpdateEmail(
+                    jobSeekerEmail,
+                    jobTitle,
+                    statusDisplayName,
+                    employerCompanyName,
+                    request.getEmployerMessage()
+            );
+        } catch (MessagingException e) {
+            System.err.println("Failed to send application status update email: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error fetching data for application status update email or other issue: " + e.getMessage());
+        }
         return applicationMapper.toApplicationResponse(updatedApplication);
     }
 
-    public Page<JobResponse> getAppliedJobsByUserId(Long userId, Pageable pageable) {
+    @Transactional(readOnly = true) // Thêm chú thích này vì đây là một thao tác chỉ đọc
+    public Page<ApplicationResponse> getApplicationsByJobSeekerId(Long userId, Pageable pageable) {
 
         User jobSeeker = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
@@ -169,30 +182,21 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // Thay đổi từ findByJobSeekerId thành findByJobSeekerId (trả về Page)
-        // Spring Data JPA sẽ tự động tạo query phân trang
-        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable);
+        // Lấy danh sách các đơn ứng tuyển của jobSeeker
+        Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable); // Điều chỉnh nếu tên phương thức trong repo là findByJobSeeker_Id
 
-        // Lấy danh sách Job từ Page<Application>
-        List<Job> appliedJobs = applicationsPage.getContent().stream()
-                .map(Application::getJob)
+        // Chuyển đổi List<Application> sang List<ApplicationResponse>
+        // SỬ DỤNG PHƯƠNG THỨC MAPPER MỚI: toApplicationResponseListWithoutJobSeeker
+        List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
+                .map(applicationMapper::toApplicationResponseWithoutJobSeeker)
                 .collect(Collectors.toList());
 
-        // Chuyển đổi List<Job> sang List<JobResponse>
-        List<JobResponse> jobResponses = jobMapper.toJobResponseList(appliedJobs);
-
-        // Tạo một đối tượng Page<JobResponse> mới từ List<JobResponse> và thông tin phân trang của applicationsPage
-        return new PageImpl<>(jobResponses, pageable, applicationsPage.getTotalElements());
+        // Tạo một đối tượng Page<ApplicationResponse> mới
+        return new PageImpl<>(applicationResponses, pageable, applicationsPage.getTotalElements());
     }
 
     public List<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId) {
-        // Sử dụng phương thức mới từ repository để lấy User cùng với SeekerDetail
         List<User> applicants = applicationRepository.findApplicantsWithDetailsByJobId(jobId);
-
-
-
-
-        // Chuyển đổi List<User> sang List<CandidateDetailResponse>
         return applicants.stream().map(user -> {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
@@ -225,8 +229,6 @@ public class ApplicationService {
     public MonthlyApplicationStatsResponse getApplicationsLast3Months() {
         LocalDate endDate = LocalDate.now();
         LocalDate startDate = endDate.minusMonths(3);
-
-        // Chuyển đổi LocalDate thành LocalDateTime cho start và end của khoảng thời gian
         LocalDateTime startDateTime = startDate.atStartOfDay(); // Bắt đầu từ 00:00:00 của startDate
         LocalDateTime endDateTime = endDate.atTime(LocalTime.MAX); // Kết thúc vào 23:59:59.999... của endDate
 
@@ -235,8 +237,8 @@ public class ApplicationService {
 
         Map<LocalDate, Long> dailyCountsMap = rawCounts.stream()
                 .collect(Collectors.toMap(
-                        // arr[0] là java.sql.Date, cần chuyển đổi sang java.time.LocalDate
-                        arr -> ((Date) arr[0]).toLocalDate(), // <-- CHỈNH SỬA DÒNG NÀY
+
+                        arr -> ((Date) arr[0]).toLocalDate(),
                         arr -> (Long) arr[1],
                         (oldValue, newValue) -> oldValue,
                         LinkedHashMap::new
@@ -245,8 +247,6 @@ public class ApplicationService {
         List<DailyApplicationCountResponse> dailyStats = new ArrayList<>();
         long totalApplications = 0;
 
-        // Điền dữ liệu cho tất cả các ngày trong khoảng thời gian,
-        // kể cả những ngày không có đơn ứng tuyển (count = 0)
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             Long count = dailyCountsMap.getOrDefault(currentDate, 0L);
@@ -266,19 +266,7 @@ public class ApplicationService {
                 .build();
     }
 
-    // Giữ lại method cũ nếu bạn vẫn muốn truy vấn theo từng ngày
-    public DailyApplicationCountResponse getDailyApplicationCount(LocalDate date) {
-        if (date == null) {
-            date = LocalDate.now();
-        }
-        Long count = applicationRepository.countByAppliedAt(date.atStartOfDay()); // Hoặc countApplicationsByDay(date)
-        return DailyApplicationCountResponse.builder()
-                .date(date)
-                .count(count)
-                .build();
-    }
-
-    @Transactional(readOnly = true) // Optimize read operations, no data modification
+    @Transactional(readOnly = true)
     public PageResponse<ApplicationResponse> getEmployerJobApplicationsForSpecificJob(
             Long jobId, int page, int size, String sortOrder,
             String name, Integer minExperience, Integer maxExperience,
@@ -431,7 +419,6 @@ public class ApplicationService {
         // Sử dụng MapStruct mapper để chuyển đổi Entity sang DTO
         return applicationMapper.toApplicationResponse(application);
     }
-
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
