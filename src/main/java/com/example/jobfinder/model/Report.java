@@ -3,6 +3,7 @@ package com.example.jobfinder.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,7 +19,7 @@ public class Report {
     private Long id;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDate createdAt;
 
     @ManyToOne
     @JoinColumn(name = "report_type_id", nullable = false)
@@ -41,7 +42,7 @@ public class Report {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDate.now();
         }
     }
 }

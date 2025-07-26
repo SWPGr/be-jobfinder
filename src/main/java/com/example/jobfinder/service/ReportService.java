@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,7 +73,7 @@ public class ReportService {
                 .user(jobSeeker)
                 .subject(request.getSubject())
                 .content(request.getContent())
-                .createdAt(request.getCreatedAt() != null ? request.getCreatedAt() : LocalDateTime.now())
+                .createdAt(request.getCreatedAt() != null ? request.getCreatedAt() : LocalDate.now())
                 .build();
         reportRepository.save(report);
 
@@ -88,7 +89,7 @@ public class ReportService {
     }
 
     public Page<ReportResponse> getAllReports(int page, int size) {
-        Pageable pageable = PageRequest.of(page -1, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
         Page<Report> reports = reportRepository.findAll(pageable);
 
         return reports.map(report -> ReportResponse.builder().
@@ -113,14 +114,15 @@ public class ReportService {
                 .collect(Collectors.toList());
     }
 
-    public Page<ReportResponse> searchReportsByType(Long reportTypeId, int page, int size) {
+    public Page<ReportResponse> searchReportsByType(Long reportTypeId, int page, int size,
+                                                    LocalDate fromDate, LocalDate toDate) {
         Pageable pageable = PageRequest.of(page - 1, size);
         Page<Report> reports;
 
         if (reportTypeId == null) {
-            reports = reportRepository.findAll(pageable);
+            reports = reportRepository.findAllByCreatedAtBetween(fromDate, toDate, pageable);
         } else {
-            reports = reportRepository.findByReportTypeId(reportTypeId, pageable);
+            reports = reportRepository.findByReportTypeIdAndCreatedAtBetween(reportTypeId, fromDate, toDate, pageable);
         }
 
         return reports.map(report -> ReportResponse.builder()
