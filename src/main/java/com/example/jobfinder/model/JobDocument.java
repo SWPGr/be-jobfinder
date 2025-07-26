@@ -46,6 +46,9 @@ public class JobDocument {
     private Long educationId;
 
     @Field(type = FieldType.Long)
+    private Long jobApplicationCounts;
+
+    @Field(type = FieldType.Long)
     private Long experience;
 
     @Field(type = FieldType.Integer)

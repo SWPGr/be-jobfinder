@@ -196,13 +196,7 @@ public class ApplicationService {
     }
 
     public List<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId) {
-        // Sử dụng phương thức mới từ repository để lấy User cùng với SeekerDetail
         List<User> applicants = applicationRepository.findApplicantsWithDetailsByJobId(jobId);
-
-
-
-
-        // Chuyển đổi List<User> sang List<CandidateDetailResponse>
         return applicants.stream().map(user -> {
             JobSeekerResponse jobSeekerResponse = null;
             Education education = user.getUserDetail().getEducation();
@@ -243,8 +237,8 @@ public class ApplicationService {
 
         Map<LocalDate, Long> dailyCountsMap = rawCounts.stream()
                 .collect(Collectors.toMap(
-                        // arr[0] là java.sql.Date, cần chuyển đổi sang java.time.LocalDate
-                        arr -> ((Date) arr[0]).toLocalDate(), // <-- CHỈNH SỬA DÒNG NÀY
+
+                        arr -> ((Date) arr[0]).toLocalDate(),
                         arr -> (Long) arr[1],
                         (oldValue, newValue) -> oldValue,
                         LinkedHashMap::new
@@ -253,8 +247,6 @@ public class ApplicationService {
         List<DailyApplicationCountResponse> dailyStats = new ArrayList<>();
         long totalApplications = 0;
 
-        // Điền dữ liệu cho tất cả các ngày trong khoảng thời gian,
-        // kể cả những ngày không có đơn ứng tuyển (count = 0)
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             Long count = dailyCountsMap.getOrDefault(currentDate, 0L);
@@ -274,19 +266,7 @@ public class ApplicationService {
                 .build();
     }
 
-    // Giữ lại method cũ nếu bạn vẫn muốn truy vấn theo từng ngày
-    public DailyApplicationCountResponse getDailyApplicationCount(LocalDate date) {
-        if (date == null) {
-            date = LocalDate.now();
-        }
-        Long count = applicationRepository.countByAppliedAt(date.atStartOfDay()); // Hoặc countApplicationsByDay(date)
-        return DailyApplicationCountResponse.builder()
-                .date(date)
-                .count(count)
-                .build();
-    }
-
-    @Transactional(readOnly = true) // Optimize read operations, no data modification
+    @Transactional(readOnly = true)
     public PageResponse<ApplicationResponse> getEmployerJobApplicationsForSpecificJob(
             Long jobId, int page, int size, String sortOrder,
             String name, Integer minExperience, Integer maxExperience,
@@ -439,7 +419,6 @@ public class ApplicationService {
         // Sử dụng MapStruct mapper để chuyển đổi Entity sang DTO
         return applicationMapper.toApplicationResponse(application);
     }
-
 
     private PageResponse<ApplicationResponse> buildPageResponse(Page<Application> applicationsPage) {
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
