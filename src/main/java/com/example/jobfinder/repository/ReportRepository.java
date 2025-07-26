@@ -9,9 +9,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
     boolean existsByUserAndJobAndSubjectAndContent(User user, Job job, String subject, String content);
+
+    Page<Report> findAllByCreatedAtBetween(LocalDate from, LocalDate to, Pageable pageable);
+
+    Page<Report> findByReportTypeIdAndCreatedAtBetween(Long reportTypeId, LocalDate from, LocalDate to, Pageable pageable);
 
     Page<Report> findByReportTypeId(Long id, Pageable pageable);
 

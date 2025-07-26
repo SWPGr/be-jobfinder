@@ -7,9 +7,12 @@ import com.example.jobfinder.service.ReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -42,7 +45,12 @@ public class ReportController {
     public ResponseEntity<Page<ReportResponse>> searchReportsByTypeName(
             @RequestParam(required = false) Long typeId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(reportService.searchReportsByType(typeId, page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate toDate) {
+
+        if (fromDate == null) fromDate = LocalDate.MIN;
+        if (toDate == null) toDate = LocalDate.now();
+        return ResponseEntity.ok(reportService.searchReportsByType(typeId, page, size, fromDate, toDate));
     }
 }

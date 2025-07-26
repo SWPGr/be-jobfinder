@@ -147,6 +147,7 @@ public class UserService {
                             .verified(user.getVerified())
                             .totalApplications(null) // Khởi tạo là null
                             .totalJobsPosted(null)   // Khởi tạo là null
+                            .active(user.getIsActive())
                             .build();
 
                     // Map UserDetail nếu có
