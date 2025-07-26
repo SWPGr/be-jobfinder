@@ -2,8 +2,10 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.JobDocument;
+import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ElasticsearchSyncService {
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchSyncService.class);
 
@@ -22,24 +25,26 @@ public class ElasticsearchSyncService {
 
     private final JobRepository jobRepository;
     private final JobDocumentRepository jobDocumentRepository;
+    private final ApplicationRepository applicationRepository;
 
-    public ElasticsearchSyncService(JobRepository jobRepository, JobDocumentRepository jobDocumentRepository) {
-        this.jobRepository = jobRepository;
-        this.jobDocumentRepository = jobDocumentRepository;
-    }
+
 
     @Scheduled(cron = "0 0 0 * * *")
     public void syncAllJobs() {
         List<Job> jobs = jobRepository.findAll();
         List<JobDocument> jobDocuments = jobs.stream()
-                .map(this::mapToDocument)
+                .map(job -> {
+                    Long count = applicationRepository.countByJob_Id(job.getId());
+                    return mapToDocument(job, count);
+                })
                 .toList();
+
 
         jobDocumentRepository.saveAll(jobDocuments);
     log.info("Completed job data sync to Elasticsearch, indexed {} jobs", jobs.size());
     }
 
-    private JobDocument mapToDocument(Job job) {
+    private JobDocument mapToDocument(Job job, Long applicationCount) {
         JobDocument doc = new JobDocument();
         doc.setId(job.getId());
         doc.setTitle(job.getTitle());
@@ -65,6 +70,8 @@ public class ElasticsearchSyncService {
                 ? job.getCreatedAt().format(CREATED_AT_FORMATTER)
                 : null);
         log.info("Job {} createdAt raw: {}", job.getId(), job.getCreatedAt());
+
+        doc.setJobApplicationCounts(applicationCount);
 
         return doc;
     }
