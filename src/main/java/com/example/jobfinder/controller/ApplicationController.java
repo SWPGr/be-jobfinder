@@ -90,8 +90,6 @@ public class ApplicationController {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
             }
         }
-        // Admin sẽ bỏ qua kiểm tra isEmployerJob
-
         List<CandidateDetailResponse> candidates = applicationService.getCandidatesDetailByJobId(jobId);
         return ResponseEntity.ok(ApiResponse.<List<CandidateDetailResponse>>builder()
                 .code(HttpStatus.OK.value())
