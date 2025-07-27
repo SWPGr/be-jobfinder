@@ -40,9 +40,6 @@ public class Application {
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;
 
-    // --- Mối quan hệ ---
-
-    // Một Application thuộc về một Job Seeker (User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_seeker_id", nullable = false)
     @JsonManagedReference("jobseeker-applications")
