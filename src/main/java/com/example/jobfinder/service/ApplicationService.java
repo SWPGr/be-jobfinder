@@ -183,11 +183,8 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // Lấy danh sách các đơn ứng tuyển của jobSeeker
         Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable); // Điều chỉnh nếu tên phương thức trong repo là findByJobSeeker_Id
 
-        // Chuyển đổi List<Application> sang List<ApplicationResponse>
-        // SỬ DỤNG PHƯƠNG THỨC MAPPER MỚI: toApplicationResponseListWithoutJobSeeker
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
                 .map(applicationMapper::toApplicationResponseWithoutJobSeeker)
                 .collect(Collectors.toList());
