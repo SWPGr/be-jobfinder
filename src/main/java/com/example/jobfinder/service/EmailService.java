@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 
 @Service
 public class EmailService {
+
     private final JavaMailSender mailSender;
 
     public EmailService(JavaMailSender mailSender) {
