@@ -223,7 +223,7 @@ public class StatisticService {
         LocalDateTime endOfDay = today.atTime(LocalTime.MAX); // Kết thúc vào 23:59:59.999999999 của hôm nay
 
         // Lấy tất cả người dùng được tạo trong ngày hôm nay
-        List<User> usersToday = userRepository.findByCreatedAtBetween(startOfDay, endOfDay);
+        List<User> usersToday = userRepository.findByCreatedAtBetweenAndIsActive(startOfDay, endOfDay, false);
         // Lấy tất cả công việc được tạo trong ngày hôm nay
         List<Job> jobsToday = jobRepository.findByCreatedAtBetween(startOfDay, endOfDay);
         // Lấy tất cả đơn ứng tuyển được tạo trong ngày hôm nay

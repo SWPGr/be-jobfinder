@@ -172,9 +172,14 @@ public class JobService {
             jobPage = jobRepository.findAllActive(pageable);
         }
 
+
+
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
             response.setIsSave(false);
+
+            Long applicationCount = applicationRepository.countByJob_Id(job.getId());
+            response.setJobApplicationCounts(applicationCount);
             return response;
         });
     }

@@ -129,6 +129,7 @@ public class ReportService {
                 .id(report.getId())
                 .email(report.getUser().getEmail())
                 .jobId(report.getJob().getId())
+                .user(report.getUser().getUserDetail().getFullName())
                 .subject(report.getSubject())
                 .content(report.getContent())
                 .createdAt(report.getCreatedAt())

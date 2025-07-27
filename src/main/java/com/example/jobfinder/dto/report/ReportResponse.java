@@ -20,6 +20,7 @@ public class ReportResponse {
     Long id;
     LocalDate createdAt;
     ReportType type;
+    String user;
     String email;
     Long jobId;
     String subject;
