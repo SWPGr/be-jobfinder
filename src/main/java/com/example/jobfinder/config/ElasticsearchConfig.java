@@ -25,24 +25,35 @@ public class ElasticsearchConfig{
     @Value("${spring.elasticsearch.uris}")
     private String elasticsearchUrl;
 
+    @Value("${spring.elasticsearch.username}")
+    private String username;
+
+    @Value("${spring.elasticsearch.password}")
+    private String password;
 
     @Bean
     public ElasticsearchClient elasticsearchClient() throws Exception {
         URI uri = new URI(elasticsearchUrl);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
 
-        RestClient restClient = RestClient.builder(host).build();
+        Header[] defaultHeaders = new Header[]{
+                new BasicHeader("Authorization", "Basic " + encodedAuth)
+        };
 
-        RestClientTransport transport = new RestClientTransport(
-                restClient,
-                new JacksonJsonpMapper(new ObjectMapper()
-                        .disable(MapperFeature.AUTO_DETECT_CREATORS,
-                                MapperFeature.AUTO_DETECT_FIELDS,
-                                MapperFeature.AUTO_DETECT_GETTERS)
-                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))
-        );
+        RestClient restClient = RestClient.builder(host)
+                .setDefaultHeaders(defaultHeaders)
+                .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder
+                        .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                )
+                .build();
 
+        RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper().disable(MapperFeature.AUTO_DETECT_CREATORS,
+                        MapperFeature.AUTO_DETECT_FIELDS,
+                        MapperFeature.AUTO_DETECT_GETTERS)
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)));
         return new ElasticsearchClient(transport);
     }
 }
