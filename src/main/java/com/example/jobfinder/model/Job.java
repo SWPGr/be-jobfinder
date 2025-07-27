@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,6 +42,7 @@ public class Job {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, updatable = false)
     private LocalDateTime updatedAt;
 
@@ -56,7 +58,7 @@ public class Job {
     @Column(name = "is_save")
     private boolean isSave;
 
-    @Column(name = "active", nullable = false)
+    @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -107,5 +109,8 @@ public class Job {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (active == null) {
+            active = true; // Đảm bảo giá trị mặc định cho active khi tạo mới
+        }
     }
 }

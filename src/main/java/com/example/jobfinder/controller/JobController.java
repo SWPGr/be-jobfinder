@@ -77,12 +77,6 @@ public class JobController {
         return jobService.updateJob(jobId, request);
     }
 
-    @DeleteMapping("/{jobId}")
-    public String deleteJob(@PathVariable Long jobId) {
-        jobService.deleteJob(jobId);
-        return "Job with ID " + jobId + " has been deleted successfully!";
-    }
-
     @GetMapping("/my-employer-jobs")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<ApiResponse<PageResponse<JobResponse>>> getAllJobsForCurrentEmployer(
