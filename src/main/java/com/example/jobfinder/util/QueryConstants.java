@@ -2,13 +2,8 @@ package com.example.jobfinder.util;
 
 // Không cần Lombok @Builder cho lớp này vì nó chỉ chứa các hằng số.
 public final class QueryConstants {
+    private QueryConstants() {}
 
-    // Private constructor để ngăn việc tạo instance
-    private QueryConstants() {
-        // Utility class
-    }
-
-    // --- Job Queries ---
     public static final String FIND_JOBS_BY_CRITERIA = """
             SELECT j FROM Job j
             LEFT JOIN FETCH j.category c
@@ -26,7 +21,6 @@ public final class QueryConstants {
             (:employerName IS NULL OR LOWER(ud.companyName) LIKE LOWER(CONCAT('%', :employerName, '%')))
             """;
 
-    // --- User Queries ---
     public static final String FIND_USERS_BY_CRITERIA = """
             SELECT u FROM User u
             LEFT JOIN FETCH u.role r
@@ -40,7 +34,6 @@ public final class QueryConstants {
             """;
 
 
-    // --- Subscription Queries ---
     public static final String FIND_SUBSCRIPTIONS_BY_CRITERIA = """
             SELECT s FROM Subscription s
             LEFT JOIN FETCH s.user u
@@ -49,14 +42,7 @@ public final class QueryConstants {
             (:planName IS NULL OR LOWER(p.subscriptionPlanName) LIKE LOWER(CONCAT('%', :planName, '%'))) AND
             (:isActive IS NULL OR s.isActive = :isActive)
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - s.user và u.email là chính xác.
-     * - s.plan và p.subscriptionPlanName là chính xác dựa trên giả định tên trường của SubscriptionPlan.
-     * - s.isActive là chính xác.
-     */
 
-    // --- Application Queries ---
     public static final String FIND_APPLICATIONS_BY_CRITERIA = """
             SELECT a FROM Application a
             LEFT JOIN FETCH a.jobSeeker js
@@ -66,7 +52,6 @@ public final class QueryConstants {
             (:status IS NULL OR LOWER(a.status) = LOWER(:status)) 
             """;
 
-    // --- EmployerReview Queries ---
     public static final String FIND_EMPLOYER_REVIEWS_BY_EMPLOYER_AND_RATING = """
             SELECT er FROM EmployerReview er
             LEFT JOIN FETCH er.jobSeeker js
@@ -76,7 +61,6 @@ public final class QueryConstants {
             (:maxRating IS NULL OR er.rating <= :maxRating)
             """;
 
-    // --- UserDetail Queries ---
     public static final String FIND_USER_DETAILS_BY_CRITERIA = """
             SELECT ud FROM UserDetail ud
             LEFT JOIN FETCH ud.user u
@@ -86,25 +70,12 @@ public final class QueryConstants {
             (:educationType IS NULL OR LOWER(e.name) LIKE LOWER(CONCAT('%', :educationType, '%'))) AND
             (:companyName IS NULL OR LOWER(ud.companyName) LIKE LOWER(CONCAT('%', :companyName, '%')))
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - ud.fullName, ud.location, ud.yearsExperience, ud.companyName là chính xác.
-     * - e.educationType là chính xác dựa trên giả định tên trường của Education.
-     */
-
     // --- SocialType Queries ---
     public static final String FIND_SOCIAL_TYPES_BY_NAME = """
             SELECT st FROM SocialType st
             WHERE (:socialTypeName IS NULL OR LOWER(st.name) LIKE LOWER(CONCAT('%', :socialTypeName, '%')))
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - st.socialTypeName là chính xác dựa trên giả định tên trường của SocialType.
-     * - Như đã thảo luận, nếu bạn muốn chuẩn hóa thành 'name', bạn sẽ cần sửa model SocialType và query này.
-     * Nhưng với model hiện tại, đây là chính xác.
-     */
 
-    // --- UserSocialType Queries ---
     public static final String FIND_USER_SOCIAL_TYPES_BY_CRITERIA = """
             SELECT ust FROM UserSocialType ust
             LEFT JOIN FETCH ust.userDetail ud
@@ -113,13 +84,7 @@ public final class QueryConstants {
             (:socialTypeName IS NULL OR LOWER(st.name) LIKE LOWER(CONCAT('%', :socialTypeName, '%'))) AND
             (:url IS NULL OR LOWER(ust.url) LIKE LOWER(CONCAT('%', :url, '%')))
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - ud.fullName và st.socialTypeName là chính xác dựa trên các model tương ứng.
-     * - ust.url là chính xác.
-     */
 
-    // --- Payment Queries ---
     public static final String FIND_PAYMENTS_BY_CRITERIA = """
             SELECT p FROM Payment p
             LEFT JOIN FETCH p.user u
@@ -129,12 +94,7 @@ public final class QueryConstants {
             (:minAmount IS NULL OR p.amount >= :minAmount) AND
             (:maxAmount IS NULL OR p.amount <= :maxAmount)
             """;
-    /*
-     * Đánh giá: CHÍNH XÁC.
-     * - u.email, p.paymentMethod, p.amount là chính xác.
-     */
 
-    // --- Notification Queries ---
     public static final String FIND_NOTIFICATIONS_BY_CRITERIA = """
             SELECT n FROM Notification n
             LEFT JOIN FETCH n.user u
@@ -142,4 +102,18 @@ public final class QueryConstants {
             (:isRead IS NULL OR n.isRead = :isRead) AND
             (:messageKeyword IS NULL OR LOWER(n.message) LIKE LOWER(CONCAT('%', :messageKeyword, '%')))
             """;
+
+    public static final String FIND_USERS_BY_CRITERIA_WITH_ACTIVE = "SELECT u FROM User u " +
+            "LEFT JOIN u.userDetail ud " +
+            "LEFT JOIN u.role r " +
+            "WHERE (:email IS NULL OR u.email LIKE CONCAT('%', :email, '%')) " +
+            "AND (:fullName IS NULL OR ud.fullName LIKE CONCAT('%', :fullName, '%')) " +
+            "AND (:roleName IS NULL OR r.name = :roleName) " +
+            "AND (:location IS NULL OR ud.location LIKE CONCAT('%', :location, '%')) " +
+            "AND (:isPremium IS NULL OR u.isPremium = :isPremium) " +
+            "AND (:verified IS NULL OR u.verified = :verified) " +
+            "AND (:resumeUrl IS NULL OR ud.resumeUrl LIKE CONCAT('%', :resumeUrl, '%')) " +
+            "AND (:companyName IS NULL OR ud.companyName LIKE CONCAT('%', :companyName, '%')) " +
+            "AND (:website IS NULL OR ud.website LIKE CONCAT('%', :website, '%')) " +
+            "AND (:isActive IS NULL OR u.active = :isActive)";
 }
