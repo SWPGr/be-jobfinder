@@ -2,6 +2,7 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job.JobOptionsResponse;
 import com.example.jobfinder.repository.*;
+import jakarta.persistence.Cacheable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -10,8 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/options")
+@RequestMapping("/api/options")
 @RequiredArgsConstructor
+@Cacheable()
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OptionController {
     JobTypeRepository jobTypeRepository;
