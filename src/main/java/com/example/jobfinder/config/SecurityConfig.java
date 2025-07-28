@@ -127,18 +127,6 @@ public class SecurityConfig {
                         })
                         
                 )
-                .exceptionHandling(exceptions -> exceptions
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        if (request.getRequestURI().startsWith("/api/")) {
-                            response.setStatus(401);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
-                        } else {
-                            // Redirect to OAuth2 for non-API requests
-                            response.sendRedirect("/oauth2/authorization/google");
-                        }
-                    })
-            );
 //        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
 
 
