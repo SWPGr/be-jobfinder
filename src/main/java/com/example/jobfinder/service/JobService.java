@@ -69,8 +69,6 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobLevel: ID=" + jobLevel.getId() + ", Name=" + jobLevel.getName());
 
-
-        // 5. Lấy JobType Entity từ ID
         JobType jobType = jobTypeRepository.findById(jobCreationRequest.getJobTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobType: ID=" + jobType.getId() + ", Name=" + jobType.getName());
@@ -200,7 +198,7 @@ public class JobService {
                 .toList();
     }
 
-    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir) {
+    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir, Boolean isActive) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new IllegalStateException("User not authenticated.");
