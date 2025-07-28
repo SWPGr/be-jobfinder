@@ -4,6 +4,7 @@ import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
+import com.example.jobfinder.dto.application.CandidateFilterRequest;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
@@ -54,7 +55,7 @@ public class ApplicationController {
     UserRepository userRepository;
     ApplicationRepository applicationRepository;
 
-    @GetMapping("/my-applied-jobs") // Tên endpoint có thể giữ nguyên hoặc đổi thành /my-applications
+    @GetMapping("/my-applied-jobs")
     public ResponseEntity<Page<ApplicationResponse>> getMyApplications(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -71,8 +72,12 @@ public class ApplicationController {
     }
 
     @GetMapping("/candidates/{jobId}")
-    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')") // Chỉ EMPLOYER hoặc ADMIN được xem
-    public ResponseEntity<ApiResponse<List<CandidateDetailResponse>>> getCandidatesForEmployerJob(@PathVariable Long jobId) {
+    @PreAuthorize("hasAnyRole('EMPLOYER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Page<CandidateDetailResponse>>> getCandidatesForEmployerJob(
+            @PathVariable Long jobId,
+            @ModelAttribute CandidateFilterRequest filterRequest,
+            Pageable pageable) {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -82,19 +87,18 @@ public class ApplicationController {
         String userEmail = authentication.getName();
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
-
-        // Logic phân quyền: Chỉ EMPLOYER (chủ sở hữu job) hoặc ADMIN mới được xem
-        if (currentUser.getRole().getName().equals("EMPLOYER")) { // So sánh với tên enum
+        if (currentUser.getRole().getName().equals("EMPLOYER")) {
             boolean isEmployerJob = applicationService.isJobOwnedByEmployer(jobId, currentUser.getId());
             if (!isEmployerJob) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
             }
         }
-        List<CandidateDetailResponse> candidates = applicationService.getCandidatesDetailByJobId(jobId);
-        return ResponseEntity.ok(ApiResponse.<List<CandidateDetailResponse>>builder()
+        Page<CandidateDetailResponse> candidatesPage = applicationService.getCandidatesDetailByJobId(jobId, filterRequest, pageable);
+
+        return ResponseEntity.ok(ApiResponse.<Page<CandidateDetailResponse>>builder()
                 .code(HttpStatus.OK.value())
-                .message("Candidates for job " + jobId + " fetched successfully.")
-                .result(candidates)
+                .message("Candidates for job " + jobId + " fetched successfully with filters.")
+                .result(candidatesPage)
                 .build());
     }
 

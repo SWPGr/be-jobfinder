@@ -4,6 +4,9 @@ import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Filter(name = "activeRelatedUserFilter", condition = "job_seeker_id IN (SELECT u.id FROM users u WHERE u.active = :isActive)")
 public class Application {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,9 +44,6 @@ public class Application {
     @Column(name = "applied_at", nullable = false, updatable = false)
     private LocalDateTime appliedAt;
 
-    // --- Mối quan hệ ---
-
-    // Một Application thuộc về một Job Seeker (User)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_seeker_id", nullable = false)
     @JsonManagedReference("jobseeker-applications")

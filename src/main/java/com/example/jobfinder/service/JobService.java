@@ -146,13 +146,6 @@ public class JobService {
         return jobMapper.toJobResponse(jobRepository.save(job));
     }
 
-    public void deleteJob(Long jobId) {
-        if (!jobRepository.existsById(jobId)) {
-            throw new AppException(ErrorCode.JOB_NOT_FOUND);
-        }
-        jobRepository.deleteById(jobId);
-    }
-
     public Page<JobResponse> getAllJobs(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
@@ -286,6 +279,7 @@ public class JobService {
                             .jobLevel(jobLevelResponse) // <-- Đã đổi
                             .jobType(jobTypeResponse)   // <-- Đã đổi
                             .jobApplicationCounts(jobApplicationCounts)
+                            .isSave(job.getActive())
                             .build();
                 })
                 .collect(Collectors.toList());

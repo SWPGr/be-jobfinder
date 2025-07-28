@@ -87,17 +87,14 @@ public class AuthService {
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
-        // Kiểm tra trạng thái đã xác minh email
         if (user.getVerified() == 0) {
             throw new AppException(ErrorCode.USER_NOT_VERIFIED); // Ném lỗi
         }
 
-        // Kiểm tra trạng thái isActive (bị block)
         if (user.getIsActive() == false) {
             throw new AppException(ErrorCode.ACCOUNT_BLOCKED); // Ném lỗi
         }
 
-        // Đăng nhập thành công
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
 
         return LoginResponse.builder()

@@ -4,6 +4,7 @@ import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.application.ApplicationRequest;
 import com.example.jobfinder.dto.application.ApplicationResponse;
 import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
+import com.example.jobfinder.dto.application.CandidateFilterRequest;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
@@ -182,11 +183,8 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
 
-        // Lấy danh sách các đơn ứng tuyển của jobSeeker
         Page<Application> applicationsPage = applicationRepository.findByJobSeekerId(userId, pageable); // Điều chỉnh nếu tên phương thức trong repo là findByJobSeeker_Id
 
-        // Chuyển đổi List<Application> sang List<ApplicationResponse>
-        // SỬ DỤNG PHƯƠNG THỨC MAPPER MỚI: toApplicationResponseListWithoutJobSeeker
         List<ApplicationResponse> applicationResponses = applicationsPage.getContent().stream()
                 .map(applicationMapper::toApplicationResponseWithoutJobSeeker)
                 .collect(Collectors.toList());
@@ -195,35 +193,63 @@ public class ApplicationService {
         return new PageImpl<>(applicationResponses, pageable, applicationsPage.getTotalElements());
     }
 
-    public List<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId) {
-        List<User> applicants = applicationRepository.findApplicantsWithDetailsByJobId(jobId);
-        return applicants.stream().map(user -> {
+    @Transactional(readOnly = true)
+    public Page<CandidateDetailResponse> getCandidatesDetailByJobId(Long jobId,
+                                                                    CandidateFilterRequest filterRequest, // Thêm filterRequest
+                                                                    Pageable pageable) { // Thêm pageable
+
+        // Gọi Repository với các tham số lọc và phân trang
+        Page<User> applicantsPage = applicationRepository.findApplicantsWithDetailsByJobIdAndFilters(
+                jobId,
+                filterRequest.getFullName(),
+                filterRequest.getEmail(),
+                filterRequest.getLocation(),
+                filterRequest.getExperienceName(),
+                filterRequest.getEducationName(),
+                filterRequest.getIsPremium(),
+                pageable // Truyền Pageable để phân trang và sắp xếp
+        );
+
+        // Map Page<User> sang Page<CandidateDetailResponse>
+        List<CandidateDetailResponse> candidateDetails = applicantsPage.getContent().stream().map(user -> {
             JobSeekerResponse jobSeekerResponse = null;
-            Education education = user.getUserDetail().getEducation();
-            Experience experience = user.getUserDetail().getExperience();
+            Education education = null;
+            Experience experience = null;
+
+            if (user.getUserDetail() != null) {
+                education = user.getUserDetail().getEducation();
+                experience = user.getUserDetail().getExperience();
+
+                jobSeekerResponse = JobSeekerResponse.builder()
+                        .userId(user.getUserDetail().getId())
+                        .phone(user.getUserDetail().getPhone())
+                        .location(user.getUserDetail().getLocation())
+                        .resumeUrl(user.getUserDetail().getResumeUrl())
+                        .userEmail(user.getEmail())
+                        .fullName(user.getUserDetail().getFullName())
+                        .educationName(education != null ? education.getName() : null)
+                        .experienceName(experience != null ? experience.getName() : null)
+                        .build();
+            } else {
+                jobSeekerResponse = JobSeekerResponse.builder().build();
+            }
+
             Long applicationId = applicationRepository.findByJobSeekerIdAndJobId(user.getId(), jobId)
                     .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
                     .getId();
-            jobSeekerResponse = JobSeekerResponse.builder()
-                    .userId(user.getUserDetail().getId())
-                    .phone(user.getUserDetail().getPhone())
-                    .location(user.getUserDetail().getLocation())
-                    .resumeUrl(user.getUserDetail().getResumeUrl())
-                    .userEmail(user.getEmail())
-                    .fullName(user.getUserDetail().getFullName())
-                    .educationName(education != null ? education.getName() : null)
-                    .experienceName(experience != null ? experience.getName() : null)
-                    .build();
 
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
                     .applicationId(applicationId)
-                    .fullname(user.getUsername())
+                    .fullname(user.getUserDetail() != null ? user.getUserDetail().getFullName() : user.getEmail())
                     .email(user.getEmail())
-                    .role(user.getRole().getName()) // Lấy tên role
+                    .role(user.getRole().getName())
                     .seekerDetail(jobSeekerResponse)
                     .build();
         }).collect(Collectors.toList());
+
+        // Trả về PageImpl mới với danh sách DTO và thông tin phân trang gốc
+        return new PageImpl<>(candidateDetails, pageable, applicantsPage.getTotalElements());
     }
 
     public MonthlyApplicationStatsResponse getApplicationsLast3Months() {

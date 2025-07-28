@@ -58,7 +58,7 @@ public class UserService {
     @Transactional
     public UserResponse createUser(UserCreationRequest request) {
         // 1. Kiểm tra xem email đã tồn tại chưa để tránh trùng lặp.
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailAndIsActive(request.getEmail(), true)) {
             throw new AppException(ErrorCode.USER_EXIST);
         }
 
