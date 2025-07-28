@@ -279,6 +279,7 @@ public class JobService {
                             .jobLevel(jobLevelResponse) // <-- Đã đổi
                             .jobType(jobTypeResponse)   // <-- Đã đổi
                             .jobApplicationCounts(jobApplicationCounts)
+                            .isSave(job.getActive())
                             .build();
                 })
                 .collect(Collectors.toList());
