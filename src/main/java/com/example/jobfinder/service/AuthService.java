@@ -1,5 +1,4 @@
 package com.example.jobfinder.service;
-
 import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.exception.AppException;
@@ -12,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -75,9 +75,13 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user;
         try {
-            String authenticatedEmail = request.getEmail();
-            user = userRepository.findByEmail(authenticatedEmail)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + authenticatedEmail));
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(), request.getPassword()
+                    )
+            );
+            user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + request.getEmail()));
 
         } catch (BadCredentialsException e) {
             throw new AppException(ErrorCode.WRONG_PASSWORD);
@@ -206,6 +210,28 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setResetPasswordToken(null);
         user.setResetPasswordExpiry(null);
+        userRepository.save(user);
+    }
+
+    public void changePassword(ChangePasswordRequest request) throws Exception {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.WRONG_PASSWORD);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
 
