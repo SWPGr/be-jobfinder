@@ -20,7 +20,7 @@ public class UserDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 255)
+    @Column(length = 300)
     private String location;
 
     @Column(name = "full_name", length = 255)
