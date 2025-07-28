@@ -238,12 +238,17 @@ public class ApplicationService {
                     .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
                     .getId();
 
+            ApplicationStatus status = applicationRepository.findByJobSeekerIdAndJobId(user.getId(), jobId)
+                    .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
+                    .getStatus();
+
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
                     .applicationId(applicationId)
                     .fullname(user.getUserDetail() != null ? user.getUserDetail().getFullName() : user.getEmail())
                     .email(user.getEmail())
                     .role(user.getRole().getName())
+                    .status(status)
                     .seekerDetail(jobSeekerResponse)
                     .build();
         }).collect(Collectors.toList());
@@ -337,10 +342,9 @@ public class ApplicationService {
                 employerId, jobId,
                 name, minExperience, maxExperience,
                 jobTypeId, educationId, jobLevelId,
-                pageable // Pass the Pageable object
+                pageable
         );
 
-        // --- 5. Map Entities to DTOs and Build PageResponse ---
         return buildPageResponse(applicationsPage);
     }
 
