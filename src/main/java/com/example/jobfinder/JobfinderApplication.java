@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaRepositories("com.example.jobfinder.repository")
 @EntityScan("com.example.jobfinder.model")
 @EnableScheduling
+@EnableAspectJAutoProxy
 public class JobfinderApplication {
 
 	public static void main(String[] args) {

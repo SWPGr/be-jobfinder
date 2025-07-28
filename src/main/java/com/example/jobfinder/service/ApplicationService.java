@@ -237,10 +237,13 @@ public class ApplicationService {
             Long applicationId = applicationRepository.findByJobSeekerIdAndJobId(user.getId(), jobId)
                     .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
                     .getId();
+<<<<<<< Updated upstream
 
             ApplicationStatus status = applicationRepository.findByJobSeekerIdAndJobId(user.getId(), jobId)
                     .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND))
                     .getStatus();
+=======
+>>>>>>> Stashed changes
 
             return CandidateDetailResponse.builder()
                     .userId(user.getId())
@@ -248,7 +251,10 @@ public class ApplicationService {
                     .fullname(user.getUserDetail() != null ? user.getUserDetail().getFullName() : user.getEmail())
                     .email(user.getEmail())
                     .role(user.getRole().getName())
+<<<<<<< Updated upstream
                     .status(status)
+=======
+>>>>>>> Stashed changes
                     .seekerDetail(jobSeekerResponse)
                     .build();
         }).collect(Collectors.toList());
