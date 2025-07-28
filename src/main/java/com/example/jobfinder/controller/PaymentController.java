@@ -41,8 +41,10 @@ public class PaymentController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "paidAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String fromDate, // <-- Thêm fromDate (không bắt buộc)
-            @RequestParam(required = false) String toDate) { // <-- Thêm toDate (không bắt buộc)
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String paymentStatus
+    ) {
         try {
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(page, size, sort);
@@ -50,7 +52,7 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false); // Parse fromDate
             LocalDateTime parsedToDate = parseDate(toDate, true);     // Parse toDate
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate);
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
                     .code(HttpStatus.OK.value())
