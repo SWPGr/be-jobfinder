@@ -1,6 +1,7 @@
 
 package com.example.jobfinder.dto.application;
 
+import com.example.jobfinder.model.enums.ApplicationStatus;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,4 +19,5 @@ public class CandidateFilterRequest {
     String experienceName;
     String educationName;
     Boolean isPremium;
+    ApplicationStatus status;
 }

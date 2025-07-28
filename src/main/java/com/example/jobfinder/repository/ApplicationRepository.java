@@ -2,6 +2,7 @@ package com.example.jobfinder.repository;
 
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -96,52 +96,48 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<Object[]> countApplicationsByDateTimeRange(@Param("startDateTime") LocalDateTime startDateTime, @Param("endDateTime") LocalDateTime endDateTime);
 
 
-    @Query("SELECT ja FROM Application ja " +
-            "JOIN FETCH ja.job j " +
-            "JOIN FETCH j.employer e " +
-            "JOIN FETCH ja.jobSeeker a " + // Đảm bảo mối quan hệ là jobSeeker
-            "LEFT JOIN FETCH a.userDetail ud " +
-            "LEFT JOIN FETCH ud.education edu " +
-            "LEFT JOIN FETCH j.jobType jt " +
-            "LEFT JOIN FETCH j.jobLevel jl " +
-            "WHERE e.id = :employerId " +
-            "AND j.id = :jobId " +
-
-            // Filters for Applicant (UserDetail)
-            "AND (:name IS NULL OR LOWER(ud.fullName) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-            "AND (:educationId IS NULL OR edu.id = :educationId) " +
-
-            // Filters for Job (via Job entity, but applied to applications for *this* job)
-            "AND (:jobTypeId IS NULL OR jt.id = :jobTypeId) " +
-            "AND (:jobLevelId IS NULL OR jl.id = :jobLevelId)")
-    Page<Application> getEmployerJobApplicationsForSpecificJob( // Đã đổi tên phương thức ở đây
-                                                                   @Param("employerId") Long employerId,
-                                                                   @Param("jobId") Long jobId,
-                                                                   // Applicant-related filter parameters
-                                                                   @Param("name") String name,
-                                                                   @Param("minExperience") Integer minExperience,
-                                                                   @Param("maxExperience") Integer maxExperience,
-                                                                   // Job-related filter parameters
-                                                                   @Param("jobTypeId") Long jobTypeId,
-                                                                   @Param("educationId") Long educationId,
-                                                                   @Param("jobLevelId") Long jobLevelId,
-                                                                   Pageable pageable
+    @Query("SELECT js FROM Application a " +
+            "JOIN a.jobSeeker js " +
+            "LEFT JOIN FETCH js.userDetail ud " +
+            "LEFT JOIN FETCH ud.education education " +
+            "LEFT JOIN FETCH ud.experience experience " +
+            "LEFT JOIN FETCH js.role " +
+            "WHERE a.job.id = :jobId " +
+            "AND js.isActive = TRUE " +
+            "AND (:fullName IS NULL OR ud.fullName LIKE CONCAT('%', :fullName, '%')) " +
+            "AND (:email IS NULL OR js.email LIKE CONCAT('%', :email, '%')) " +
+            "AND (:location IS NULL OR ud.location LIKE CONCAT('%', :location, '%')) " +
+            "AND (:experienceName IS NULL OR experience.name LIKE CONCAT('%', :experienceName, '%')) " +
+            "AND (:educationName IS NULL OR education.name LIKE CONCAT('%', :educationName, '%')) " +
+            "AND (:isPremium IS NULL OR js.isPremium = :isPremium) " +
+            "AND (:status IS NULL OR a.status = :status)")
+    Page<Application> getEmployerJobApplicationsForSpecificJob(
+           @Param("employerId") Long employerId,
+           @Param("jobId") Long jobId,
+           @Param("name") String name,
+           @Param("minExperience") Integer minExperience,
+           @Param("maxExperience") Integer maxExperience,
+           @Param("jobTypeId") Long jobTypeId,
+           @Param("educationId") Long educationId,
+           @Param("jobLevelId") Long jobLevelId,
+           Pageable pageable
     );
 
     @Query("SELECT js FROM Application a " +
             "JOIN a.jobSeeker js " +
             "LEFT JOIN FETCH js.userDetail ud " +
-            "LEFT JOIN FETCH ud.education education " + // Alias cho education
-            "LEFT JOIN FETCH ud.experience experience " + // Alias cho experience
+            "LEFT JOIN FETCH ud.education education " +
+            "LEFT JOIN FETCH ud.experience experience " +
             "LEFT JOIN FETCH js.role " +
             "WHERE a.job.id = :jobId " +
             "AND js.isActive = TRUE " + // Chỉ lấy ứng viên active
             "AND (:fullName IS NULL OR ud.fullName LIKE CONCAT('%', :fullName, '%')) " +
             "AND (:email IS NULL OR js.email LIKE CONCAT('%', :email, '%')) " +
             "AND (:location IS NULL OR ud.location LIKE CONCAT('%', :location, '%')) " +
-            "AND (:experienceName IS NULL OR experience.name LIKE CONCAT('%', :experienceName, '%')) " + // Lọc theo tên kinh nghiệm
-            "AND (:educationName IS NULL OR education.name LIKE CONCAT('%', :educationName, '%')) " + // Lọc theo tên học vấn
-            "AND (:isPremium IS NULL OR js.isPremium = :isPremium)") // Lọc theo trạng thái premium
+            "AND (:experienceName IS NULL OR experience.name LIKE CONCAT('%', :experienceName, '%')) " +
+            "AND (:educationName IS NULL OR education.name LIKE CONCAT('%', :educationName, '%')) " +
+            "AND (:isPremium IS NULL OR js.isPremium = :isPremium)" +
+            "AND (:status IS NULL OR a.status = :status)")
     Page<User> findApplicantsWithDetailsByJobIdAndFilters(
             @Param("jobId") Long jobId,
             @Param("fullName") String fullName,
@@ -150,7 +146,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("experienceName") String experienceName,
             @Param("educationName") String educationName,
             @Param("isPremium") Boolean isPremium,
-            Pageable pageable);
+            ApplicationStatus status, Pageable pageable);
 
 }
 
