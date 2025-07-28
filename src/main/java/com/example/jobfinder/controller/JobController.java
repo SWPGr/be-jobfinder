@@ -83,9 +83,10 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) Boolean isActive
     ) {
-        PageResponse<JobResponse> response = jobService.getAllJobsForCurrentEmployer(page, size, sortBy, sortDir);
+        PageResponse<JobResponse> response = jobService.getAllJobsForCurrentEmployer(page, size, sortBy, sortDir, isActive);
 
         return ResponseEntity.ok(ApiResponse.<PageResponse<JobResponse>>builder()
                 .code(HttpStatus.OK.value())
