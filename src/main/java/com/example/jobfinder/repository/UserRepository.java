@@ -18,13 +18,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByVerificationToken(String verificationToken);
 
-    Boolean existsByEmail(String email);
-
     Optional<User>  findByResetPasswordToken(String resetPasswordToken);
 
     Optional<User> findFirstByOrderByCreatedAtAsc();
 
-    List<User> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    default Optional<User> findByEmailIgnoringActiveFilter(String email) {
+        throw new UnsupportedOperationException("This method should not be called directly. Use CustomUserDetailsService.");
+    }
+
 
     @Query("SELECT COUNT(u) FROM User u JOIN u.role r WHERE r.name = :roleName AND u.createdAt <= :endDate")
     long countUsersByRoleNameAndCreatedAtBeforeOrEquals(@Param("roleName") String roleName, @Param("endDate") LocalDateTime endDate);
