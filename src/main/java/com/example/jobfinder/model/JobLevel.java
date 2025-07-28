@@ -1,6 +1,7 @@
 package com.example.jobfinder.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -23,5 +24,6 @@ public class JobLevel extends BaseNameEntity {
     // Một JobLevel có thể có nhiều Job
     @OneToMany(mappedBy = "jobLevel", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("jobLevel-jobs")
+    @JsonIgnore
     private Set<Job> jobs = new HashSet<>();
 }

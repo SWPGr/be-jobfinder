@@ -128,5 +128,29 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
                                                                    Pageable pageable
     );
 
+    @Query("SELECT js FROM Application a " +
+            "JOIN a.jobSeeker js " +
+            "LEFT JOIN FETCH js.userDetail ud " +
+            "LEFT JOIN FETCH ud.education education " + // Alias cho education
+            "LEFT JOIN FETCH ud.experience experience " + // Alias cho experience
+            "LEFT JOIN FETCH js.role " +
+            "WHERE a.job.id = :jobId " +
+            "AND js.isActive = TRUE " + // Chỉ lấy ứng viên active
+            "AND (:fullName IS NULL OR ud.fullName LIKE CONCAT('%', :fullName, '%')) " +
+            "AND (:email IS NULL OR js.email LIKE CONCAT('%', :email, '%')) " +
+            "AND (:location IS NULL OR ud.location LIKE CONCAT('%', :location, '%')) " +
+            "AND (:experienceName IS NULL OR experience.name LIKE CONCAT('%', :experienceName, '%')) " + // Lọc theo tên kinh nghiệm
+            "AND (:educationName IS NULL OR education.name LIKE CONCAT('%', :educationName, '%')) " + // Lọc theo tên học vấn
+            "AND (:isPremium IS NULL OR js.isPremium = :isPremium)") // Lọc theo trạng thái premium
+    Page<User> findApplicantsWithDetailsByJobIdAndFilters(
+            @Param("jobId") Long jobId,
+            @Param("fullName") String fullName,
+            @Param("email") String email,
+            @Param("location") String location,
+            @Param("experienceName") String experienceName,
+            @Param("educationName") String educationName,
+            @Param("isPremium") Boolean isPremium,
+            Pageable pageable);
+
 }
 

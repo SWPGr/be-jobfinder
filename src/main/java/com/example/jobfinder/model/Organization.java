@@ -1,6 +1,7 @@
 package com.example.jobfinder.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,5 +25,6 @@ public class Organization extends BaseNameEntity{
 
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL)
     @JsonBackReference("organization-userDetails")
+    @JsonIgnore
     private Set<UserDetail> userDetails = new HashSet<>();
 }

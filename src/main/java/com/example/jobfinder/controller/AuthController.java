@@ -5,6 +5,7 @@ import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.service.AuthService;
+import com.google.protobuf.Api;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.Map;
 
 @RestController
@@ -84,6 +86,18 @@ public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogleToken(@RequestB
         ApiResponse<String> response = ApiResponse.<String>builder()
                 .code(200)
                 .message("Password reset successfully")
+                .result("OK")
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(@RequestBody ChangePasswordRequest request) throws Exception {
+        authService.changePassword( request);
+        ApiResponse<String> response = ApiResponse.<String>builder()
+                .code(200)
+                .message("Password change successfully")
                 .result("OK")
                 .build();
 

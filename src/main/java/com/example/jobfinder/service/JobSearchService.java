@@ -187,7 +187,6 @@ public class JobSearchService {
                 .map(jobDocumentMapper::toJobResponse)
                 .toList();
 
-        // Lưu lịch sử tìm kiếm sau khi search thành công
         saveSearchHistory(request);
 
         return JobSearchResponse.builder()

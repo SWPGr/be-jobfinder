@@ -1,6 +1,7 @@
 package com.example.jobfinder.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*; // Đảm bảo import AccessLevel
 import lombok.experimental.SuperBuilder;
@@ -27,5 +28,6 @@ public class Category extends BaseNameEntity {
 
     @OneToMany
     @JsonBackReference("category-userDetails")
+    @JsonIgnore
     private Set<UserDetail> users = new HashSet<>();
 }

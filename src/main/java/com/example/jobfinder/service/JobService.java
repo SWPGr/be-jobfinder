@@ -69,8 +69,6 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobLevel: ID=" + jobLevel.getId() + ", Name=" + jobLevel.getName());
 
-
-        // 5. Lấy JobType Entity từ ID
         JobType jobType = jobTypeRepository.findById(jobCreationRequest.getJobTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_EXIST));
         System.out.println("DEBUG: Fetched JobType: ID=" + jobType.getId() + ", Name=" + jobType.getName());
@@ -146,13 +144,6 @@ public class JobService {
         return jobMapper.toJobResponse(jobRepository.save(job));
     }
 
-    public void deleteJob(Long jobId) {
-        if (!jobRepository.existsById(jobId)) {
-            throw new AppException(ErrorCode.JOB_NOT_FOUND);
-        }
-        jobRepository.deleteById(jobId);
-    }
-
     public Page<JobResponse> getAllJobs(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
@@ -207,7 +198,7 @@ public class JobService {
                 .toList();
     }
 
-    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir) {
+    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir, Boolean isActive) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new IllegalStateException("User not authenticated.");
@@ -286,6 +277,7 @@ public class JobService {
                             .jobLevel(jobLevelResponse) // <-- Đã đổi
                             .jobType(jobTypeResponse)   // <-- Đã đổi
                             .jobApplicationCounts(jobApplicationCounts)
+                            .isSave(job.getActive())
                             .build();
                 })
                 .collect(Collectors.toList());

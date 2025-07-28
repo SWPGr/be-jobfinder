@@ -1,6 +1,7 @@
 package com.example.jobfinder.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -21,6 +22,7 @@ public class Education extends BaseNameEntity {
     // Một Education có thể có nhiều UserDetail
     @OneToMany(mappedBy = "education", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JsonBackReference("education-userDetails")
+    @JsonIgnore
     private Set<UserDetail> userDetails = new HashSet<>();
 
 }
