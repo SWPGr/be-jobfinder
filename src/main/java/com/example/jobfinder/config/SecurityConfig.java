@@ -62,7 +62,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/verify-email",
+                                "/api/auth/forgot-password",
+                                "/api/auth/resend-verification",
+                                "/api/auth/verify",
+                                "/api/auth/reset-password",
                                 "/api/users",
                                 "/api/debug/**",
                                 "/api/profiles/**",
@@ -105,7 +111,7 @@ public class SecurityConfig {
                                 "api/debug/**",
                                 "api/report/**"
                         ).permitAll()
-                        .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/api/auth/change-password").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -119,7 +125,20 @@ public class SecurityConfig {
                             response.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
                             response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
                         })
-                );
+                        
+                )
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        if (request.getRequestURI().startsWith("/api/")) {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                        } else {
+                            // Redirect to OAuth2 for non-API requests
+                            response.sendRedirect("/oauth2/authorization/google");
+                        }
+                    })
+            );
 //        add header để tránh lỗi Cross-Origin-Opener-Policy policy would block the window.postMessage call.
 
 
