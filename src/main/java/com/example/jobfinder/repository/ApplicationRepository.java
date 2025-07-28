@@ -137,7 +137,15 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             "AND (:experienceName IS NULL OR experience.name LIKE CONCAT('%', :experienceName, '%')) " +
             "AND (:educationName IS NULL OR education.name LIKE CONCAT('%', :educationName, '%')) " +
             "AND (:isPremium IS NULL OR js.isPremium = :isPremium)" +
-            "AND (:status IS NULL OR a.status = :status)")
+            "AND (:status IS NULL OR a.status = :status)" +
+            "ORDER BY " +
+            "CASE a.status " +
+            "   WHEN 'PENDING' THEN 1 " +
+            "   WHEN 'ACCEPTED' THEN 2 " +
+            "   WHEN 'REJECTED' THEN 3 " +
+            "   ELSE 99 " +
+            "END ASC, " +
+            "a.appliedAt DESC")
     Page<User> findApplicantsWithDetailsByJobIdAndFilters(
             @Param("jobId") Long jobId,
             @Param("fullName") String fullName,
