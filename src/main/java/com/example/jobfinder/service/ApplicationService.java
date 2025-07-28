@@ -207,7 +207,8 @@ public class ApplicationService {
                 filterRequest.getExperienceName(),
                 filterRequest.getEducationName(),
                 filterRequest.getIsPremium(),
-                pageable // Truyền Pageable để phân trang và sắp xếp
+                filterRequest.getStatus(),
+                pageable
         );
 
         // Map Page<User> sang Page<CandidateDetailResponse>

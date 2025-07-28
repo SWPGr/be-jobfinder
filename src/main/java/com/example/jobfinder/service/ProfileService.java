@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional; // Import Optional
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -47,13 +47,8 @@ public class ProfileService {
         // Sử dụng AppException cho lỗi User not found
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        // Không cần kiểm tra if (user == null) sau orElseThrow
-
-        // UserDetail phải tồn tại, nếu không ném lỗi
         UserDetail userDetail = userDetailsRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
-        // Không cần kiểm tra if (userDetail == null)
 
         String roleName = user.getRole().getName();
 
@@ -130,6 +125,7 @@ public class ProfileService {
             Optional.ofNullable(request.getYearOfEstablishment()).ifPresent(userDetail::setYearOfEstablishment);
             Optional.ofNullable(request.getMapLocation()).ifPresent(userDetail::setMapLocation);
             Optional.ofNullable(request.getCompanyVision()).ifPresent(userDetail::setCompanyVision);
+            Optional.ofNullable(request.getPhone()).ifPresent(userDetail::setPhone);
 
         } else {
             throw new AppException(ErrorCode.INVALID_ROLE); // Thêm ErrorCode này
@@ -162,7 +158,6 @@ public class ProfileService {
         if (roleName.equals(ROLE_JOB_SEEKER)) {
             boolean shouldAnalyzeResume = false;
 
-            // Điều kiện 1: Resume vừa được cập nhật hoặc xóa trong request này
             if (resumeUrlUpdatedOrCleared) {
                 shouldAnalyzeResume = true;
                 log.info("Resume URL for job seeker ID {} was updated/cleared. Will trigger AI analysis.", user.getId());
@@ -179,7 +174,6 @@ public class ProfileService {
             if (shouldAnalyzeResume) {
                 if (savedUserDetail.getResumeUrl() != null && !savedUserDetail.getResumeUrl().isEmpty()) {
                     try {
-                        // GỌI HÀM PHÂN TÍCH VỚI USERDETAIL TRỰC TIẾP
                         jobseekerAnalysisService.analyzeAndSaveJobseekerResume(savedUserDetail);
                         log.info("Successfully performed AI analysis for job seeker resume for user {} (UserDetail ID {}).", user.getId(), savedUserDetail.getId());
                     } catch (AppException e) {
@@ -209,10 +203,8 @@ public class ProfileService {
         User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Bỏ kiểm tra if (currentUser == null)
-
         if (currentUser.getVerified() == 0) {
-            throw new AppException(ErrorCode.USER_NOT_VERIFIED); // Thêm ErrorCode này
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED);
         }
 
         UserDetail userDetail = userDetailsRepository.findByUserId(currentUser.getId())
@@ -254,8 +246,8 @@ public class ProfileService {
             response.setOrganizationType(userDetail.getOrganization().getName());
         }
 
-        response.setBanner(userDetail.getBanner()); // Có thể bạn muốn thêm banner vào đây
-        response.setTeamSize(userDetail.getTeamSize()); // Và các trường khác
+        response.setBanner(userDetail.getBanner());
+        response.setTeamSize(userDetail.getTeamSize());
 
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
