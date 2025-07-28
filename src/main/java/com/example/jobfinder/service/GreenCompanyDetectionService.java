@@ -9,14 +9,15 @@ import com.example.jobfinder.repository.CompanyAnalysisRepository;
 import com.example.jobfinder.repository.UserDetailsRepository;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 @Service
 @RequiredArgsConstructor
@@ -35,14 +36,14 @@ public class GreenCompanyDetectionService {
                     "sustainability champion", "clean technology leader", "ESG leader",
                     "carbon neutral", "net zero", "climate leader", "green transformation",
                     "sustainable solutions provider", "environmental excellence", "green business model",
-                    "sustainable development", "eco-innovation", "climate positive", "regenerative business", "green"
+                    "sustainable development", "eco-innovation", "climate positive", "regenerative business"
             ),
             "GREEN_PRODUCTS_SERVICES", Set.of(
                     "eco-friendly products", "green services", "sustainable offerings",
                     "environmentally responsible", "clean technology solutions",
                     "renewable energy solutions", "green infrastructure", "sustainable supply chain",
                     "circular business model", "green product portfolio", "sustainable manufacturing",
-                    "clean production", "green technology", "eco-design", "sustainable innovation", "green"
+                    "clean production", "green technology", "eco-design", "sustainable innovation"
             ),
             "ENVIRONMENTAL_IMPACT", Set.of(
                     "positive environmental impact", "environmental stewardship", "ecological footprint",
@@ -68,21 +69,21 @@ public class GreenCompanyDetectionService {
                     "environmental management system", "climate action", "biodiversity protection",
                     "carbon offsetting", "clean energy transition", "environmental monitoring",
                     "pollution prevention", "resource conservation", "ecosystem restoration",
-                    "green initiatives", "green"
+                    "green initiatives"
             ),
             "SOCIAL_RESPONSIBILITY", Set.of(
                     "community engagement", "social impact", "stakeholder engagement",
                     "employee wellbeing", "diversity and inclusion", "fair trade",
                     "ethical sourcing", "community development", "social investment",
                     "responsible business practices", "sustainable development goals",
-                    "social equity", "community partnership", "local sourcing", "fair labor practices", "green"
+                    "social equity", "community partnership", "local sourcing", "fair labor practices"
             ),
             "GOVERNANCE_SUSTAINABILITY", Set.of(
                     "ESG reporting", "sustainability reporting", "transparent governance",
                     "ethical business practices", "sustainable governance", "accountability",
                     "stakeholder capitalism", "long-term value creation", "responsible leadership",
                     "sustainability metrics", "impact measurement", "ESG integration",
-                    "sustainable finance", "green bonds", "impact investing", "B-Corp certification", "green"
+                    "sustainable finance", "green bonds", "impact investing", "B-Corp certification"
             ),
             "GREEN_INNOVATION", Set.of(
                     "green R&D", "sustainable innovation", "clean technology development",
@@ -104,6 +105,9 @@ public class GreenCompanyDetectionService {
             "HEAVY_MANUFACTURING", 0.7,
             "MINING", 0.6
     );
+
+    private static final LevenshteinDistance LEVENSHTEIN = new LevenshteinDistance();
+    private static final double SIMILARITY_THRESHOLD = 0.8;
 
     /**
      * Main method - Analyze company green credentials
@@ -198,9 +202,9 @@ public class GreenCompanyDetectionService {
             return;
         }
 
-        String normalizedText = normalizeText(marketPositioning);
+        String normalizedText = normalizeTextAdvanced(marketPositioning);
 
-        List<String> keywords = extractKeywordsFromCategories(normalizedText, GREEN_MARKET_POSITIONING_KEYWORDS);
+        List<String> keywords = extractKeywordsFromCategoriesEnhanced(normalizedText, GREEN_MARKET_POSITIONING_KEYWORDS);
         List<String> categories = detectCategoriesFromKeywords(normalizedText, GREEN_MARKET_POSITIONING_KEYWORDS);
         double score = calculateCategoryScore(normalizedText, GREEN_MARKET_POSITIONING_KEYWORDS);
 
@@ -217,9 +221,9 @@ public class GreenCompanyDetectionService {
             return;
         }
 
-        String normalizedText = normalizeText(csrSustainability);
+        String normalizedText = normalizeTextAdvanced(csrSustainability);
 
-        List<String> keywords = extractKeywordsFromCategories(normalizedText, CSR_SUSTAINABILITY_KEYWORDS);
+        List<String> keywords = extractKeywordsFromCategoriesEnhanced(normalizedText, CSR_SUSTAINABILITY_KEYWORDS);
         List<String> categories = detectCategoriesFromKeywords(normalizedText, CSR_SUSTAINABILITY_KEYWORDS);
         double score = calculateCategoryScore(normalizedText, CSR_SUSTAINABILITY_KEYWORDS);
 
@@ -251,7 +255,7 @@ public class GreenCompanyDetectionService {
 
         // Analyze company description
         if (userDetail.getDescription() != null) {
-            String normalizedDesc = normalizeText(userDetail.getDescription());
+            String normalizedDesc = normalizeTextAdvanced(userDetail.getDescription());
             List<String> descKeywords = extractGreenKeywordsFromText(normalizedDesc);
             metrics.getProfileKeywords().addAll(descKeywords);
         }
@@ -350,13 +354,13 @@ public class GreenCompanyDetectionService {
     }
 
     // Helper methods
-    private List<String> extractKeywordsFromCategories(String text, Map<String, Set<String>> categories) {
+    private List<String> extractKeywordsFromCategoriesEnhanced(String text, Map<String, Set<String>> categories) {
         List<String> keywords = new ArrayList<>();
-        String lowerText = text.toLowerCase();
+        String normalizedText = normalizeTextAdvanced(text);
 
         for (Set<String> categoryKeywords : categories.values()) {
             for (String keyword : categoryKeywords) {
-                if (lowerText.contains(keyword.toLowerCase())) {
+                if (isKeywordMatch(normalizedText, keyword)) {
                     keywords.add(keyword);
                 }
             }
@@ -364,6 +368,126 @@ public class GreenCompanyDetectionService {
 
         return keywords.stream().distinct().collect(Collectors.toList());
     }
+    private boolean isKeywordMatch(String text, String keyword) {
+        String normalizedKeyword = keyword.toLowerCase().trim();
+        String normalizedText = text.toLowerCase();
+
+        if (normalizedText.contains(normalizedKeyword)) {
+            return true;
+        }
+
+        if (isStemmingMatch(normalizedText, normalizedKeyword)) {
+            return true;             
+        }
+
+        if (isFuzzyMatch(normalizedText, normalizedKeyword)) {
+            return true; 
+        }
+        
+        if (isPartialWordMatch(normalizedText, normalizedKeyword)) {
+            return true; 
+        }
+
+        return false;
+    }
+
+    private boolean isStemmingMatch(String text, String keyword) {
+        String[]  textWords = text.split("\\s+");
+        String[] keywordWords = keyword.split("\\s+");
+
+        if (keywordWords.length == 0) {
+            return false;
+        }
+
+        boolean allStemsFound = true;
+        for (String keywordWord : keywordWords) {
+        String keywordStem = getStem(keywordWord);
+        boolean stemFound = false;
+        
+        for (String textWord : textWords) {
+            String textStem = getStem(textWord);
+            if (textStem.equals(keywordStem) || 
+                textWord.startsWith(keywordWord) || 
+                keywordWord.startsWith(textWord)) {
+                stemFound = true;
+                break;
+            }
+        }
+        
+        if (!stemFound) {
+            allStemsFound = false;
+            break;
+        }
+    }
+    
+    return allStemsFound;
+    }
+
+    private String getStem(String word) {
+    // Simple suffix removal
+    String stem = word;
+    
+    // Remove common suffixes
+    String[] suffixes = {"ment", "ing", "ed", "er", "est", "ly", "tion", "ness", "ful", "able"};
+    
+    for (String suffix : suffixes) {
+        if (stem.endsWith(suffix) && stem.length() > suffix.length() + 2) {
+            stem = stem.substring(0, stem.length() - suffix.length());
+            break;
+        }
+    }
+    
+    return stem;
+}
+
+    private boolean isFuzzyMatch(String text, String keyword) {
+        
+    // Tìm các cụm từ trong text có độ dài tương tự keyword
+    String[] words = text.split("\\s+");
+    int keywordLength = keyword.split("\\s+").length;
+    
+    for (int i = 0; i <= words.length - keywordLength; i++) {
+        StringBuilder phrase = new StringBuilder();
+        for (int j = 0; j < keywordLength; j++) {
+            if (j > 0) phrase.append(" ");
+            phrase.append(words[i + j]);
+        }
+        
+        double similarity = calculateSimilarity(phrase.toString(), keyword);
+        if (similarity >= SIMILARITY_THRESHOLD) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+    private double calculateSimilarity(String text1, String text2) {
+    int maxLength = Math.max(text1.length(), text2.length());
+    if (maxLength == 0) return 1.0;
+    
+    int distance = LEVENSHTEIN.apply(text1, text2);
+    return 1.0 - (double) distance / maxLength;
+}
+
+private boolean isPartialWordMatch(String text, String keyword) {
+    String[] keywordWords = keyword.split("\\s+");
+    String[] textWords = text.split("\\s+");
+    
+    // Check if most keyword words exist in text (at least 80%)
+    int matchedWords = 0;
+    for (String keywordWord : keywordWords) {
+        for (String textWord : textWords) {
+            if (textWord.contains(keywordWord) || keywordWord.contains(textWord)) {
+                matchedWords++;
+                break;
+            }
+        }
+    }
+    
+    double matchPercentage = (double) matchedWords / keywordWords.length;
+    return matchPercentage >= 0.8; // 80% of words must match
+}
 
     private List<String> detectCategoriesFromKeywords(String text, Map<String, Set<String>> categories) {
         List<String> detectedCategories = new ArrayList<>();
@@ -413,7 +537,7 @@ public class GreenCompanyDetectionService {
     private void analyzeTextField(String text, CompanyGreenMetrics metrics, String context) {
         if (text == null || text.trim().isEmpty()) return;
 
-        String normalizedText = normalizeText(text);
+        String normalizedText = normalizeTextAdvanced(text);
         List<String> keywords = extractGreenKeywordsFromText(normalizedText);
 
         metrics.getAdditionalKeywords().addAll(keywords);
@@ -426,10 +550,11 @@ public class GreenCompanyDetectionService {
         Set<String> allGreenKeywords = new HashSet<>();
         GREEN_MARKET_POSITIONING_KEYWORDS.values().forEach(allGreenKeywords::addAll);
         CSR_SUSTAINABILITY_KEYWORDS.values().forEach(allGreenKeywords::addAll);
+        String normalizedText = normalizeTextAdvanced(text);
 
-        String lowerText = text.toLowerCase();
+
         for (String keyword : allGreenKeywords) {
-            if (lowerText.contains(keyword.toLowerCase())) {
+            if (isKeywordMatch(normalizedText, keyword)) {
                 keywords.add(keyword);
             }
         }
@@ -537,38 +662,6 @@ public class GreenCompanyDetectionService {
 }
 
 
-    private CompanyAnalysis getCompanyAnalysisByEmployerId(Long employerId) {
-        try {
-            UserDetail userDetail = getUserDetailByEmployerId(employerId);
-            if (userDetail == null) return null;
-
-            Optional<CompanyAnalysis> optional = companyAnalysisRepository.findByUserDetail(userDetail);
-
-            if (optional.isPresent()) {
-                return optional.get();
-            } else {
-                // Nếu chưa có -> tạo mới
-                CompanyAnalysis newAnalysis = new CompanyAnalysis();
-                newAnalysis.setUserDetail(userDetail);
-                return companyAnalysisRepository.save(newAnalysis);
-            }
-        } catch (Exception e) {
-            log.error("Error getting company analysis for employer: {}", employerId, e);
-            return null;
-        }
-    }
-
-    private UserDetail getUserDetailById(Long employerId) {
-        try {
-            return userDetailsRepository.findById(employerId)
-                    .orElse(null);
-        } catch (Exception e) {
-            log.debug("Could not find user detail for id: {}", employerId, e);
-            return null; // <-- bạn cần thêm dòng này để đảm bảo method luôn trả về giá trị
-        }
-    }
-
-
     private UserDetail getUserDetailByEmployerId(Long employerId) {
         try {
             return userDetailsRepository.findByUserId(employerId)
@@ -579,35 +672,35 @@ public class GreenCompanyDetectionService {
         }
     }
 
-    private String normalizeText(String input) {
+   private String normalizeTextAdvanced(String input) {
     if (input == null || input.trim().isEmpty()) {
         return "";
     }
 
-    try {
-        String cleanInput = input.toLowerCase().trim();
+
+
+       try {
+        String cleanInput = input.toLowerCase().trim()
+            .replaceAll("[^a-zA-Z0-9\\s]", " ") // Remove special chars
+            .replaceAll("\\s+", " ") // Normalize spaces
+            .trim();
         
+        // Sử dụng Stanford NLP nếu có
         CoreDocument document = new CoreDocument(cleanInput);
         pipeline.annotate(document);
-        
-        String result = document.tokens().stream()
+           assert pipeline != null : "pipeline must be initialized!";
+
+           return document.tokens().stream()
                 .map(token -> token.lemma())
                 .filter(lemma -> lemma != null && lemma.length() > 1)
                 .collect(Collectors.joining(" "));
                 
-        // Fallback to simple processing if Stanford fails
-        if (result.trim().isEmpty()) {
-            log.warn("Stanford NLP returned empty result, using simple normalization");
-            return cleanInput;
-        }
-        
-        return result;
-        
     } catch (Exception e) {
-        log.warn("Stanford NLP failed, using simple normalization: {}", e.getMessage());
+        log.warn("Advanced normalization failed, using simple version: {}", e.getMessage());
         return input.toLowerCase().trim();
     }
 }
+
 
     public String lemmatizeText(String input) {
         CoreDocument doc = new CoreDocument(input.toLowerCase());
@@ -638,5 +731,12 @@ public class GreenCompanyDetectionService {
                 .industryBenchmark(0.0)
                 .certificationLevel("UNASSESSED")
                 .build();
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        if (pipeline != null) {
+            // Clear pipeline resources if needed
+        }
     }
 }

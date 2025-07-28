@@ -4,6 +4,9 @@ import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Filter(name = "activeRelatedUserFilter", condition = "job_seeker_id IN (SELECT u.id FROM users u WHERE u.active = :isActive)")
 public class Application {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

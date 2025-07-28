@@ -86,7 +86,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     private boolean isPublicEndpoint(String requestURI) {
         String[] publicEndpoints = {
-                "/api/auth/",
+                "/api/auth/register",
+                "/api/auth/login",
+                "/api/auth/verify-email",
+                "/api/auth/forgot-password",
+                "/api/auth/resend-verification",
+                "/api/auth/verify",
+                "/api/auth/reset-password",
                 "/api/debug/"
         };
         for (String endpoint : publicEndpoints) {
@@ -95,6 +101,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
         return false;
+
     }
 
 }

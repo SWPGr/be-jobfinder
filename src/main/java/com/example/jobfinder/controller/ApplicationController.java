@@ -55,7 +55,7 @@ public class ApplicationController {
     UserRepository userRepository;
     ApplicationRepository applicationRepository;
 
-    @GetMapping("/my-applied-jobs") // Tên endpoint có thể giữ nguyên hoặc đổi thành /my-applications
+    @GetMapping("/my-applied-jobs")
     public ResponseEntity<Page<ApplicationResponse>> getMyApplications(Pageable pageable) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {

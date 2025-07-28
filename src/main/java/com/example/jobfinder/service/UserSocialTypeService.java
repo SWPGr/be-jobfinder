@@ -47,21 +47,14 @@ public class UserSocialTypeService {
     // Helper method to get UserDetail of the authenticated user
     private UserDetail getAuthenticatedUserDetail() {
         User user = getAuthenticatedUser();
-        // Giả sử UserDetailRepository có phương thức findByUser(User user)
         return userDetailRepository.findByUser(user)
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
     }
 
-    /**
-     * Tạo một liên kết mạng xã hội mới cho người dùng đang đăng nhập.
-     * @param request DTO chứa socialTypeId và URL.
-     * @return UserSocialTypeResponse của liên kết đã tạo.
-     */
     @Transactional
     public UserSocialTypeResponse createUserSocialLink(UserSocialTypeRequest request) {
         UserDetail userDetail = getAuthenticatedUserDetail();
 
-        // 1. Tìm SocialType dựa trên socialTypeId
         SocialType socialType = socialTypeRepository.findById(request.getSocialTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SOCIAL_TYPE_NOT_FOUND)); // Ném lỗi nếu không tìm thấy
 
@@ -75,26 +68,16 @@ public class UserSocialTypeService {
         userSocialType.setUserDetail(userDetail);
         userSocialType.setSocialType(socialType);
 
-        // 4. Lưu vào database và trả về response DTO
         UserSocialType savedLink = userSocialTypeRepository.save(userSocialType);
         return userSocialTypeMapper.toUserSocialTypeResponse(savedLink);
     }
 
-    /**
-     * Lấy tất cả các liên kết mạng xã hội của người dùng đang đăng nhập.
-     * @return Danh sách UserSocialTypeResponse.
-     */
     public List<UserSocialTypeResponse> getMySocialLinks() {
         UserDetail userDetail = getAuthenticatedUserDetail();
         List<UserSocialType> socialLinks = userSocialTypeRepository.findByUserDetail_Id(userDetail.getId());
         return userSocialTypeMapper.toUserSocialTypeResponseList(socialLinks);
     }
 
-    /**
-     * Lấy một liên kết mạng xã hội cụ thể của người dùng đang đăng nhập theo ID.
-     * @param id ID của liên kết.
-     * @return UserSocialTypeResponse.
-     */
     public UserSocialTypeResponse getSocialLinkById(Long id) {
         UserDetail userDetail = getAuthenticatedUserDetail();
         UserSocialType socialLink = userSocialTypeRepository.findById(id)
@@ -107,12 +90,6 @@ public class UserSocialTypeService {
         return userSocialTypeMapper.toUserSocialTypeResponse(socialLink);
     }
 
-    /**
-     * Cập nhật một liên kết mạng xã hội cụ thể của người dùng đang đăng nhập.
-     * @param id ID của liên kết cần cập nhật.
-     * @param request DTO chứa socialTypeId và URL mới.
-     * @return UserSocialTypeResponse của liên kết đã cập nhật.
-     */
     @Transactional
     public UserSocialTypeResponse updateUserSocialLink(Long id, UserSocialTypeRequest request) {
         UserDetail userDetail = getAuthenticatedUserDetail();
