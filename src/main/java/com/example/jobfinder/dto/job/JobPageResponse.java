@@ -1,17 +1,17 @@
-package com.example.jobfinder.dto;
+package com.example.jobfinder.dto.job;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.util.List;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResponse<T> {
+@Builder
+
+public class JobPageResponse<T> {
     private int pageNumber;
     private int pageSize;
     private long totalElements;
@@ -19,6 +19,6 @@ public class PageResponse<T> {
     private boolean isLast;
     private boolean isFirst;
     private List<T> content;
-    private Long totalApplication;
+    private Long totalApplication; // <--- Thêm trường này
     private Long totalOpenJob;
 }

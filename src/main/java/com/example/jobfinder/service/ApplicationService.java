@@ -150,6 +150,17 @@ public class ApplicationService {
         }
 
         application.setStatus(newStatus);
+
+        if (newStatus == ApplicationStatus.ACCEPTED) {
+            Job job = application.getJob();
+            Integer currentVacancy = job.getVacancy();
+            if (currentVacancy != null && currentVacancy > 0) {
+                job.setVacancy(currentVacancy - 1);
+            } else {
+                throw new AppException(ErrorCode.JOB_NO_VACANCY);
+            }
+        }
+
         Application updatedApplication = applicationRepository.save(application);
 
         try {
@@ -171,6 +182,46 @@ public class ApplicationService {
             System.err.println("Error fetching data for application status update email or other issue: " + e.getMessage());
         }
         return applicationMapper.toApplicationResponse(updatedApplication);
+    }
+
+    @Transactional // Đảm bảo giao dịch (transaction) cho thao tác cập nhật nhiều bản ghi
+    public void rejectRemainingApplicationsForJob(Long jobId, Long employerId, String employerMessage) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+        if (!job.getEmployer().getId().equals(employerId)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED); // Hoặc một ErrorCode cụ thể hơn
+        }
+
+        List<Application> applicationsToReject = applicationRepository.findByJobAndStatusIsNot(job, ApplicationStatus.ACCEPTED);
+
+        // 3. Cập nhật trạng thái của từng đơn ứng tuyển sang REJECTED
+        for (Application app : applicationsToReject) {
+            // Chỉ cập nhật nếu trạng thái hiện tại chưa phải là REJECTED (để tránh gửi lại email không cần thiết)
+            if (app.getStatus() != ApplicationStatus.REJECTED) {
+                app.setStatus(ApplicationStatus.REJECTED);
+                applicationRepository.save(app);
+            }
+            try {
+                String jobSeekerEmail = app.getJobSeeker().getEmail();
+                String jobTitle = app.getJob().getTitle();
+                String employerCompanyName = app.getJob().getEmployer().getUserDetail().getCompanyName();
+                String statusDisplayName = ApplicationStatus.REJECTED.getValue(); // Lấy tên hiển thị của trạng thái REJECTED
+
+                emailService.sendApplicationStatusUpdateEmail(
+                        jobSeekerEmail,
+                        jobTitle,
+                        statusDisplayName,
+                        employerCompanyName,
+                        employerMessage
+                );
+            } catch (MessagingException e) {
+                System.err.println("Failed to send rejection email for application " + app.getId() + ": " + e.getMessage());
+                // Bạn có thể log lỗi chi tiết hơn hoặc xử lý lại sau
+            } catch (Exception e) {
+                System.err.println("Error processing email for application " + app.getId() + ": " + e.getMessage());
+            }
+        }
     }
 
     @Transactional(readOnly = true) // Thêm chú thích này vì đây là một thao tác chỉ đọc

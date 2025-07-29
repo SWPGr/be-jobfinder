@@ -1,10 +1,7 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
-import com.example.jobfinder.dto.application.ApplicationRequest;
-import com.example.jobfinder.dto.application.ApplicationResponse;
-import com.example.jobfinder.dto.application.ApplicationStatusUpdateRequest;
-import com.example.jobfinder.dto.application.CandidateFilterRequest;
+import com.example.jobfinder.dto.application.*;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
 import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
@@ -14,10 +11,12 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.ApplicationService;
+import com.example.jobfinder.service.JobService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -53,7 +53,6 @@ public class ApplicationController {
 
     ApplicationService applicationService;
     UserRepository userRepository;
-    ApplicationRepository applicationRepository;
 
     @GetMapping("/my-applied-jobs")
     public ResponseEntity<Page<ApplicationResponse>> getMyApplications(Pageable pageable) {
@@ -119,6 +118,37 @@ public class ApplicationController {
         ApplicationResponse updatedApplication = applicationService.updateApplicationStatus(
                 applicationId, request, employerId);
         return ResponseEntity.ok(updatedApplication);
+    }
+
+    @PostMapping("/job/{jobId}/reject-all")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<Void>> rejectRemainingApplicationsForJob(
+            @PathVariable Long jobId,
+            @RequestBody EmployerMessageRequest request
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
+        }
+
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.USER_NOT_FOUND.getErrorMessage()));
+        if (currentUser.getRole().getName().equals("EMPLOYER")) {
+            boolean isEmployerJob = applicationService.isJobOwnedByEmployer(jobId, currentUser.getId());
+            if (!isEmployerJob) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+            }
+        }
+        Long employerId = getUserIdFromAuthentication(authentication);
+
+        applicationService.rejectRemainingApplicationsForJob(jobId, employerId, request.getMessage());
+
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("All remaining applications for job " + jobId + " have been rejected.")
+                .build());
     }
 
     @GetMapping("/total")
