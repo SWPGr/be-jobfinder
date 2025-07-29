@@ -10,14 +10,17 @@ import com.example.jobfinder.repository.*; // Import tất cả các repository
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.type.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.criteria.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -175,18 +178,33 @@ public class SubscriptionPaymentService {
     @Transactional(readOnly = true)
     public PageResponse<PaymentResponse> getAllPaymentHistory(
             Pageable pageable,
-            LocalDateTime fromDate, // <-- Thêm fromDate
-            LocalDateTime toDate) {  // <-- Thêm toDate
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
+            String paymentStatus // <-- Tham số lọc theo trạng thái
+    ) {
         Page<Payment> paymentsPage;
-        if (fromDate != null && toDate != null) {
-            paymentsPage = paymentRepository.findByPaidAtBetween(fromDate, toDate, pageable);
-        } else if (fromDate != null) {
-            paymentsPage = paymentRepository.findByPaidAtAfter(fromDate, pageable);
-        } else if (toDate != null) {
-            paymentsPage = paymentRepository.findByPaidAtBefore(toDate, pageable);
-        } else {
-            paymentsPage = paymentRepository.findAll(pageable);
-        }
+
+        // Xây dựng Specification động
+        Specification<Payment> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (fromDate != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("paidAt"), fromDate));
+            }
+            if (toDate != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("paidAt"), toDate));
+            }
+
+            if (paymentStatus != null && !paymentStatus.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), paymentStatus));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // Sử dụng findAll với Specification
+        paymentsPage = paymentRepository.findAll(spec, pageable);
+
         return buildPageResponse(paymentsPage);
     }
 

@@ -27,8 +27,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.criteria.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -198,7 +201,16 @@ public class JobService {
                 .toList();
     }
 
-    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(int page, int size, String sortBy, String sortDir, Boolean isActive) {
+    public PageResponse<JobResponse> getAllJobsForCurrentEmployer(
+            int page,
+            int size,
+            String sortBy,
+            String sortDir,
+            Boolean isActive, // Lọc theo trạng thái active
+            String jobTitle,  // Lọc theo tên công việc
+            LocalDateTime fromDate, // Lọc từ ngày
+            LocalDateTime toDate    // Lọc đến ngày
+    ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new IllegalStateException("User not authenticated.");
@@ -217,7 +229,33 @@ public class JobService {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Job> jobsPage = jobRepository.findByEmployerId(employerId, pageable);
+        // --- Bắt đầu phần xây dựng truy vấn động ---
+        Page<Job> jobsPage = jobRepository.findAll((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Lọc theo employerId (luôn cần)
+            predicates.add(criteriaBuilder.equal(root.get("employer").get("id"), employerId));
+
+            // Lọc theo jobTitle (tìm kiếm gần đúng, không phân biệt hoa thường)
+            if (jobTitle != null && !jobTitle.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), "%" + jobTitle.toLowerCase() + "%"));
+            }
+
+            // Lọc theo trạng thái active
+            if (isActive != null) {
+                predicates.add(criteriaBuilder.equal(root.get("active"), isActive));
+            }
+
+            // Lọc theo khoảng thời gian (appliedAt)
+            if (fromDate != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), fromDate));
+            }
+            if (toDate != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdAt"), toDate));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
 
 
         List<JobResponse> jobResponses = jobsPage.getContent().stream()
@@ -273,11 +311,11 @@ public class JobService {
                             .createdAt(job.getCreatedAt())
                             .salaryMin(job.getSalaryMin())
                             .salaryMax(job.getSalaryMax())
-                            .category(categoryResponse) // <-- Đã đổi
-                            .jobLevel(jobLevelResponse) // <-- Đã đổi
-                            .jobType(jobTypeResponse)   // <-- Đã đổi
+                            .category(categoryResponse)
+                            .jobLevel(jobLevelResponse)
+                            .jobType(jobTypeResponse)
                             .jobApplicationCounts(jobApplicationCounts)
-                            .isSave(job.getActive())
+                            .isSave(job.getActive()) // Sử dụng getActive() cho isSave (tên có vẻ hơi khó hiểu, nên là isActive)
                             .build();
                 })
                 .collect(Collectors.toList());
