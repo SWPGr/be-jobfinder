@@ -151,6 +151,9 @@ public enum ErrorCode {
 
     GEMINI_API_ERROR(2005, "GEMINI_API_ERROR"),
     UNEXPECTED_ERROR(2006, "Unexpected error"),
+    INTERNAL_SERVER_ERROR(2007, "Internal server error"),
+    GEMINI_RESPONSE_PARSING_ERROR(2008, "GEMINI_RESPONSE_PARSING_ERROR"),
+    NETWORK_ERROR(2009, "Network error"),
 
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),

@@ -350,77 +350,159 @@ public class ApplicationService {
     }
 
     @Transactional
-    public String summarizeResumeWithGemini(Long applicationId) throws IOException { // IOException được ném nếu có lỗi từ PDFBox/Gemini
+    public String summarizeResumeWithGemini(Long applicationId) throws IOException {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
 
-        // 1. Kiểm tra xem bản tóm tắt đã tồn tại trong DB chưa
+        // --- BƯỚC 1: Lấy hoặc tạo bản tóm tắt Resume và LƯU vào DB ---
+        String resumeSummaryContent;
         Optional<ResumeSummary> existingSummary = resumeSummaryRepository.findByApplication(application);
+
         if (existingSummary.isPresent()) {
+            resumeSummaryContent = existingSummary.get().getSummaryContent();
             log.info("Returning cached resume summary for application ID: {}", applicationId);
-            return existingSummary.get().getSummaryContent(); // Trả về nội dung đã lưu
+        } else {
+            // Nếu chưa có, tiến hành đọc PDF và gọi AI để tóm tắt
+            String resumeUrl = application.getResume();
+            if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
+                throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION);
+            }
+
+            String resumeRawContent = "";
+            try {
+                URL url = new URL(resumeUrl);
+                PDDocument document = PDDocument.load(url.openStream());
+                PDFTextStripper pdfStripper = new PDFTextStripper();
+                resumeRawContent = pdfStripper.getText(document);
+                document.close();
+                log.info("Successfully extracted content from resume URL: {}", resumeUrl);
+            } catch (IOException e) {
+                log.error("Error reading resume content from URL {} using PDFBox: {}", resumeUrl, e.getMessage(), e);
+                throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+            } catch (Exception e) {
+                log.error("An unexpected error occurred while processing resume URL {}: {}", resumeUrl, e.getMessage(), e);
+                throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+            }
+
+            if (resumeRawContent.trim().isEmpty()) {
+                throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT);
+            }
+
+            String promptForSummary = """
+                Bạn là một chuyên gia tóm tắt hồ sơ ứng viên.
+                Hãy đọc kỹ và tóm tắt nội dung resume dưới đây một cách chi tiết nhưng súc tích, tập trung vào những điểm chính sau:
+                - **Thông tin liên hệ cơ bản**: Tên, email, số điện thoại (nếu có).
+                - **Mục tiêu nghề nghiệp/Tóm tắt bản thân**: Tóm tắt ngắn gọn nếu có.
+                - **Kinh nghiệm làm việc**:
+                    - Liệt kê các vị trí công việc gần đây nhất (tối đa 3 vị trí).
+                    - Với mỗi vị trí, nêu tên công ty, chức danh, thời gian làm việc và 1-2 gạch đầu dòng mô tả các trách nhiệm chính hoặc thành tựu nổi bật nhất.
+                - **Kỹ năng**:
+                    - Phân loại và liệt kê các kỹ năng chính (ví dụ: Ngôn ngữ lập trình, Frameworks, Cơ sở dữ liệu, Công cụ, Kỹ năng mềm).
+                    - Chỉ liệt kê các kỹ năng được đề cập rõ ràng trong resume.
+                - **Học vấn**: Liệt kê bằng cấp cao nhất, tên trường và thời gian tốt nghiệp.
+                - **Dự án/Hoạt động (nếu có)**: Tóm tắt 1-2 dự án hoặc hoạt động nổi bật, nêu rõ vai trò và kết quả chính.
+
+                Đảm bảo tóm tắt bằng tiếng Việt, mạch lạc, chuyên nghiệp và không thêm thông tin suy diễn.
+                Nếu một phần thông tin không có trong resume, hãy bỏ qua phần đó.
+
+                --- Bắt đầu Resume ---
+                """ + resumeRawContent + """
+                --- Kết thúc Resume ---
+                """;
+
+            resumeSummaryContent = geminiService.getGeminiResponse(promptForSummary);
+
+            ResumeSummary newSummary = ResumeSummary.builder()
+                    .application(application)
+                    .summaryContent(resumeSummaryContent)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            resumeSummaryRepository.save(newSummary); // ✅ LƯU BẢN TÓM TẮT RESUME VÀO DB
+            log.info("Saved new resume summary for application ID: {}", applicationId);
         }
 
-        // 2. Nếu chưa có, tiến hành phân tích và tóm tắt
-        String resumeUrl = application.getResume(); // Giả sử trường resumeUrl trong Application là 'resume'
-        if (resumeUrl == null || resumeUrl.trim().isEmpty()) {
-            throw new AppException(ErrorCode.RESUME_NOT_FOUND_FOR_APPLICATION);
+        Job job = application.getJob();
+        if (job == null) {
+            log.warn("Application ID {} does not have an associated Job. Cannot perform job fit analysis.", applicationId);
+            return resumeSummaryContent + "\n\n--- Phân tích sự phù hợp công việc ---\nKhông thể phân tích sự phù hợp do thông tin công việc không có sẵn.";
         }
-
-        String resumeContent = "";
-        try {
-            URL url = new URL(resumeUrl);
-            PDDocument document = PDDocument.load(url.openStream());
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            resumeContent = pdfStripper.getText(document);
-            document.close();
-            log.info("Successfully extracted content from resume URL: {}", resumeUrl);
-        } catch (IOException e) {
-            log.error("Error reading resume content from URL {} using PDFBox: {}", resumeUrl, e.getMessage(), e);
-            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
-        } catch (Exception e) {
-            log.error("An unexpected error occurred while processing resume URL {}: {}", resumeUrl, e.getMessage(), e);
-            throw new AppException(ErrorCode.RESUME_PROCESSING_ERROR);
+        String jobTitle = job.getTitle() != null ? job.getTitle() : "Không có tiêu đề.";
+        String jobDescription = job.getDescription() != null ? job.getDescription() : "Không có mô tả công việc.";
+        String jobLocation = job.getLocation() != null ? job.getLocation() : "Không có địa điểm.";
+        String salaryRange = "";
+        if (job.getSalaryMin() != null && job.getSalaryMax() != null) {
+            salaryRange = "Từ " + job.getSalaryMin() + " đến " + job.getSalaryMax() + " USD.";
+        } else if (job.getSalaryMin() != null) {
+            salaryRange = "Tối thiểu " + job.getSalaryMin() + " USD.";
+        } else if (job.getSalaryMax() != null) {
+            salaryRange = "Tối đa " + job.getSalaryMax() + " USD.";
+        } else {
+            salaryRange = "Không rõ.";
         }
+        String responsibility = job.getResponsibility() != null ? job.getResponsibility() : "Không có mô tả trách nhiệm.";
+        String expiredDate = job.getExpiredDate() != null ? job.getExpiredDate().toString() : "Không rõ ngày hết hạn.";
+        String vacancy = job.getVacancy() != null ? String.valueOf(job.getVacancy()) : "Không rõ số lượng.";
+        String jobCategory = job.getCategory() != null ? job.getCategory().getName() : "Không rõ.";
+        String jobLevel = job.getJobLevel() != null ? job.getJobLevel().getName() : "Không rõ.";
+        String jobType = job.getJobType() != null ? job.getJobType().getName() : "Không rõ.";
+        String requiredEducation = job.getEducation() != null ? job.getEducation().getName() : "Không có yêu cầu học vấn.";
+        String requiredExperience = job.getExperience() != null ? job.getExperience().getName() : "Không có yêu cầu kinh nghiệm.";
 
-        if (resumeContent.trim().isEmpty()) {
-            throw new AppException(ErrorCode.EMPTY_RESUME_CONTENT);
+
+        // --- BƯỚC 3: Xây dựng Prompt cho AI để so sánh và tạo ra một chuỗi tổng hợp ---
+        String promptForComparison = String.format("""
+            Bạn là một chuyên gia phân tích hồ sơ ứng viên và so sánh với yêu cầu công việc.
+            
+            **Thông tin ứng viên (được tóm tắt từ Resume):**
+            %s
+            
+            **Thông tin công việc đang ứng tuyển:**
+            - **Tiêu đề:** %s
+            - **Mô tả:** %s
+            - **Yêu cầu:** %s
+            - **Kỹ năng cần thiết:** %s
+            - **Lợi ích:** %s
+            
+            ---
+            
+            **Yêu cầu:**
+            1.  **Đánh giá mức độ phù hợp về kỹ năng và kinh nghiệm** của ứng viên với các yêu cầu của công việc. Nêu rõ các điểm mạnh (skills/experience matching) và các kỹ năng/kinh nghiệm còn thiếu (gaps).
+            2.  **Đánh giá tiềm năng phát triển và sự phù hợp về mục tiêu nghề nghiệp** của ứng viên với tính chất công việc.
+            3.  **Cung cấp một điểm số tổng thể** cho mức độ phù hợp của ứng viên với công việc (từ 0 đến 100).
+            4.  **Tổng hợp toàn bộ đánh giá này thành một đoạn văn bản mạch lạc, dễ hiểu**, bằng tiếng Việt, có độ dài khoảng 3-5 câu.
+
+            Ví dụ định dạng đầu ra mong muốn:
+            "Ứng viên [Tên Ứng Viên] cho vị trí [Tên Công Việc]: Phù hợp [Mức độ phù hợp, ví dụ: Cao/Trung bình/Thấp] ([Điểm số]/100). Ứng viên nổi bật với [Điểm mạnh]. Tuy nhiên, cần cải thiện/thiếu [Kỹ năng/kinh nghiệm còn thiếu]. Mục tiêu nghề nghiệp của ứng viên có [Mô tả về sự phù hợp mục tiêu]."
+            ---
+            Bắt đầu phân tích:
+            """,
+                resumeSummaryContent,
+                jobTitle, jobDescription, jobLocation, salaryRange, responsibility, expiredDate, vacancy,
+                jobCategory, jobLevel, jobType, requiredEducation, requiredExperience
+        );
+
+        String jobFitAnalysis = geminiService.getGeminiResponse(promptForComparison);
+        log.info("Job Fit Analysis from Gemini for application ID {}: {}", applicationId, jobFitAnalysis);
+
+        // --- BƯỚC 4: Kết hợp bản tóm tắt resume và phân tích sự phù hợp vào một chuỗi duy nhất ---
+        String finalOutput = "--- Tóm tắt Resume ---\n" +
+                resumeSummaryContent +
+                "\n\n--- Phân tích sự phù hợp với Công việc (Job Fit Analysis) ---\n" +
+                jobFitAnalysis;
+
+        return finalOutput;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isJobOwnedByEmployerByApplicationId(Long applicationId, Long employerId) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new AppException(ErrorCode.APPLICATION_NOT_FOUND));
+        Job job = application.getJob();
+        if (job == null) {
+            return false;
         }
-
-        String prompt = """
-            Bạn là một chuyên gia tóm tắt hồ sơ ứng viên.
-            Hãy đọc kỹ và tóm tắt nội dung resume dưới đây một cách chi tiết nhưng súc tích, tập trung vào những điểm chính sau:
-            - **Thông tin liên hệ cơ bản**: Tên, email, số điện thoại (nếu có).
-            - **Mục tiêu nghề nghiệp/Tóm tắt bản thân**: Tóm tắt ngắn gọn nếu có.
-            - **Kinh nghiệm làm việc**:
-                - Liệt kê các vị trí công việc gần đây nhất (tối đa 3 vị trí).
-                - Với mỗi vị trí, nêu tên công ty, chức danh, thời gian làm việc và 1-2 gạch đầu dòng mô tả các trách nhiệm chính hoặc thành tựu nổi bật nhất.
-            - **Kỹ năng**:
-                - Phân loại và liệt kê các kỹ năng chính (ví dụ: Ngôn ngữ lập trình, Frameworks, Cơ sở dữ liệu, Công cụ, Kỹ năng mềm).
-                - Chỉ liệt kê các kỹ năng được đề cập rõ ràng trong resume.
-            - **Học vấn**: Liệt kê bằng cấp cao nhất, tên trường và thời gian tốt nghiệp.
-            - **Dự án/Hoạt động (nếu có)**: Tóm tắt 1-2 dự án hoặc hoạt động nổi bật, nêu rõ vai trò và kết quả chính.
-
-            Đảm bảo tóm tắt bằng tiếng Việt, mạch lạc, chuyên nghiệp và không thêm thông tin suy diễn.
-            Nếu một phần thông tin không có trong resume, hãy bỏ qua phần đó.
-
-            --- Bắt đầu Resume ---
-            """ + resumeContent + """
-            --- Kết thúc Resume ---
-            """;
-
-        String resumeSummary = geminiService.getGeminiResponse(prompt);
-
-        ResumeSummary newSummary = ResumeSummary.builder()
-                .application(application)
-                .summaryContent(resumeSummary)
-                .createdAt(LocalDateTime.now()) // Đảm bảo tự động điền nếu không dùng @PrePersist
-                .updatedAt(LocalDateTime.now()) // Đảm bảo tự động điền nếu không dùng @PrePersist
-                .build();
-        resumeSummaryRepository.save(newSummary);
-        log.info("Saved new resume summary for application ID: {}", applicationId);
-
-        return resumeSummary;
+        return job.getEmployer().getId().equals(employerId);
     }
 
     @Transactional(readOnly = true)

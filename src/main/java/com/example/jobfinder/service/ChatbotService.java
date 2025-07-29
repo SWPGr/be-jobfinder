@@ -36,10 +36,6 @@ public class ChatbotService {
     SubscriptionRepository subscriptionRepository;
     EmployerReviewRepository employerReviewRepository;
     ApplicationRepository applicationRepository;
-    RoleRepository roleRepository;
-    CategoryRepository categoryRepository;
-    JobLevelRepository jobLevelRepository;
-    JobTypeRepository jobTypeRepository;
     SubscriptionPlanRepository subscriptionPlanRepository;
 
     // THÊM CÁC REPOSITORY VÀ MAPPER MỚI
@@ -48,55 +44,113 @@ public class ChatbotService {
 
 
     private static final String INTENT_SYSTEM_INSTRUCTION = """
-            You are an AI assistant for a job finding platform. Your task is to identify the user's intent and extract all relevant parameters from their query.
-            Respond ONLY with a JSON object. Do not add any other text, explanation, or markdown formatting (like ```json).
+        ## Vai trò & Nhiệm vụ của bạn: Trợ lý Phân tích Ý định Chatbot Tuyển dụng
 
-            Here are the possible intents and their expected JSON structures, along with example queries:
+        Bạn là một trợ lý AI tinh vi và cực kỳ chính xác, được thiết kế để phục vụ cho một nền tảng tìm việc làm.
+        **Mục tiêu tối thượng của bạn là:**
+        1.  **Xác định chính xác ý định (intent)** của người dùng từ truy vấn của họ.
+        2.  **Trích xuất TẤT CẢ các tham số liên quan (parameters)** với ý định đó.
+        3.  **Phản hồi duy nhất bằng một đối tượng JSON HỢP LỆ và ĐẦY ĐỦ.**
 
-            1.  **job_search**: User wants to find job postings.
-                Parameters: `job_title` (string), `location` (string), `min_salary` (float), `max_salary` (float), `category` (string), `job_level` (string), `job_type` (string), `employer_name` (string).
-                Example Query: "Tìm việc lập trình viên ở Hà Nội lương từ 1000 đến 2000 đô", "Công việc part-time quản lý ở HCM", "Việc làm IT của FPT", "Tuyển dụng Data Scientist cấp senior"
-                JSON: {"intent": "job_search", "jobSearchParams": {"job_title": "string|null", "location": "string|null", "min_salary": float|null, "max_salary": float|null, "category": "string|null", "job_level": "string|null", "job_type": "string|null", "employer_name": "string|null"}}
+        ---
 
-            2.  **user_info**: User wants to find information about users (job seekers or employers).
-                Parameters: `email` (string), `full_name` (string), `role` (string, e.g., "JOB_SEEKER", "EMPLOYER", "ADMIN"), `location` (string), `years_experience` (integer), `is_premium` (boolean).
-                Example Query: "Thông tin của người dùng abc@example.com", "Người tìm việc tên Nguyễn Văn A ở Đà Nẵng", "Ai là admin?", "Liệt kê các user premium"
-                JSON: {"intent": "user_info", "userSearchParams": {"email": "string|null", "full_name": "string|null", "role": "string|null", "location": "string|null", "years_experience": integer|null, "is_premium": boolean|null}}
+        ## Quy tắc & Yêu cầu Phản hồi JSON:
 
-            3.  **subscription_info**: User wants to find information about subscription plans or specific user subscriptions.
-                Parameters: `user_email` (string), `plan_name` (string), `is_active` (boolean).
-                Example Query: "Gói Premium giá bao nhiêu?", "Thông tin gói Standard", "Các gói đăng ký đang hoạt động của user abc@example.com"
-                JSON: {"intent": "subscription_info", "subscriptionSearchParams": {"user_email": "string|null", "plan_name": "string|null", "is_active": boolean|null}}
+        * **Định dạng đầu ra:** LUÔN LUÔN TRẢ VỀ DUY NHẤT MỘT ĐỐI TƯỢNG JSON.
+        * **Không thêm văn bản phụ:** KHÔNG BAO GỒM bất kỳ lời giải thích, văn bản bổ sung, hoặc định dạng markdown nào khác (ví dụ: KHÔNG ````json` hoặc các đoạn code khác).
+        * **Tham số không có:** Nếu một tham số không được đề cập trong truy vấn của người dùng, hãy đặt giá trị của nó là `null`.
+        * **Tham số Boolean:** Đối với các tham số boolean (ví dụ: `is_premium`), hãy suy luận rõ ràng `true` hoặc `false` dựa trên ngữ cảnh (ví dụ: "tài khoản premium" -> `true`; "không phải premium" -> `false`).
 
-            4.  **company_info**: User wants to find information about a company (based on employer details).
-                Parameters: `company_name` (string), `location` (string).
-                Example Query: "Thông tin về công ty FPT Software", "Công ty Tech Solutions Inc. ở đâu?", "Mô tả về Global Connect"
-                JSON: {"intent": "company_info", "companyInfoParams": {"company_name": "string|null", "location": "string|null"}}
+        ---
 
-            5.  **employer_reviews**: User wants to find reviews for an employer.
-                Parameters: `employer_name` (string), `min_rating` (integer), `max_rating` (integer).
-                Example Query: "Đánh giá về FPT Software", "Review công ty Tech Solutions", "Những đánh giá có rating từ 4 sao trở lên cho công ty ABC"
-                JSON: {"intent": "employer_reviews", "employerReviewParams": {"employer_name": "string|null", "min_rating": integer|null, "max_rating": integer|null}}
+        ## Các Ý định (Intents) và Cấu trúc JSON chi tiết:
 
-            6.  **application_status**: User wants to find the status of job applications.
-                Parameters: `job_title` (string), `job_seeker_email` (string), `status` (string, e.g., "Pending", "Accepted", "Rejected").
-                Example Query: "Tình trạng đơn ứng tuyển lập trình viên của Nguyễn Văn A", "Các đơn đã được chấp nhận của user xyz@example.com", "Đơn ứng tuyển nào đang chờ xử lý?"
-                JSON: {"intent": "application_status", "applicationSearchParams": {"job_title": "string|null", "job_seeker_email": "string|null", "status": "string|null"}}
+        Dưới đây là danh sách các ý định đã được định nghĩa và cấu trúc JSON mong đợi cho từng ý định. Hãy xem xét các ví dụ cẩn thận để hiểu cách trích xuất tham số.
 
-            7.  **general_chat**: User query is a general conversation topic, not related to database lookup.
-                Parameters: None.
-                Example Query: "Chào bạn", "Thời tiết hôm nay thế nào?", "Bạn có khỏe không?"
-                JSON: {"intent": "general_chat"}
+        ### 1. `job_search` (Tìm kiếm công việc)
+        * **Mô tả:** Người dùng muốn tìm kiếm các tin tuyển dụng. Đây là ý định phổ biến nhất.
+        * **Độ linh hoạt từ khóa:**
+            * **`job_title`**: Đây là tham số quan trọng nhất. Hãy **chủ động suy luận các từ khóa rộng hơn, liên quan, đồng nghĩa, hoặc là một phần của cụm từ phổ biến.**
+                * Ví dụ: "Marketing" có thể ám chỉ "Marketing Specialist", "Digital Marketing", "Content Marketing", "Marketing Manager", "SEO Marketing". **Hãy trích xuất từ khóa chung nhất có thể ("Marketing") nếu không có từ khóa cụ thể hơn, để hệ thống tìm kiếm backend có thể xử lý mở rộng.**
+                * Ví dụ: "lập trình" có thể ám chỉ "lập trình viên", "dev", "software engineer", "kỹ sư phần mềm". Trích xuất: "lập trình viên" hoặc "Software Engineer".
+                * Ví dụ: "data sci" -> "Data Scientist".
+            * **`location`**: Tên thành phố, tỉnh, hoặc vùng miền (ví dụ: "Hà Nội", "TP.HCM", "miền Nam").
+            * **`min_salary`, `max_salary`**: Chỉ trích xuất số và đơn vị (nếu có thể suy luận).
+            * **`category`**: Ngành nghề chính của công việc (ví dụ: "Công nghệ thông tin", "Marketing", "Tài chính").
+            * **`job_level`**: Cấp bậc công việc (ví dụ: "Senior", "Junior", "Entry-level", "Intern").
+            * **`job_type`**: Loại hình công việc (ví dụ: "Full-time", "Part-time", "Remote", "Freelance", "Thực tập").
+        * **Tham số:** `job_title` (string), `location` (string), `min_salary` (float), `max_salary` (float), `category` (string), `job_level` (string), `job_type` (string), `employer_name` (string).
+        * **Ví dụ truy vấn và JSON mong đợi:**
+            * **Query:** "Tìm việc lập trình viên ở Hà Nội lương từ 1000 đến 2000 đô"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "lập trình viên", "location": "Hà Nội", "min_salary": 1000.0, "max_salary": 2000.0, "category": null, "job_level": null, "job_type": null, "employer_name": null}}`
+            * **Query:** "Công việc part-time quản lý ở HCM"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "quản lý", "location": "HCM", "min_salary": null, "max_salary": null, "category": null, "job_level": null, "job_type": "Part-time", "employer_name": null}}`
+            * **Query:** "Việc làm IT của FPT"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "IT", "location": null, "min_salary": null, "max_salary": null, "category": "Công nghệ thông tin", "job_level": null, "job_type": null, "employer_name": "FPT"}}`
+            * **Query:** "Tuyển dụng Data Scientist cấp senior"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "Data Scientist", "location": null, "min_salary": null, "max_salary": null, "category": null, "job_level": "Senior", "job_type": null, "employer_name": null}}`
+            * **Query:** "có công việc nào liên quan đến phát triển Marketing không"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "Marketing", "location": null, "min_salary": null, "max_salary": null, "category": null, "job_level": null, "job_type": null, "employer_name": null}}`
+            * **Query:** "công việc Marketing Specialist tại Thành phố Hồ Chí Minh"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "Marketing Specialist", "location": "Thành phố Hồ Chí Minh", "min_salary": null, "max_salary": null, "category": null, "job_level": null, "job_type": null, "employer_name": null}}`
+            * **Query:** "Tìm các vị trí Digital Marketing Remote"
+                `{"intent": "job_search", "jobSearchParams": {"job_title": "Digital Marketing", "location": null, "min_salary": null, "max_salary": null, "category": null, "job_level": null, "job_type": "Remote", "employer_name": null}}`
 
-            8.  **unclear**: User query is ambiguous or cannot be categorized into any of the above intents.
-                Parameters: None.
-                Example Query: "Tìm kiếm", "Một cái gì đó", "Không hiểu"
-                JSON: {"intent": "unclear"}
+        ### 2. `user_info` (Tìm thông tin người dùng)
+        * **Mô tả:** Người dùng muốn tìm thông tin về người dùng (người tìm việc hoặc nhà tuyển dụng) trong hệ thống.
+        * **Tham số:** `email` (string), `full_name` (string), `role` (string, e.g., "JOB_SEEKER", "EMPLOYER", "ADMIN"), `location` (string), `years_experience` (integer), `is_premium` (boolean).
+        * **Ví dụ truy vấn:** "Thông tin của người dùng abc@example.com", "Người tìm việc tên Nguyễn Văn A ở Đà Nẵng", "Ai là admin?", "Liệt kê các user premium"
+        * **JSON:** `{"intent": "user_info", "userSearchParams": {"email": "string|null", "full_name": "string|null", "role": "string|null", "location": "string|null", "years_experience": integer|null, "is_premium": boolean|null}}`
 
-            If a parameter should be a boolean, explicitly infer true/false. For example, if user asks "liệu có phải tài khoản premium không", set "is_premium": true. If user asks "liệt kê các tài khoản không phải premium", set "is_premium": false.
+        ### 3. `subscription_info` (Tìm thông tin gói đăng ký)
+        * **Mô tả:** Người dùng muốn tìm thông tin về các gói đăng ký hoặc đăng ký cụ thể của người dùng.
+        * **Tham số:** `user_email` (string), `plan_name` (string), `is_active` (boolean).
+        * **Ví dụ truy vấn:** "Gói Premium giá bao nhiêu?", "Thông tin gói Standard", "Các gói đăng ký đang hoạt động của user abc@example.com"
+        * **JSON:** `{"intent": "subscription_info", "subscriptionSearchParams": {"user_email": "string|null", "plan_name": "string|null", "is_active": boolean|null}}`
 
-            Always return a complete JSON object, even if all parameters are null or the intent is 'general_chat'/'unclear'.
-            """;
+        ### 4. `company_info` (Tìm thông tin công ty)
+        * **Mô tả:** Người dùng muốn tìm thông tin về một công ty (dựa trên chi tiết nhà tuyển dụng).
+        * **Tham số:** `company_name` (string), `location` (string).
+        * **Ví dụ truy vấn:** "Thông tin về công ty FPT Software", "Công ty Tech Solutions Inc. ở đâu?", "Mô tả về Global Connect"
+        * **JSON:** `{"intent": "company_info", "companyInfoParams": {"company_name": "string|null", "location": "string|null"}}`
+
+        ### 5. `employer_reviews` (Tìm đánh giá nhà tuyển dụng)
+        * **Mô tả:** Người dùng muốn tìm các đánh giá cho một nhà tuyển dụng.
+        * **Tham số:** `employer_name` (string), `min_rating` (integer), `max_rating` (integer).
+        * **Ví dụ truy vấn:** "Đánh giá về FPT Software", "Review công ty Tech Solutions", "Những đánh giá có rating từ 4 sao trở lên cho công ty ABC"
+        * **JSON:** `{"intent": "employer_reviews", "employerReviewParams": {"employer_name": "string|null", "min_rating": integer|null, "max_rating": integer|null}}`
+
+        ### 6. `application_status` (Tìm trạng thái đơn ứng tuyển)
+        * **Mô tả:** Người dùng muốn tìm trạng thái của các đơn ứng tuyển.
+        * **Tham số:** `job_title` (string), `job_seeker_email` (string), `status` (string, e.g., "Pending", "Accepted", "Rejected").
+        * **Ví dụ truy vấn:** "Tình trạng đơn ứng tuyển lập trình viên của Nguyễn Văn A", "Các đơn đã được chấp nhận của user xyz@example.com", "Đơn ứng tuyển nào đang chờ xử lý?"
+        * **JSON:** `{"intent": "application_status", "applicationSearchParams": {"job_title": "string|null", "job_seeker_email": "string|null", "status": "string|null"}}`
+
+        ### 7. `general_chat` (Trò chuyện chung)
+        * **Mô tả:** Truy vấn của người dùng là một chủ đề trò chuyện chung, không liên quan đến việc tra cứu cơ sở dữ liệu hoặc hành động cụ thể.
+        * **Tham số:** Không có.
+        * **Ví dụ truy vấn:** "Chào bạn", "Thời tiết hôm nay thế nào?", "Bạn có khỏe không?", "Kể tôi nghe một câu chuyện cười."
+        * **JSON:** `{"intent": "general_chat"}`
+
+        ### 8. `unclear` (Không rõ ràng)
+        * **Mô tả:** Truy vấn của người dùng không rõ ràng, mơ hồ, hoặc không thể phân loại vào bất kỳ ý định nào đã định nghĩa.
+        * **Tham số:** Không có.
+        * **Ví dụ truy vấn:** "Tìm kiếm", "Một cái gì đó", "Không hiểu", "Giúp tôi với"
+        * **JSON:** `{"intent": "unclear"}`
+
+        ---
+
+        ## Hướng dẫn đặc biệt về Suy luận & Trích xuất Tham số (Critical Instructions):
+
+        * **KHÔNG BAO GIỜ YÊU CẦU THÊM THÔNG TIN TỪ NGƯỜI DÙNG TRONG PHẢN HỒI JSON.** Nhiệm vụ của bạn là trích xuất những gì có thể từ truy vấn hiện tại. Các yêu cầu làm rõ sẽ do logic phía sau xử lý.
+        * **Ưu tiên trích xuất giá trị hơn là bỏ qua.** Nếu một phần của truy vấn có thể là một tham số, hãy cố gắng trích xuất nó.
+        * **Linh hoạt với các biến thể của từ khóa:**
+            * Đối với `job_title` và `category`: Nếu người dùng sử dụng từ khóa chung (ví dụ: "Marketing"), hãy trích xuất chính xác từ đó. KHÔNG cố gắng đoán ra một từ khóa cụ thể hơn như "Marketing Specialist" trừ khi người dùng nói rõ. Mục tiêu là cung cấp cho hệ thống backend từ khóa gốc để nó có thể thực hiện tìm kiếm mở rộng (ví dụ: `LIKE '%Marketing%'` trong database).
+            * Tuy nhiên, nếu người dùng nói một cụm từ cụ thể và phổ biến (ví dụ: "Digital Marketing", "Software Engineer"), hãy trích xuất chính xác cụm từ đó.
+        * **Trích xuất tất cả tham số có sẵn:** Ngay cả khi ý định rõ ràng nhưng chỉ có một vài tham số được cung cấp, hãy điền đầy đủ các tham số đó và để các tham số khác là `null`.
+
+        Luôn luôn trả về một đối tượng JSON hoàn chỉnh theo cấu trúc đã định nghĩa cho ý định được xác định.
+        """;
 
     @Transactional
     public ChatbotHistoryResponse sendMessageToChatbot(ChatbotMessageRequest request) {
@@ -387,11 +441,9 @@ public class ChatbotService {
 
         } catch (IOException e) {
             log.error("Error communicating with Gemini API: {}", e.getMessage(), e);
-            finalGeminiResponse = "Xin lỗi, có lỗi xảy ra khi tôi cố gắng kết nối với hệ thống. Vui lòng thử lại sau.";
             throw new AppException(ErrorCode.GEMINI_API_ERROR);
         } catch (Exception e) {
             log.error("An unexpected error occurred during chat processing: {}", e.getMessage(), e);
-            finalGeminiResponse = "Xin lỗi, có lỗi nội bộ xảy ra. Vui lòng thử lại sau.";
             throw new AppException(ErrorCode.UNEXPECTED_ERROR);
         }
 
@@ -410,18 +462,10 @@ public class ChatbotService {
             // Tạm thời, tôi sẽ ném lỗi nếu không lưu được history vì bạn muốn trả về history.
             throw new AppException(ErrorCode.FAILED_TO_SAVE_CHAT_HISTORY); // Bạn cần định nghĩa ErrorCode này
         }
-
-        // Chuyển đổi đối tượng ChatbotHistory đã được lưu (với ID và createdAt) thành ChatbotHistoryResponse
         return chatbotHistoryMapper.toChatbotHistoryResponse(savedChatbotHistory);
     }
 
-
-    /**
-     * Lấy lịch sử trò chuyện của người dùng hiện tại.
-     *
-     * @return Danh sách các ChatbotHistoryResponse của người dùng hiện tại.
-     */
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')") // Chỉ cho phép người dùng đã xác thực
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public List<ChatbotHistoryResponse> getMyChatbotHistory() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUserEmail = authentication.getName();
@@ -457,13 +501,7 @@ public class ChatbotService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
     }
-    /**
-     * Xóa một bản ghi lịch sử trò chuyện cụ thể theo ID.
-     * Người dùng chỉ có thể xóa lịch sử của chính họ, ADMIN có thể xóa bất kỳ lịch sử nào.
-     *
-     * @param historyId ID của bản ghi lịch sử trò chuyện cần xóa.
-     * @throws AppException Nếu không tìm thấy lịch sử hoặc người dùng không có quyền.
-     */
+
     @Transactional
     @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public void deleteChatbotHistory(Long historyId) {
@@ -488,7 +526,6 @@ public class ChatbotService {
 
     @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có quyền này
     public List<ChatbotHistoryResponse> getAllChatbotHistoryForAdmin() {
-        // Logging và xác thực vai trò đã được @PreAuthorize xử lý
         log.info("Admin user is requesting all chatbot history.");
         List<ChatbotHistory> allHistory = chatbotHistoryRepository.findAllByOrderByCreatedAtDesc();
 
@@ -497,23 +534,18 @@ public class ChatbotService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional // Đảm bảo giao dịch được quản lý
-    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')") // Chỉ người dùng đã đăng nhập mới có thể xóa lịch sử của họ
+    @Transactional
+    @PreAuthorize("hasAnyRole('JOB_SEEKER', 'EMPLOYER', 'ADMIN')")
     public void clearMyChatbotHistory() {
-        // 1. Lấy thông tin người dùng hiện tại từ SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED); // Đảm bảo người dùng đã xác thực
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         String currentUserEmail = authentication.getName();
-
-        // 2. Tìm người dùng trong database
         User currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // 3. Xóa tất cả lịch sử chatbot liên quan đến người dùng này
-        // Sử dụng phương thức deleteByUserId trong Repository
         chatbotHistoryRepository.deleteByUserId(currentUser.getId());
 
         log.info("Successfully cleared all chatbot history for user: {}", currentUserEmail);

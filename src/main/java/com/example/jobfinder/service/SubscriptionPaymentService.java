@@ -180,7 +180,8 @@ public class SubscriptionPaymentService {
             Pageable pageable,
             LocalDateTime fromDate,
             LocalDateTime toDate,
-            String paymentStatus // <-- Tham số lọc theo trạng thái
+            String paymentStatus,
+            String userEmail
     ) {
         Page<Payment> paymentsPage;
 
@@ -196,15 +197,17 @@ public class SubscriptionPaymentService {
             }
 
             if (paymentStatus != null && !paymentStatus.trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), paymentStatus));
+                predicates.add(criteriaBuilder.equal(root.get("payosStatus"), paymentStatus));
+            }
+
+            if (userEmail != null && !userEmail.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("user").get("email")), "%" + userEmail.toLowerCase() + "%"));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
 
-        // Sử dụng findAll với Specification
         paymentsPage = paymentRepository.findAll(spec, pageable);
-
         return buildPageResponse(paymentsPage);
     }
 
