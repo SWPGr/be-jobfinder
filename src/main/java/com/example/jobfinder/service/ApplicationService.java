@@ -150,6 +150,17 @@ public class ApplicationService {
         }
 
         application.setStatus(newStatus);
+
+        if (newStatus == ApplicationStatus.ACCEPTED) {
+            Job job = application.getJob();
+            Integer currentVacancy = job.getVacancy();
+            if (currentVacancy != null && currentVacancy > 0) {
+                job.setVacancy(currentVacancy - 1);
+            } else {
+                throw new AppException(ErrorCode.JOB_NO_VACANCY);
+            }
+        }
+
         Application updatedApplication = applicationRepository.save(application);
 
         try {

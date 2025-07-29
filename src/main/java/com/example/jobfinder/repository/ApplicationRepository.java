@@ -1,5 +1,6 @@
 package com.example.jobfinder.repository;
 
+import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.enums.ApplicationStatus;
@@ -155,6 +156,30 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             @Param("educationName") String educationName,
             @Param("isPremium") Boolean isPremium,
             ApplicationStatus status, Pageable pageable);
+
+    @Query(value = """
+    SELECT
+        U.id AS userId,
+        U.email AS userEmail,
+        UD.company_name AS companyName,
+        UD.location AS userLocation,
+        COUNT(A.id) AS totalApplications
+    FROM
+        applications AS A
+    JOIN
+        jobs AS J ON A.job_id = J.id
+    JOIN
+        users AS U ON J.employer_id = U.id
+    JOIN
+        user_details AS UD ON U.id = UD.user_id
+    WHERE
+        U.role_id = (SELECT id FROM roles WHERE role_name = 'EMPLOYER')
+    GROUP BY
+        U.id, U.email, UD.company_name, UD.location
+    ORDER BY
+        totalApplications DESC
+    """, nativeQuery = true)
+    List<TopEmployerProjection> findTopEmployers(Pageable pageable);
 
 }
 

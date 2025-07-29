@@ -69,7 +69,7 @@ public class SecurityConfig {
                                 "/api/auth/resend-verification",
                                 "/api/auth/verify",
                                 "/api/auth/reset-password",
-                                "/api/users",
+                                "/api/users/**",
                                 "/api/debug/**",
                                 "/api/profiles/**",
                                 "/api/profiles/me",
@@ -156,7 +156,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:3030",
-                "http://localhost:8080"
+                "http://localhost:8080",
+                "https://fe-jobfinder.vercel.app/"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));

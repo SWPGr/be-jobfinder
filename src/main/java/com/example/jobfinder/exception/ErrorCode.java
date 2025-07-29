@@ -183,7 +183,8 @@ public enum ErrorCode {
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED"),
     REPORT_TYPE_NOT_FOUND(2016,  "Report type not found"),
-    ALREADY_REPORTED(2017, "You have already reported this job with the same content.");
+    ALREADY_REPORTED(2017, "You have already reported this job with the same content."),
+    JOB_NO_VACANCY(2018, "Job has out of vacancy");
 
 
 
