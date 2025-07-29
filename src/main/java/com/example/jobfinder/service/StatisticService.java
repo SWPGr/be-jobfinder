@@ -7,6 +7,7 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.Job;
+import com.example.jobfinder.model.Payment;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;
@@ -39,6 +40,8 @@ public class StatisticService {
 
     SavedJobRepository savedJobRepository;
     JobRecommendationRepository jobRecommendationRepository;
+
+    PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public List<MonthlyTrendResponse> getMonthlyTrendsCalculatedOnTheFly() {
@@ -301,6 +304,88 @@ public class StatisticService {
                 .totalSavedJobs(totalSavedJobs)
                 .totalJobRecommendations(totalJobRecommendations)
                 .build();
+    }
+
+
+    @Transactional(readOnly = true)
+    public PaymentComparisonResponse getPaymentMonthOverMonthComparison() {
+        YearMonth currentMonth = YearMonth.now();
+        YearMonth previousMonth = currentMonth.minusMonths(1);
+
+        LocalDateTime currentMonthStart = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime currentMonthEnd = currentMonth.atEndOfMonth().atTime(23, 59, 59, 999999999);
+
+        LocalDateTime previousMonthStart = previousMonth.atDay(1).atStartOfDay();
+        LocalDateTime previousMonthEnd = previousMonth.atEndOfMonth().atTime(23, 59, 59, 999999999);
+
+        // --- Lấy dữ liệu cho tháng hiện tại ---
+        List<Payment> currentMonthPayments = paymentRepository.findByPaidAtBetween(currentMonthStart, currentMonthEnd);
+        double currentMonthTotalRevenue = currentMonthPayments.stream()
+                .mapToDouble(Payment::getAmount)
+                .sum();
+        long currentMonthTotalPaidPayments = currentMonthPayments.stream()
+                .filter(p -> "PAID".equalsIgnoreCase(p.getPayosStatus())) // Giả định trường status là payosStatus
+                .count();
+        long currentMonthTotalPendingPayments = currentMonthPayments.stream()
+                .filter(p -> "PENDING".equalsIgnoreCase(p.getPayosStatus())) // Giả định trường status là payosStatus
+                .count();
+        long currentMonthTotalPayments = currentMonthPayments.size();
+
+        List<Payment> previousMonthPayments = paymentRepository.findByPaidAtBetween(previousMonthStart, previousMonthEnd);
+        double previousMonthTotalRevenue = previousMonthPayments.stream()
+                .mapToDouble(Payment::getAmount)
+                .sum();
+        long previousMonthTotalPaidPayments = previousMonthPayments.stream()
+                .filter(p -> "PAID".equalsIgnoreCase(p.getPayosStatus()))
+                .count();
+        long previousMonthTotalPendingPayments = previousMonthPayments.stream()
+                .filter(p -> "PENDING".equalsIgnoreCase(p.getPayosStatus()))
+                .count();
+        long previousMonthTotalPayments = previousMonthPayments.size();
+
+
+        // --- Tính toán phần trăm thay đổi và trạng thái ---
+        return PaymentComparisonResponse.builder()
+                .monthYear(currentMonth.toString())
+
+                // Tổng doanh thu
+                .currentMonthTotalRevenue(currentMonthTotalRevenue)
+                .revenueChangePercentage(calculateChangePercentage(currentMonthTotalRevenue, previousMonthTotalRevenue))
+                .revenueStatus(getChangeStatus(currentMonthTotalRevenue, previousMonthTotalRevenue))
+
+                // Tổng Paid Payments
+                .currentMonthTotalPaidPayments(currentMonthTotalPaidPayments)
+                .paidPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPaidPayments, previousMonthTotalPaidPayments))
+                .paidPaymentsStatus(getChangeStatus(currentMonthTotalPaidPayments, previousMonthTotalPaidPayments))
+
+                // Tổng Pending Payments
+                .currentMonthTotalPendingPayments(currentMonthTotalPendingPayments)
+                .pendingPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPendingPayments, previousMonthTotalPendingPayments))
+                .pendingPaymentsStatus(getChangeStatus(currentMonthTotalPendingPayments, previousMonthTotalPendingPayments))
+
+                // Tổng số lượng Payments
+                .currentMonthTotalPayments(currentMonthTotalPayments)
+                .totalPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPayments, previousMonthTotalPayments))
+                .totalPaymentsStatus(getChangeStatus(currentMonthTotalPayments, previousMonthTotalPayments))
+
+                .build();
+    }
+
+    private double calculateChangePercentage(double current, double previous) {
+        if (previous == 0) {
+            return current == 0 ? 0.0 : 100.0; // Nếu tháng trước 0, tháng này 0 thì 0%, nếu tháng trước 0 tháng này >0 thì 100% tăng
+        }
+        return ((current - previous) / previous) * 100.0;
+    }
+
+    private String getChangeStatus(double current, double previous) {
+        if (current > previous) {
+            return "increase";
+        } else if (current < previous) {
+            return "decrease";
+        } else {
+            return "no_change";
+        }
     }
 
 }

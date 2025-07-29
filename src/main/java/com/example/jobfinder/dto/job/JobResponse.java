@@ -26,23 +26,15 @@ public class JobResponse {
     private Boolean isSave;
     private Boolean active;
     private Integer vacancy;
-
-    // Đảm bảo kiểu là LocalDateTime. @JsonFormat giúp định dạng khi chuyển sang JSON.
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt; // <-- PHẢI CÓ TRƯỜNG NÀY VỚI KIỂU NÀY
-
-    UserResponse employer; // <-- Phải là EmployerDto, không phải Long employerId
-    SimpleNameResponse category; // <-- Phải là CategoryDto, không phải Long categoryId, String categoryName
-    SimpleNameResponse jobLevel; // <-- Phải là JobLevelDto, không phải Long jobLevelId, String jobLevelName
-    SimpleNameResponse jobType;   // <-- Phải là JobTypeDto, không phải Long jobTypeId, String jobTypeName
-
+    private LocalDateTime updatedAt;
+    UserResponse employer;
+    SimpleNameResponse category;
+    SimpleNameResponse jobLevel;
+    SimpleNameResponse jobType;
     SimpleNameResponse education;
     SimpleNameResponse experience;
-
-
-
-
     Long jobApplicationCounts;
 }
