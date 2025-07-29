@@ -25,27 +25,13 @@ public class ElasticsearchConfig{
     @Value("${spring.elasticsearch.uris}")
     private String elasticsearchUrl;
 
-    @Value("${spring.elasticsearch.username}")
-    private String userName;
-
-    @Value("${spring.elasticsearch.password}")
-    private String password;
-
 
     @Bean
     public ElasticsearchClient elasticsearchClient() throws Exception {
         URI uri = new URI(elasticsearchUrl);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
 
-        String credentials = Base64.getEncoder().encodeToString((userName + ":" + password).getBytes());
-
-        Header[] defaultHeaders = new Header[]{
-                new BasicHeader("Authorization", "Basic " + credentials)
-        };
-
-        RestClient restClient = RestClient.builder(host)
-                .setDefaultHeaders(defaultHeaders)
-                .build();
+        RestClient restClient = RestClient.builder(host).build();
 
         RestClientTransport transport = new RestClientTransport(
                 restClient,
