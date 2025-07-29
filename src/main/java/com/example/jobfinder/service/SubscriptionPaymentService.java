@@ -180,7 +180,7 @@ public class SubscriptionPaymentService {
             Pageable pageable,
             LocalDateTime fromDate,
             LocalDateTime toDate,
-            String paymentStatus // <-- Tham số lọc theo trạng thái
+            String paymentStatus
     ) {
         Page<Payment> paymentsPage;
 
