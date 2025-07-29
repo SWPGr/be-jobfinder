@@ -42,7 +42,8 @@ public class PaymentController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
-            @RequestParam(required = false) String paymentStatus
+            @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false) String userEmail
     ) {
         try {
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -51,7 +52,7 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false); // Parse fromDate
             LocalDateTime parsedToDate = parseDate(toDate, true);     // Parse toDate
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus);
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus, userEmail);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
                     .code(HttpStatus.OK.value())
