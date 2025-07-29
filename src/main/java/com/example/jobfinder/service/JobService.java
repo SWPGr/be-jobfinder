@@ -151,27 +151,35 @@ public class JobService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal());
-
         Long currentUserId = null;
         if (isAuthenticated) {
             String currentUserEmail = authentication.getName();
             Optional<User> userOptional = userRepository.findByEmail(currentUserEmail);
             currentUserId = userOptional.map(User::getId).orElse(null);
         }
-
         Page<Job> jobPage;
         if (currentUserId != null) {
             jobPage = jobRepository.findAllActiveJobsNotSavedByUser(currentUserId, pageable);
         } else {
             jobPage = jobRepository.findAllActive(pageable);
         }
-
-
-
         return jobPage.map(job -> {
             JobResponse response = jobMapper.toJobResponse(job);
             response.setIsSave(false);
 
+            Long applicationCount = applicationRepository.countByJob_Id(job.getId());
+            response.setJobApplicationCounts(applicationCount);
+            return response;
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<JobResponse> getAllJobsForAdmin(Pageable pageable) {
+        Page<Job> jobPage = jobRepository.findAll(pageable);
+
+        return jobPage.map(job -> {
+            JobResponse response = jobMapper.toJobResponse(job);
+            response.setIsSave(false);
             Long applicationCount = applicationRepository.countByJob_Id(job.getId());
             response.setJobApplicationCounts(applicationCount);
             return response;
