@@ -69,7 +69,7 @@ public class SecurityConfig {
                                 "/api/auth/resend-verification",
                                 "/api/auth/verify",
                                 "/api/auth/reset-password",
-                                "/api/users",
+                                "/api/users/**",
                                 "/api/debug/**",
                                 "/api/profiles/**",
                                 "/api/profiles/me",

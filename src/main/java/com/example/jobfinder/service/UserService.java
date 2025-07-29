@@ -1,6 +1,7 @@
 // src/main/java/com/example/jobfinder/service/UserService.java
 package com.example.jobfinder.service;
 
+import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.dto.user.*;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.AppException;
@@ -14,6 +15,8 @@ import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -209,5 +212,10 @@ public class UserService {
                 log.error("Failed to send account blocked email to {}: {}", user.getEmail(), e.getMessage());
             }
         }
+    }
+
+    public List<TopEmployerProjection> getTopEmployers(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return applicationRepository.findTopEmployers(pageable);
     }
 }
