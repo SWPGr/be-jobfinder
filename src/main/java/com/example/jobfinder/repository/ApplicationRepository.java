@@ -2,6 +2,7 @@ package com.example.jobfinder.repository;
 
 import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.model.Application;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import com.example.jobfinder.util.QueryConstants;
@@ -17,6 +18,10 @@ import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Optional<Application> findByJobSeekerIdAndJobId(Long jobSeekerId, Long jobId);
+
+    List<Application> findByJobAndStatusIsNot(Job job, ApplicationStatus status);
+
+    Long countByJob_Employer_Id(Long employerId);
 
     Optional<Application> findByJobSeekerId(Long jobSeekerId);
 
