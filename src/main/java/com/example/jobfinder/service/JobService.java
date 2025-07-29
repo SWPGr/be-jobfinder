@@ -237,24 +237,17 @@ public class JobService {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // --- Bắt đầu phần xây dựng truy vấn động ---
         Page<Job> jobsPage = jobRepository.findAll((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Lọc theo employerId (luôn cần)
             predicates.add(criteriaBuilder.equal(root.get("employer").get("id"), employerId));
 
-            // Lọc theo jobTitle (tìm kiếm gần đúng, không phân biệt hoa thường)
             if (jobTitle != null && !jobTitle.trim().isEmpty()) {
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), "%" + jobTitle.toLowerCase() + "%"));
             }
-
-            // Lọc theo trạng thái active
             if (isActive != null) {
                 predicates.add(criteriaBuilder.equal(root.get("active"), isActive));
             }
-
-            // Lọc theo khoảng thời gian (appliedAt)
             if (fromDate != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), fromDate));
             }
@@ -268,21 +261,6 @@ public class JobService {
 
         List<JobResponse> jobResponses = jobsPage.getContent().stream()
                 .map(job -> {
-                    // Mapping Employer
-                    UserResponse employerResponse = null;
-                    if (job.getEmployer() != null) {
-                        employerResponse = UserResponse.builder()
-                                .id(job.getEmployer().getId())
-                                .fullName(job.getEmployer().getUsername())
-                                .email(job.getEmployer().getEmail())
-                                .role(SimpleNameResponse.builder()
-                                        .id(job.getEmployer().getRole().getId())
-                                        .name(job.getEmployer().getRole().getName())
-                                        .build())
-                                .build();
-                    }
-
-                    // Mapping Category
                     SimpleNameResponse categoryResponse = null;
                     if (job.getCategory() != null) {
                         categoryResponse = SimpleNameResponse.builder()
@@ -290,8 +268,6 @@ public class JobService {
                                 .name(job.getCategory().getName())
                                 .build();
                     }
-
-                    // Mapping JobLevel
                     SimpleNameResponse jobLevelResponse = null;
                     if (job.getJobLevel() != null) {
                         jobLevelResponse = SimpleNameResponse.builder()
@@ -299,8 +275,6 @@ public class JobService {
                                 .name(job.getJobLevel().getName())
                                 .build();
                     }
-
-                    // Mapping JobType
                     SimpleNameResponse jobTypeResponse = null;
                     if (job.getJobType() != null) {
                         jobTypeResponse = SimpleNameResponse.builder()
@@ -308,9 +282,21 @@ public class JobService {
                                 .name(job.getJobType().getName())
                                 .build();
                     }
-
+                    SimpleNameResponse educationResponse = null;
+                    if (job.getEducation() != null) {
+                        educationResponse = SimpleNameResponse.builder()
+                                .id(job.getEducation().getId())
+                                .name(job.getEducation().getName())
+                                .build();
+                    }
+                    SimpleNameResponse experienceResponse = null;
+                    if (job.getExperience() != null) {
+                        experienceResponse = SimpleNameResponse.builder()
+                                .id(job.getExperience().getId())
+                                .name(job.getExperience().getName())
+                                .build();
+                    }
                     Long jobApplicationCounts = applicationRepository.countByJob_Id(job.getId());
-
                     return JobResponse.builder()
                             .id(job.getId())
                             .title(job.getTitle())
@@ -319,11 +305,18 @@ public class JobService {
                             .createdAt(job.getCreatedAt())
                             .salaryMin(job.getSalaryMin())
                             .salaryMax(job.getSalaryMax())
+                            .responsibility(job.getResponsibility())
+                            .expiredDate(job.getExpiredDate())
+                            .vacancy(job.getVacancy())
+                            .active(job.getActive())
+                            .updatedAt(job.getUpdatedAt())
                             .category(categoryResponse)
                             .jobLevel(jobLevelResponse)
                             .jobType(jobTypeResponse)
                             .jobApplicationCounts(jobApplicationCounts)
-                            .isSave(job.getActive()) // Sử dụng getActive() cho isSave (tên có vẻ hơi khó hiểu, nên là isActive)
+                            .isSave(job.isSave())
+                            .education(educationResponse)
+                            .experience(experienceResponse)
                             .build();
                 })
                 .collect(Collectors.toList());
