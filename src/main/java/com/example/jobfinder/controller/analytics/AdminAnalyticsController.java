@@ -101,4 +101,16 @@ public class AdminAnalyticsController {
                 .result(response)
                 .build());
     }
+
+    @GetMapping("/payment-comparison")
+    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có thể xem thống kê này
+    public ApiResponse<PaymentComparisonResponse> getPaymentMonthOverMonthComparison() {
+        log.info("API: Lấy so sánh thống kê thanh toán giữa tháng này và tháng trước.");
+        PaymentComparisonResponse comparison = statisticService.getPaymentMonthOverMonthComparison();
+        return ApiResponse.<PaymentComparisonResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Payment month-over-month comparison fetched successfully")
+                .result(comparison)
+                .build();
+    }
 }
