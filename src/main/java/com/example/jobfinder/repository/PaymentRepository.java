@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,43 +18,21 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PaymentRepository extends JpaRepository<Payment, Long> {
+public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpecificationExecutor<Payment> {
 
     Optional<Payment> findByPayosOrderCode(Long payosOrderCode);
-    Optional<Payment> findByPayosPaymentLinkId(String payosPaymentLinkId);
+    List<Payment> findByPaidAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime);
 
-    // Tìm kiếm các khoản thanh toán của một user
-    List<Payment> findByUser(User user);
-    List<Payment> findByUser_Id(Long userId);
-
-    // Phương thức mới: Lọc tất cả payments trong khoảng thời gian
-    @EntityGraph(attributePaths = {"user", "intendedPlan"})
-    Page<Payment> findByPaidAtBetween(LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable);
-
-    // Phương thức mới: Lọc tất cả payments sau một thời điểm
-    @EntityGraph(attributePaths = {"user", "intendedPlan"})
-    Page<Payment> findByPaidAtAfter(LocalDateTime fromDate, Pageable pageable);
-
-    // Phương thức mới: Lọc tất cả payments trước một thời điểm
-    @EntityGraph(attributePaths = {"user", "intendedPlan"})
-    Page<Payment> findByPaidAtBefore(LocalDateTime toDate, Pageable pageable);
-
-    // Phương thức mới: Lọc payments của một user trong khoảng thời gian
     @EntityGraph(attributePaths = {"user", "intendedPlan"})
     Page<Payment> findByUserIdAndPaidAtBetween(Long userId, LocalDateTime fromDate, LocalDateTime toDate, Pageable pageable);
 
-    // Phương thức mới: Lọc payments của một user sau một thời điểm
     @EntityGraph(attributePaths = {"user", "intendedPlan"})
     Page<Payment> findByUserIdAndPaidAtAfter(Long userId, LocalDateTime fromDate, Pageable pageable);
 
-    // Phương thức mới: Lọc payments của một user trước một thời điểm
     @EntityGraph(attributePaths = {"user", "intendedPlan"})
     Page<Payment> findByUserIdAndPaidAtBefore(Long userId, LocalDateTime toDate, Pageable pageable);
 
     Page<Payment> findByUserId(Long userId, Pageable pageable);
-
-    // Tìm kiếm khoản thanh toán cho một subscription cụ thể
-    Optional<Payment> findBySubscription(Subscription subscription);
 
     @Query(QueryConstants.FIND_PAYMENTS_BY_CRITERIA)
     List<Payment> findPaymentsByCriteria(@Param("userEmail") String userEmail,
