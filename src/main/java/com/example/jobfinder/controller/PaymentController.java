@@ -22,9 +22,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDateTime; // Import LocalDateTime
-import java.time.format.DateTimeParseException; // Import DateTimeParseException
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -41,8 +40,10 @@ public class PaymentController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "paidAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String fromDate, // <-- Thêm fromDate (không bắt buộc)
-            @RequestParam(required = false) String toDate) { // <-- Thêm toDate (không bắt buộc)
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String paymentStatus
+    ) {
         try {
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(page, size, sort);
@@ -50,7 +51,7 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false); // Parse fromDate
             LocalDateTime parsedToDate = parseDate(toDate, true);     // Parse toDate
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate);
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
                     .code(HttpStatus.OK.value())
@@ -83,8 +84,8 @@ public class PaymentController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "paidAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(required = false) String fromDate, // <-- Thêm fromDate
-            @RequestParam(required = false) String toDate) { // <-- Thêm toDate
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
@@ -140,9 +141,7 @@ public class PaymentController {
             // Thử parse với định dạng đầy đủ (YYYY-MM-DDTHH:MM:SS)
             return LocalDateTime.parse(dateString);
         } catch (DateTimeParseException e) {
-            // Nếu không được, thử parse với định dạng chỉ ngày (YYYY-MM-DD)
-            // Nếu là fromDate, đặt thời gian là 00:00:00
-            // Nếu là toDate, đặt thời gian là 23:59:59
+
             if (isEndDate) {
                 return LocalDateTime.parse(dateString + "T23:59:59");
             } else {
