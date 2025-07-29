@@ -186,6 +186,13 @@ public class ApplicationController {
             log.warn("Lưu ý: Đối với EMPLOYER, bạn nên thêm kiểm tra quyền sở hữu job cho application ID {}.", applicationId);
         }
 
+        if (currentUser.getRole().getName().equals("EMPLOYER")) {
+            boolean isEmployerJob = applicationService.isJobOwnedByEmployerByApplicationId(applicationId, currentUser.getId());
+            if (!isEmployerJob) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
+            }
+        }
+
         try {
             String resumeSummary = applicationService.summarizeResumeWithGemini(applicationId);
             return ResponseEntity.ok(ApiResponse.<String>builder()
