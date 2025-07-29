@@ -17,7 +17,7 @@ public class ActiveUserFilterAspect {
     }
 
     // Áp dụng Aspect cho tất cả các Controller loại bỏ authController để đăng nhập ban đầu lấy trường activeUserFilter
-    @Around("execution(* com.example.jobfinder.controller.*.*(..)) && !execution(* com.example.jobfinder.controller.AuthController.*(..))")
+    @Around("execution(* com.example.jobfinder.controller.*.*(..)) && !execution(* com.example.jobfinder.controller.AuthController.*(..)) && !execution(* com.example.jobfinder.controller.AdminController.*(..))")
     public Object applyFilters(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result;
         try {
