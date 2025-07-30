@@ -35,8 +35,6 @@ public class JobSearchService {
     private static final Logger log = LoggerFactory.getLogger(JobSearchService.class);
     private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final DateTimeFormatter EXPIRED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-
     private final ElasticsearchClient client;
     private final UserRepository userRepository;
     private final SavedJobRepository savedJobRepository;
@@ -45,8 +43,6 @@ public class JobSearchService {
     private final SearchHistoryRepository searchHistoryRepository;
 
     public JobSearchResponse search(JobSearchRequest request) throws IOException {
-
-
         List<Query> mustQueries = new ArrayList<>();
 
         if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
@@ -236,15 +232,15 @@ public class JobSearchService {
     public List<JobDocument> getAllJobsWithIsSaveStatus() {
         List<Job> allJobs = jobRepository.findAll();
         log.info("Found {} jobs in database", allJobs.size());
-        
+
         List<JobDocument> jobDocuments = allJobs.stream()
                 .map(this::convertToJobDocument)
                 .toList();
-        
+
         log.info("Converted {} jobs to JobDocuments", jobDocuments.size());
-        
+
         setIsSaveStatus(jobDocuments);
-        
+
         return jobDocuments;
     }
 
@@ -273,7 +269,7 @@ public class JobSearchService {
         doc.setCreatedAt(job.getCreatedAt() != null
                 ? job.getCreatedAt().format(CREATED_AT_FORMATTER)
                 : null);
-        
+
         log.debug("Converted Job {} to JobDocument with title: {}", job.getId(), doc.getTitle());
         return doc;
     }
@@ -318,7 +314,6 @@ public class JobSearchService {
         }
     }
 
-
     private void cleanupOldSearchHistory(User user, int maxRecords) {
         try {
             long totalRecords = searchHistoryRepository.countByUserAndSearchType(user, SearchHistory.SearchType.JOB);
@@ -341,8 +336,6 @@ public class JobSearchService {
         if (text == null) return null;
         return text.trim().toLowerCase().replaceAll("\\s+", " ");
     }
-
-
 
     private String buildSearchQueryString(JobSearchRequest request) {
         List<String> queryParts = new ArrayList<>();

@@ -45,18 +45,18 @@ public class AuthController {
         return ResponseEntity.ok(apiResponse);
     }
 
-@PostMapping("/google")
-public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogleToken(@RequestBody Map<String, String> body) {
-    String idToken = body.get("credential");
-    LoginResponse loginResponse = authService.loginWithGoogleToken(idToken);
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> loginWithGoogleToken(@RequestBody Map<String, String> body) {
+        String idToken = body.get("credential");
+        LoginResponse loginResponse = authService.loginWithGoogleToken(idToken);
 
-    ApiResponse<LoginResponse> apiResponse = ApiResponse.<LoginResponse>builder()
-            .code(HttpStatus.OK.value())
-            .message("Login successful with Google")
-            .result(loginResponse)
-            .build();
-    return ResponseEntity.ok(apiResponse);
-}
+        ApiResponse<LoginResponse> apiResponse = ApiResponse.<LoginResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Login successful with Google")
+                .result(loginResponse)
+                .build();
+        return ResponseEntity.ok(apiResponse);
+    }
 
 
     @GetMapping("/verify")
