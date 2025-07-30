@@ -26,4 +26,11 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
 
     Long countByJobSeeker_Id(Long jobSeekerId);
 
+    @Query("""
+    SELECT DISTINCT sj.jobSeeker.id 
+    FROM SavedJob sj 
+    WHERE sj.job.employer.id = :employerId
+""")
+    List<Long> findDistinctJobSeekerIdsByEmployerId(@Param("employerId") Long employerId);
+
 }

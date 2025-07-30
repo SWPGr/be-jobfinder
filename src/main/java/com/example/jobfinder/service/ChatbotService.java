@@ -37,11 +37,8 @@ public class ChatbotService {
     EmployerReviewRepository employerReviewRepository;
     ApplicationRepository applicationRepository;
     SubscriptionPlanRepository subscriptionPlanRepository;
-
-    // THÊM CÁC REPOSITORY VÀ MAPPER MỚI
-    ChatbotHistoryRepository chatbotHistoryRepository; // Dành cho ChatbotHistory
-    ChatbotHistoryMapper chatbotHistoryMapper; // Dành cho mapping ChatbotHistory
-
+    ChatbotHistoryRepository chatbotHistoryRepository;
+    ChatbotHistoryMapper chatbotHistoryMapper;
 
     private static final String INTENT_SYSTEM_INSTRUCTION = """
         ## Vai trò & Nhiệm vụ của bạn: Trợ lý Phân tích Ý định Chatbot Tuyển dụng
@@ -457,10 +454,7 @@ public class ChatbotService {
             log.info("Chatbot history saved successfully for user {}. ID: {}", currentUserEmail, savedChatbotHistory.getId());
         } catch (Exception e) {
             log.error("Failed to save chatbot history for user {}: {}", currentUserEmail, e.getMessage(), e);
-            // Quyết định: Nếu không lưu được lịch sử, bạn có muốn trả về lỗi cho người dùng không?
-            // Hoặc bạn vẫn muốn trả về phản hồi Gemini nhưng với thông báo lỗi nhẹ?
-            // Tạm thời, tôi sẽ ném lỗi nếu không lưu được history vì bạn muốn trả về history.
-            throw new AppException(ErrorCode.FAILED_TO_SAVE_CHAT_HISTORY); // Bạn cần định nghĩa ErrorCode này
+            throw new AppException(ErrorCode.FAILED_TO_SAVE_CHAT_HISTORY);
         }
         return chatbotHistoryMapper.toChatbotHistoryResponse(savedChatbotHistory);
     }
@@ -492,7 +486,6 @@ public class ChatbotService {
         ChatbotHistory history = chatbotHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHATBOT_HISTORY_NOT_FOUND));
 
-        // Kiểm tra quyền truy cập
         if ("ADMIN".equals(currentUserRole) || history.getUser().getId().equals(currentUser.getId())) {
             log.info("User {} (role {}) accessed chat history ID {}.", currentUserEmail, currentUserRole, historyId);
             return chatbotHistoryMapper.toChatbotHistoryResponse(history);
@@ -524,7 +517,7 @@ public class ChatbotService {
     }
 
 
-    @PreAuthorize("hasRole('ADMIN')") // Chỉ ADMIN mới có quyền này
+    @PreAuthorize("hasRole('ADMIN')")
     public List<ChatbotHistoryResponse> getAllChatbotHistoryForAdmin() {
         log.info("Admin user is requesting all chatbot history.");
         List<ChatbotHistory> allHistory = chatbotHistoryRepository.findAllByOrderByCreatedAtDesc();

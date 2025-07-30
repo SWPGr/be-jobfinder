@@ -7,7 +7,6 @@ import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobStatusUpdateRequest;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -47,8 +46,9 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
-    SavedJobRepository savedJobRepository;
     ApplicationRepository applicationRepository;
+    NotificationService notificationService;
+    SavedJobRepository savedJobRepository;
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -101,10 +101,29 @@ public class JobService {
         newJob.setResponsibility(jobCreationRequest.getResponsibility());
         newJob.setActive(true);
 
-        return jobRepository.save(newJob);
+            Job savedJob = jobRepository.save(newJob);
+
+            notifyJobSeekersOfNewJob(savedJob);
+        return savedJob;
     }
 
-    @Transactional // Đảm bảo giao dịch được quản lý
+    private void notifyJobSeekersOfNewJob(Job newJob) {
+        List<Long> jobSeekerIds = savedJobRepository.findDistinctJobSeekerIdsByEmployerId(newJob.getEmployer().getId());
+
+        for (Long jobSeekerId : jobSeekerIds) {
+            User jobSeeker = userRepository.findById(jobSeekerId)
+                    .orElse(null);
+            if (jobSeeker != null) {
+                String message = String.format(" '<b>%s</b>' has recently posted a new job. You might be interested.",
+                        newJob.getEmployer().getUserDetail().getCompanyName());
+
+                notificationService.createNotification(jobSeeker.getId(), message, newJob.getId());
+            }
+        }
+    }
+
+
+    @Transactional
     public JobResponse updateJob(Long jobId, JobUpdateRequest request) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -113,9 +132,8 @@ public class JobService {
             User newEmployer = userRepository.findById(request.getEmployerId())
                     .orElseThrow(() -> new AppException(ErrorCode.EMPLOYER_NOT_FOUND));
 
-            // Đảm bảo vai trò đúng cho Employer mới
             if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"ADMIN".equals(newEmployer.getRole().getName())) { // Added ADMIN check for flexibility
-                throw new AppException(ErrorCode.UNAUTHORIZED); // Hoặc một ErrorCode cụ thể hơn như FORBIDDEN_ROLE
+                throw new AppException(ErrorCode.UNAUTHORIZED);
             }
             job.setEmployer(newEmployer);
         }
@@ -186,7 +204,6 @@ public class JobService {
         });
     }
 
-
     @Transactional(readOnly = true)
     public long getTotalJobs() {
         log.info("Service: Đếm tổng số công việc.");
@@ -214,10 +231,10 @@ public class JobService {
             int size,
             String sortBy,
             String sortDir,
-            Boolean isActive, // Lọc theo trạng thái active
-            String jobTitle,  // Lọc theo tên công việc
-            LocalDateTime fromDate, // Lọc từ ngày
-            LocalDateTime toDate    // Lọc đến ngày
+            Boolean isActive,
+            String jobTitle,
+            LocalDateTime fromDate,
+            LocalDateTime toDate
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -234,8 +251,15 @@ public class JobService {
 
         Long employerId = currentEmployer.getId();
 
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Long totalApplicationCount = applicationRepository.countByJob_Employer_Id(employerId);
+        Long totalOpenJobCount = jobRepository.countByEmployer_IdAndActiveTrue(employerId);
+
+        Sort defaultActiveSort = Sort.by(Sort.Direction.DESC, "active");
+        Sort userDefinedSort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
+                Sort.by(sortBy).ascending() :
+                Sort.by(sortBy).descending();
+        Sort finalSort = defaultActiveSort.and(userDefinedSort);
+        Pageable pageable = PageRequest.of(page, size, finalSort);
 
         Page<Job> jobsPage = jobRepository.findAll((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -329,6 +353,8 @@ public class JobService {
                 .isLast(jobsPage.isLast())
                 .isFirst(jobsPage.isFirst())
                 .content(jobResponses)
+                .totalApplication(totalApplicationCount)
+                .totalOpenJob(totalOpenJobCount)
                 .build();
     }
 
