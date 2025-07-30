@@ -197,17 +197,25 @@ public class SubscriptionPaymentService {
             Long userId,
             Pageable pageable,
             LocalDateTime fromDate,
-            LocalDateTime toDate) {
-        Page<Payment> paymentsPage;
-        if (fromDate != null && toDate != null) {
-            paymentsPage = paymentRepository.findByUserIdAndPaidAtBetween(userId, fromDate, toDate, pageable);
-        } else if (fromDate != null) {
-            paymentsPage = paymentRepository.findByUserIdAndPaidAtAfter(userId, fromDate, pageable);
-        } else if (toDate != null) {
-            paymentsPage = paymentRepository.findByUserIdAndPaidAtBefore(userId, toDate, pageable);
-        } else {
-            paymentsPage = paymentRepository.findByUserId(userId, pageable);
-        }
+            LocalDateTime toDate,
+            String paymentStatus
+    ) {
+        Specification<Payment> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
+            if (fromDate != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("paidAt"), fromDate));
+            }
+            if (toDate != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("paidAt"), toDate));
+            }
+            if (paymentStatus != null && !paymentStatus.trim().isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("payosStatus"), paymentStatus));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Payment> paymentsPage = paymentRepository.findAll(spec, pageable);
         return buildPageResponse(paymentsPage);
     }
 
