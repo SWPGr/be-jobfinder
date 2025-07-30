@@ -346,7 +346,7 @@ public class JobService {
                 .collect(Collectors.toList());
 
         return PageResponse.<JobResponse>builder()
-                .pageNumber(jobsPage.getNumber())
+                .pageNumber(jobsPage.getNumber() + 1)
                 .pageSize(jobsPage.getSize())
                 .totalElements(jobsPage.getTotalElements())
                 .totalPages(jobsPage.getTotalPages())

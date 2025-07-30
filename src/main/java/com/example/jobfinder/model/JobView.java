@@ -8,9 +8,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "job_views",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"job_id", "job_seeker_id"})
-        })
+        indexes = {@Index(name = "idx_job_seeker_job", columnList = "job_id, job_seeker_id")})
 @Getter
 @Setter
 @NoArgsConstructor
