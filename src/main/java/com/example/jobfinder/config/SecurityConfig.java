@@ -157,7 +157,8 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:3030",
                 "http://localhost:8080",
-                "https://fe-jobfinder.vercel.app/"
+                "https://fe-jobfinder.vercel.app/",
+                "http://localhost:8081"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));

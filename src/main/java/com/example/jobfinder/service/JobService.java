@@ -7,7 +7,6 @@ import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.job.JobStatusUpdateRequest;
 import com.example.jobfinder.dto.job.JobUpdateRequest;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.JobMapper;
@@ -47,8 +46,9 @@ public class JobService {
     CategoryRepository categoryRepository;
     EducationRepository educationRepository;
     ExperienceRepository experienceRepository;
-    SavedJobRepository savedJobRepository;
     ApplicationRepository applicationRepository;
+    NotificationService notificationService;
+    SavedJobRepository savedJobRepository;
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -101,8 +101,27 @@ public class JobService {
         newJob.setResponsibility(jobCreationRequest.getResponsibility());
         newJob.setActive(true);
 
-        return jobRepository.save(newJob);
+            Job savedJob = jobRepository.save(newJob);
+
+            notifyJobSeekersOfNewJob(savedJob);
+        return savedJob;
     }
+
+    private void notifyJobSeekersOfNewJob(Job newJob) {
+        List<Long> jobSeekerIds = savedJobRepository.findDistinctJobSeekerIdsByEmployerId(newJob.getEmployer().getId());
+
+        for (Long jobSeekerId : jobSeekerIds) {
+            User jobSeeker = userRepository.findById(jobSeekerId)
+                    .orElse(null);
+            if (jobSeeker != null) {
+                String message = String.format(" '%s' has recently posted a new job. You might be interested.",
+                        newJob.getEmployer().getUserDetail().getCompanyName());
+
+                notificationService.createNotification(jobSeeker.getId(), message);
+            }
+        }
+    }
+
 
     @Transactional // Đảm bảo giao dịch được quản lý
     public JobResponse updateJob(Long jobId, JobUpdateRequest request) {
@@ -345,4 +364,29 @@ public class JobService {
         jobRepository.save(job);
         log.info("Job with ID {} active status updated to {}", request.getJobId(), request.getIsActive());
     }
+
+    public void notifyUserOfNewJobsFromSavedEmployers(int limit) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new IllegalStateException("User not authenticated.");
+        }
+
+        String email = authentication.getName();
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + email));
+
+        LocalDateTime fromTime = LocalDateTime.now().minusHours(24);
+
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Job> jobs = jobRepository.findRecentJobsFromSavedEmployers(currentUser.getId(), fromTime, pageable);
+
+        List<JobResponse> jobResponses = jobs.stream()
+                .map(jobMapper::toJobResponse)
+                .toList();
+
+        if (!jobResponses.isEmpty()) {
+            notificationService.sendJobNotifications(currentUser, jobResponses);
+        }
+    }
+
 }
