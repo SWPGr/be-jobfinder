@@ -35,6 +35,11 @@ public class Notification {
     @JsonManagedReference("user-notifications")
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_id", nullable = false)
+    @JsonManagedReference("job-notifications")
+    private Job job;
+
     // Lifecycle callbacks
     @PrePersist
     protected void onCreate() {
