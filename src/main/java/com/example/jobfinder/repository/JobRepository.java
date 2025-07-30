@@ -119,4 +119,7 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
             @Param("fromTime") LocalDateTime fromTime,
             Pageable pageable);
 
+    @Query("SELECT COUNT(j) FROM Job j WHERE j.employer.id = :employerId AND j.active = true")
+    long countActiveJobsByEmployer(@Param("employerId") Long employerId);
+
 }
