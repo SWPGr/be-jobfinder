@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Optional;
 
 
 @Service
@@ -40,41 +41,33 @@ public class JobViewService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
             log.debug("Anonymous user viewing job ID: {}", request.getJobId());
-            return null; // hoặc return JobViewResponse.empty(), tùy bạn
+            return null;
         }
 
         String email = authentication.getName();
-        log.debug("Authenticated username: {}", email);
         User jobSeeker = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        String role = jobSeeker.getRole().getName();
-        log.debug("User role: {}", role);
-        if(!role.equals("JOB_SEEKER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only Job seeker roles are allowed");
+        if (!"JOB_SEEKER".equals(jobSeeker.getRole().getName())) {
+            log.debug("User is not JOB_SEEKER, skipping job view record");
+            return null;
         }
 
         Job job = jobRepository.findById(request.getJobId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found" + request.getJobId()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found"));
 
-        LocalDateTime startOfDay = LocalDate.now().atTime(LocalTime.MIN);
-        boolean alreadyViewedToday = jobViewRepository.findByJobSeekerIdAndJobIdAndViewedAtAfter(jobSeeker.getId(), job.getId(), startOfDay)
-                .isPresent();
-        if(!alreadyViewedToday) {
-            JobView jobView = new JobView();
-            jobView.setJobSeeker(jobSeeker);
-            jobView.setJob(job);
-            jobView.setViewedAt(LocalDateTime.now());
-            log.debug("Recording job view for user: {} and job: {}", jobSeeker.getId(), job.getId());
-            jobViewRepository.save(jobView);
-            return mapToJobViewResponse(jobView);
-        } else {
-            log.debug("Job already viewed today by user: {} for job: {}", jobSeeker.getId(), job.getId());
-            JobView existingView = jobViewRepository.findByJobSeekerIdAndJobIdAndViewedAtAfter(jobSeeker.getId(), job.getId(), startOfDay)
-                    .get();
-            return mapToJobViewResponse(existingView);
-        }
+        JobView jobView = new JobView();
+        jobView.setJobSeeker(jobSeeker);
+        jobView.setJob(job);
+        jobView.setViewedAt(LocalDateTime.now());
+
+        log.debug("Recording job view for user: {} and job: {}", jobSeeker.getId(), job.getId());
+        jobViewRepository.save(jobView);
+
+        return mapToJobViewResponse(jobView);
     }
+
+
     private JobViewResponse mapToJobViewResponse(JobView jobView) {
         return JobViewResponse.builder()
                 .id(jobView.getId())
