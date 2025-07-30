@@ -6,7 +6,9 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,22 +21,21 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ProfileService {
-    private final UserRepository userRepository;
-    private final UserDetailsRepository userDetailsRepository;
-    private final EducationRepository educationRepository;
-    private final CloudinaryService cloudinaryService;
-    private final ExperienceRepository experienceRepository;
-    private final OrganizationRepository organizationRepository;
-    private final CategoryRepository categoryRepository;
-    private final AICompanyAnalysisService aiCompanyAnalysisService;
-    private final JobseekerAnalysisService jobseekerAnalysisService;
-    private final JobseekerAnalysisRepository jobseekerAnalysisRepository;
-    private final ApplicationRepository applicationRepository;
+    UserRepository userRepository;
+    UserDetailsRepository userDetailsRepository;
+    EducationRepository educationRepository;
+    CloudinaryService cloudinaryService;
+    ExperienceRepository experienceRepository;
+    OrganizationRepository organizationRepository;
+    CategoryRepository categoryRepository;
+    AICompanyAnalysisService aiCompanyAnalysisService;
+    JobseekerAnalysisService jobseekerAnalysisService;
+    JobseekerAnalysisRepository jobseekerAnalysisRepository;
 
-    // Constants for role names - better practice
-    private static final String ROLE_JOB_SEEKER = "JOB_SEEKER";
-    private static final String ROLE_EMPLOYER = "EMPLOYER";
+     static String ROLE_JOB_SEEKER = "JOB_SEEKER";
+     static String ROLE_EMPLOYER = "EMPLOYER";
 
 
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
@@ -53,9 +54,7 @@ public class ProfileService {
         String roleName = user.getRole().getName();
 
         if (roleName.equals(ROLE_JOB_SEEKER)) {
-            boolean shouldAnalyzeResume = false;
 
-            // Kiểm tra null cho từng trường để chỉ cập nhật nếu giá trị được cung cấp
             if (request.getEducation() != null) {
                 Education education = educationRepository.findById(request.getEducation().getId())
                         .orElseThrow(() -> new Exception("invalid education id"));
@@ -88,19 +87,15 @@ public class ProfileService {
                     }
                 }
             }
-
-
-        } else if (roleName.equals(ROLE_EMPLOYER)) { // Sử dụng hằng số
+        } else if (roleName.equals(ROLE_EMPLOYER)) {
             if (request.getCompanyName() == null || request.getCompanyName().isEmpty()) {
-                throw new AppException(ErrorCode.COMPANY_NAME_REQUIRED); // Thêm ErrorCode này
+                throw new AppException(ErrorCode.COMPANY_NAME_REQUIRED);
             }
 
-            // Xử lý upload banner nếu có
             if (request.getBanner() != null && !request.getBanner().isEmpty()) {
                 String bannerUrl = cloudinaryService.uploadFile(request.getBanner());
                 userDetail.setBanner(bannerUrl);
             } else if (request.getBanner() != null && request.getBanner().isEmpty()) {
-                // Nếu client gửi chuỗi rỗng để xóa banner
                 userDetail.setBanner(null);
             }
 
@@ -115,8 +110,6 @@ public class ProfileService {
                       .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
               userDetail.setCategory(category);
           }
-
-
             Optional.ofNullable(request.getCompanyName()).ifPresent(userDetail::setCompanyName);
             Optional.ofNullable(request.getLocation()).ifPresent(userDetail::setLocation);
             Optional.ofNullable(request.getDescription()).ifPresent(userDetail::setDescription);
@@ -128,22 +121,18 @@ public class ProfileService {
             Optional.ofNullable(request.getPhone()).ifPresent(userDetail::setPhone);
 
         } else {
-            throw new AppException(ErrorCode.INVALID_ROLE); // Thêm ErrorCode này
+            throw new AppException(ErrorCode.INVALID_ROLE);
         }
-
-        // Xử lý upload avatar (chung cho cả hai vai trò)
         if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
             String avatarUrl = cloudinaryService.uploadFile(request.getAvatar());
             userDetail.setAvatarUrl(avatarUrl);
         } else if (request.getAvatar() != null && request.getAvatar().isEmpty()) {
-            // Nếu client gửi chuỗi rỗng để xóa avatar
             userDetail.setAvatarUrl(null);
         }
 
         UserDetail savedUserDetail = userDetailsRepository.save(userDetail);
 
         try {
-            // Chỉ phân tích nếu có đủ thông tin cơ bản
             if (savedUserDetail.getCompanyName() != null && !savedUserDetail.getCompanyName().isEmpty() &&
                     savedUserDetail.getDescription() != null && !savedUserDetail.getDescription().isEmpty()) {
                 aiCompanyAnalysisService.analyzeAndSaveCompanyProfile(savedUserDetail);
@@ -209,9 +198,6 @@ public class ProfileService {
 
         UserDetail userDetail = userDetailsRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.PROFILE_NOT_FOUND));
-
-        // Bỏ kiểm tra if (userDetail == null) và trả về Collections.emptyList()
-        // Vì nếu đã đến đây mà không tìm thấy UserDetail thì đã ném lỗi PROFILE_NOT_FOUND
 
         ProfileResponse response = mapToProfileResponse(currentUser, userDetail);
         return Collections.singletonList(response);

@@ -9,7 +9,9 @@ import com.example.jobfinder.dto.job_seeker.JobSeekerSearchResponse;
 import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.mapper.UserDocumentMapper;
 import com.example.jobfinder.model.UserDocument;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,23 +23,22 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class JobSeekerSearchService {
-    
-    private static final Logger log = LoggerFactory.getLogger(JobSeekerSearchService.class);
 
-    private final ElasticsearchClient client;
-    private final UserDocumentMapper userDocumentMapper;
+    static Logger log = LoggerFactory.getLogger(JobSeekerSearchService.class);
+
+    ElasticsearchClient client;
+    UserDocumentMapper userDocumentMapper;
 
     public JobSeekerSearchResponse search(JobSeekerSearchRequest request) throws IOException {
         List<Query> mustQueries = new ArrayList<>();
-
-        // Always filter by JOB_SEEKER role
         mustQueries.add(Query.of(q -> q.term(t -> t
                 .field("roleId")
                 .value(1L) // Assuming JOB_SEEKER role has ID = 1
         )));
 
-        // Education filter
+
         if (request.getEducationId() != null) {
             mustQueries.add(termQuery("educationId", request.getEducationId()));
         }
@@ -52,7 +53,6 @@ public class JobSeekerSearchService {
             mustQueries.add(matchQuery("location", request.getLocation()));
         }
 
-        
 
         // Build final query
         Query finalQuery = mustQueries.isEmpty()
@@ -95,14 +95,12 @@ public class JobSeekerSearchService {
                 .build();
     }
 
-    // Helper methods for building queries
     private Query termQuery(String field, Object value) {
         return Query.of(q -> q.term(t -> t
                 .field(field)
                 .value(v -> v.stringValue(value.toString()))
         ));
     }
-
     private Query matchQuery(String field, String value) {
         return Query.of(q -> q.match(m -> m
                 .field(field)
