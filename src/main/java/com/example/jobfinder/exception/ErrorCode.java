@@ -185,8 +185,9 @@ public enum ErrorCode {
     REPORT_TYPE_NOT_FOUND(2016,  "Report type not found"),
     ALREADY_REPORTED(2017, "You have already reported this job with the same content."),
     JOB_NO_VACANCY(2018, "Job has out of vacancy"),
-    JOB_POST_LIMIT_EXCEEDED(2019,"You have used up all your free postings. Check out our other packages for a better experience."),
-    SUBSCRIPTION_NOT_FOUND(2020, "No subcription plan found");
+    JOB_POST_LIMIT_EXCEEDED(2019,"You have used up all your postings time. Check out our other packages for a better experience."),
+    SUBSCRIPTION_NOT_FOUND(2020, "No subcription plan found"),
+    SUBSCRIPTION_EXPIRED(2021, "Your plan has expired. You can choose the other plan");
 
 
 

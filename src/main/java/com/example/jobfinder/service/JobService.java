@@ -69,11 +69,17 @@ public class JobService {
                 .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
 
         Integer maxJobsPost = subscription.getPlan().getMaxJobsPost();
-        long currentJobCount = jobRepository.countActiveJobsByEmployer(employer.getId());
+        LocalDateTime subscriptionStart = subscription.getStartDate();
+        long jobCountSinceSubscription = jobRepository.countJobsPostedSince(employer.getId(), subscriptionStart);
 
-        if (maxJobsPost != null && currentJobCount >= maxJobsPost) {
+        if (maxJobsPost != null && jobCountSinceSubscription >= maxJobsPost) {
             throw new AppException(ErrorCode.JOB_POST_LIMIT_EXCEEDED);
         }
+        if (subscription.getEndDate() != null && subscription.getEndDate().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
+        }
+
+
 
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));

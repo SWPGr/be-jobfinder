@@ -299,7 +299,7 @@ public class ChatbotService {
                             String planListString = allPlans.stream()
                                     .map(plan -> String.format("- Gói: %s, Giá: %.2f VNĐ, Thời hạn: %d ngày, Đăng bài tối đa: %d, Xem ứng tuyển tối đa: %d, Nổi bật việc làm: %b",
                                             plan.getSubscriptionPlanName(), plan.getPrice(), plan.getDurationDays(),
-                                            plan.getMaxJobsPost(), plan.getMaxApplicationsView(), plan.getHighlightJobs()))
+                                            plan.getMaxJobsPost(), plan.getMaxApplications(), plan.getHighlightJobs()))
                                     .collect(Collectors.joining("\n"));
                             contextForGemini.append("\n").append(planListString);
                             contextForGemini.append("\n\nDựa vào thông tin này, hãy trả lời câu hỏi của người dùng.");
