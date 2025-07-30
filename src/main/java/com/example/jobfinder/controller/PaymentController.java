@@ -86,7 +86,9 @@ public class PaymentController {
             @RequestParam(defaultValue = "paidAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String paymentStatus
+    ) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
@@ -100,10 +102,11 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false);
             LocalDateTime parsedToDate = parseDate(toDate, true);
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getMyPaymentHistory(currentUser.getId(), pageable, parsedFromDate, parsedToDate);
+            // Truyền paymentStatus xuống service
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getMyPaymentHistory(currentUser.getId(), pageable, parsedFromDate, parsedToDate, paymentStatus);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
-                    .code(200)
+                    .code(HttpStatus.OK.value())
                     .message("My payment history retrieved successfully")
                     .result(paymentsPageResponse)
                     .build();
