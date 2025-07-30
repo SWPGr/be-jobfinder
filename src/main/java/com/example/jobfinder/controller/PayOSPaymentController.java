@@ -90,7 +90,7 @@ public class PayOSPaymentController {
             );
 
             ApiResponse<String> apiResponse = ApiResponse.<String>builder()
-                    .code(200)
+                    .code(2000)
                     .message("Payment successfully processed and premium status updated.")
                     .result("OK")
                     .build();
