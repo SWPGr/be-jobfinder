@@ -127,7 +127,7 @@ public class ApplicationService {
                 job.getTitle()
         );
         try {
-            notificationService.createNotification(employerId, notificationMessage);
+            notificationService.createNotification(employerId, notificationMessage, null);
             log.info("Notification sent to employer {} (ID: {}) for new application on job '{}' (ID: {}).",
                     employerName, employerId, job.getTitle(), job.getId());
         } catch (Exception e) {

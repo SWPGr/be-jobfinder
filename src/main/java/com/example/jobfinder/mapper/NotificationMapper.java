@@ -21,7 +21,8 @@ public interface NotificationMapper {
     Notification toNotification(NotificationRequest request);
 
     // Khi chuyển Notification Entity sang Response DTO
-    @Mapping(source = "user", target = "user") // Map User entity to UserResponse DTO
+    @Mapping(source = "user", target = "user")
+    @Mapping(source = "job.id", target = "jobId")// Map User entity to UserResponse DTO
     NotificationResponse toNotificationResponse(Notification notification);
 
     List<NotificationResponse> toNotificationResponseList(List<Notification> notifications);
