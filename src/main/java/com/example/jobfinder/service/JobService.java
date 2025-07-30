@@ -114,7 +114,7 @@ public class JobService {
             User jobSeeker = userRepository.findById(jobSeekerId)
                     .orElse(null);
             if (jobSeeker != null) {
-                String message = String.format(" '<b>%s</b>' has recently posted a new job. You might be interested.",
+                String message = String.format(" **%s** has recently posted a new job. You might be interested.",
                         newJob.getEmployer().getUserDetail().getCompanyName());
 
                 notificationService.createNotification(jobSeeker.getId(), message);
