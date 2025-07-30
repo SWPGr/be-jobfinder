@@ -38,6 +38,11 @@ public class JobViewService {
         log.debug("Processing job view request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            log.debug("Anonymous user viewing job ID: {}", request.getJobId());
+            return null; // hoặc return JobViewResponse.empty(), tùy bạn
+        }
+
         String email = authentication.getName();
         log.debug("Authenticated username: {}", email);
         User jobSeeker = userRepository.findByEmail(email)

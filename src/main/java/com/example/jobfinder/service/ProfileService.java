@@ -238,6 +238,7 @@ public class ProfileService {
         response.setYearOfEstablishment(userDetail.getYearOfEstablishment());
         response.setMapLocation(userDetail.getMapLocation());
         response.setCompanyVision(userDetail.getCompanyVision());
+        response.setCreatedAt(user.getCreatedAt());
 
         return response;
     }

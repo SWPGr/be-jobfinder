@@ -107,8 +107,8 @@ public class SecurityConfig {
                                 "/api/subscription-plans/**",
                                 "/api/payments/**",
                                 "/api/green-test/**",
-                                "api/debug/**",
-                                "api/report/**",
+                                "/api/debug/**",
+                                "/api/report/**",
                                 "/api/admin"
                         ).permitAll()
                         .requestMatchers("/api/auth/change-password").authenticated()

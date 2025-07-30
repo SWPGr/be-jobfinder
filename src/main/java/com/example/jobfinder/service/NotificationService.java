@@ -32,16 +32,26 @@ public class NotificationService {
     public void createNotification(Long userId, String message, Long jobId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+        if (jobId != null) {
+            Job job = jobRepository.findById(jobId)
+                    .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+
+
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .message(message)
+                    .isRead(false)
+                    .job(job)
+                    .build();
+            notificationMapper.toNotificationResponse(notificationRepository.save(notification));
+        }
 
         Notification notification = Notification.builder()
                 .user(user)
                 .message(message)
                 .isRead(false)
-                .job(job)
                 .build();
-
         notificationMapper.toNotificationResponse(notificationRepository.save(notification));
     }
 
