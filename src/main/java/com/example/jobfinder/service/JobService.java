@@ -254,8 +254,12 @@ public class JobService {
         Long totalApplicationCount = applicationRepository.countByJob_Employer_Id(employerId);
         Long totalOpenJobCount = jobRepository.countByEmployer_IdAndActiveTrue(employerId);
 
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Sort defaultActiveSort = Sort.by(Sort.Direction.DESC, "active");
+        Sort userDefinedSort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ?
+                Sort.by(sortBy).ascending() :
+                Sort.by(sortBy).descending();
+        Sort finalSort = defaultActiveSort.and(userDefinedSort);
+        Pageable pageable = PageRequest.of(page, size, finalSort);
 
         Page<Job> jobsPage = jobRepository.findAll((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();

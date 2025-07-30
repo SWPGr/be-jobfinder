@@ -133,29 +133,9 @@ public class UserService {
                     UserDetail userDetail = (UserDetail) row[1];
                     Role role = (Role) row[2];
 
-                    UserResponse userResponse = UserResponse.builder()
-                            .id(user.getId())
-                            .email(user.getEmail())
-                            .isPremium(user.getIsPremium())
-                            .createdAt(user.getCreatedAt()) // Chuyển đổi LocalDateTime sang String
-                            .updatedAt(user.getUpdatedAt()) // Chuyển đổi LocalDateTime sang String
-                            .role(role != null ? new SimpleNameResponse(role.getId(), role.getName()) : null)
-                            .verified(user.getVerified())
-                            .totalApplications(null) // Khởi tạo là null
-                            .totalJobsPosted(null)   // Khởi tạo là null
-                            .active(user.getIsActive())
-                            .build();
+                    UserResponse userResponse = userMapper.toUserResponse(user);
 
-                    // Map UserDetail nếu có
-                    if (userDetail != null) {
-                        userResponse.setFullName(userDetail.getFullName());
-                        userResponse.setPhone(userDetail.getPhone());
-                        userResponse.setLocation(userDetail.getLocation());
-                        userResponse.setCompanyName(userDetail.getCompanyName());
-                        userResponse.setWebsite(userDetail.getWebsite());
-                    }
 
-                    // Điền totalJobsPosted cho EMPLOYER (chỉ đếm job active)
                     if (role != null && "EMPLOYER".equals(role.getName())) {
                         long totalActiveJobs = jobRepository.countByEmployerIdAndActiveTrue(user.getId());
                         userResponse.setTotalJobsPosted(totalActiveJobs);

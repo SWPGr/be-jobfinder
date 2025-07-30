@@ -15,9 +15,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor // Sẽ tạo constructor cho final fields
+@RequiredArgsConstructor
 @Slf4j
-// Lớp này là abstract, sẽ không được Spring tạo bean trực tiếp
 public abstract class BaseNameService<T> {
 
     protected final BaseNameRepository<T, Long> repository;

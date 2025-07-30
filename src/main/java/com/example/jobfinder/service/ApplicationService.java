@@ -63,6 +63,7 @@ public class ApplicationService {
     GeminiService geminiService;
     ResumeSummaryRepository resumeSummaryRepository;
     EmailService emailService;
+    NotificationService notificationService;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
@@ -111,6 +112,28 @@ public class ApplicationService {
         application.setAppliedAt(LocalDateTime.now());
         Application createdApplication = applicationRepository.save(application);
 
+        // Xây dựng nội dung thông báo
+        String jobSeekerName = application.getJobSeeker().getUserDetail() != null
+                ? application.getJobSeeker().getUserDetail().getFullName()
+                : null;
+
+        Long employerId = job.getEmployer().getId();
+        String employerName = job.getEmployer().getUserDetail() != null
+                ? job.getEmployer().getUserDetail().getCompanyName()
+                : "Nhà tuyển dụng";
+        String notificationMessage = String.format(
+                "%s đã nộp đơn vào công việc '%s' của bạn.",
+                jobSeekerName != null && !jobSeekerName.isEmpty() ? jobSeekerName : jobSeeker.getEmail(),
+                job.getTitle()
+        );
+        try {
+            notificationService.createNotification(employerId, notificationMessage);
+            log.info("Notification sent to employer {} (ID: {}) for new application on job '{}' (ID: {}).",
+                    employerName, employerId, job.getTitle(), job.getId());
+        } catch (Exception e) {
+            log.error("Failed to create notification for employer {} (ID: {}) for new application: {}",
+                    employerName, employerId, e.getMessage());
+        }
         return applicationMapper.toApplicationResponse(createdApplication);
     }
 
