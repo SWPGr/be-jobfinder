@@ -122,7 +122,7 @@ public class ApplicationService {
                 ? job.getEmployer().getUserDetail().getCompanyName()
                 : "Nhà tuyển dụng";
         String notificationMessage = String.format(
-                "%s đã nộp đơn vào công việc '%s' của bạn.",
+                "%s has applied for your job '%s'",
                 jobSeekerName != null && !jobSeekerName.isEmpty() ? jobSeekerName : jobSeeker.getEmail(),
                 job.getTitle()
         );
