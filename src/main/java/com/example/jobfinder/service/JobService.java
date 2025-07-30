@@ -253,6 +253,9 @@ public class JobService {
 
         Long employerId = currentEmployer.getId();
 
+        Long totalApplicationCount = applicationRepository.countByJob_Employer_Id(employerId);
+        Long totalOpenJobCount = jobRepository.countByEmployer_IdAndActiveTrue(employerId);
+
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
@@ -348,6 +351,8 @@ public class JobService {
                 .isLast(jobsPage.isLast())
                 .isFirst(jobsPage.isFirst())
                 .content(jobResponses)
+                .totalApplication(totalApplicationCount)
+                .totalOpenJob(totalOpenJobCount)
                 .build();
     }
 
