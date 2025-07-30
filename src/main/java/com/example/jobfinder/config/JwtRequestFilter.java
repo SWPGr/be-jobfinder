@@ -93,7 +93,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 "/api/auth/resend-verification",
                 "/api/auth/verify",
                 "/api/auth/reset-password",
-                "/api/debug/"
+                "/api/debug/",
         };
         for (String endpoint : publicEndpoints) {
             if (requestURI.startsWith(endpoint)) {
