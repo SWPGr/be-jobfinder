@@ -1,12 +1,15 @@
 package com.example.jobfinder.service;
 
+import com.example.jobfinder.dto.job.JobResponse;
 import com.example.jobfinder.dto.notification.NotificationResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.NotificationMapper;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.Notification;
 import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.NotificationRepository;
+import com.example.jobfinder.repository.SavedJobRepository;
 import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ public class NotificationService {
     NotificationRepository notificationRepository;
     UserRepository userRepository;
     NotificationMapper notificationMapper;
+    SavedJobRepository savedJobRepository;
 
     public NotificationResponse createNotification(Long userId, String message) {
         User user = userRepository.findById(userId)
@@ -80,4 +84,18 @@ public class NotificationService {
 
         notificationRepository.delete(notification);
     }
+
+    public void sendJobNotifications(User user, List<JobResponse> jobs) {
+        List<Notification> notifications = jobs.stream()
+                .map(job -> Notification.builder()
+                        .user(user)
+                        .message(job.getEmployer().getCompanyName() + "has recently posted a new job. You might be interested.")
+                        .isRead(false)
+                        .build())
+                .toList();
+
+        notificationRepository.saveAll(notifications);
+    }
+
+
 }
