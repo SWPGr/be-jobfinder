@@ -101,6 +101,11 @@ public class Job {
     @JsonBackReference("job-jobviews")
     private Set<JobView> jobViews = new HashSet<>();
 
+    @OneToMany(mappedBy = "job", cascade = CascadeType.DETACH, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JsonBackReference("job-notifications")
+    private Set<Notification> notifications = new HashSet<>();
+
+
     @ManyToOne
     @JoinColumn(name = "job_education_id")
     private Education education;

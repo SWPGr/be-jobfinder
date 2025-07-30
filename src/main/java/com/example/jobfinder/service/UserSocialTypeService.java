@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +35,6 @@ public class UserSocialTypeService {
     SocialTypeRepository socialTypeRepository;
     UserSocialTypeMapper userSocialTypeMapper;
 
-    // Helper method to get authenticated user entity
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();

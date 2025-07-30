@@ -8,14 +8,16 @@ import com.example.jobfinder.exception.ErrorCode; // Cần import ErrorCode
 import com.example.jobfinder.mapper.EducationMapper; // Cần import EducationMapper
 import com.example.jobfinder.model.Education; // Cần import Education entity
 import com.example.jobfinder.repository.EducationRepository; // Cần import EducationRepository
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
-@Service // Đánh dấu đây là một Spring Service bean
+@Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EducationService extends BaseNameService<Education> {
 
-    private final EducationMapper educationMapper;
+    private EducationMapper educationMapper;
 
-    // Spring sẽ tự động inject EducationRepository và EducationMapper vào constructor này
     public EducationService(EducationRepository educationRepository, EducationMapper educationMapper) {
         super(educationRepository); // Gọi constructor của lớp cha BaseNameService
         this.educationMapper = educationMapper;
@@ -38,12 +40,12 @@ public class EducationService extends BaseNameService<Education> {
 
     @Override
     protected ErrorCode getExistedErrorCode() {
-        return ErrorCode.EDUCATION_NAME_EXISTED; // Sẽ thêm vào ErrorCode
+        return ErrorCode.EDUCATION_NAME_EXISTED;
     }
 
     @Override
     protected ErrorCode getNotFoundErrorCode() {
-        return ErrorCode.EDUCATION_NOT_FOUND; // Sẽ thêm vào ErrorCode
+        return ErrorCode.EDUCATION_NOT_FOUND;
     }
 
     @Override

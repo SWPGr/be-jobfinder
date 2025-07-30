@@ -29,8 +29,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthService {
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
+    Logger log = LoggerFactory.getLogger(AuthService.class);
     UserRepository userRepository;
     RoleRepository roleRepository;
     UserDetailsRepository userDetailsRepository;
@@ -41,8 +40,6 @@ public class AuthService {
     GoogleTokenVerifierService googleTokenVerifierService;
     SubscriptionRepository subscriptionRepository;
     SubscriptionPlanRepository subscriptionPlanRepository;
-    UserMapper userMapper;
-
 
     public void register(RegisterRequest request) throws Exception {
         if(userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -59,9 +56,7 @@ public class AuthService {
         user.setVerificationToken(UUID.randomUUID().toString());
         user.setVerified(0);
         user.setIsActive(true);
-
         userRepository.save(user);
-
         UserDetail userDetail = new UserDetail();
         userDetail.setUser(user);
 
@@ -75,28 +70,27 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user;
         try {
+            user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + request.getEmail()));
+
+            if (user.getVerified() == 0) {
+                throw new AppException(ErrorCode.USER_NOT_VERIFIED);
+            }
+
+            if (user.getIsActive() == false) {
+                throw new AppException(ErrorCode.ACCOUNT_BLOCKED);
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(), request.getPassword()
                     )
             );
-            user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + request.getEmail()));
-
         } catch (BadCredentialsException e) {
             throw new AppException(ErrorCode.WRONG_PASSWORD);
         }
 
-        if (user.getVerified() == 0) {
-            throw new AppException(ErrorCode.USER_NOT_VERIFIED); // Ném lỗi
-        }
-
-        if (user.getIsActive() == false) {
-            throw new AppException(ErrorCode.ACCOUNT_BLOCKED); // Ném lỗi
-        }
-
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
-
         return LoginResponse.builder()
                 .token(token)
                 .role(user.getRole().getName())
@@ -108,7 +102,7 @@ public class AuthService {
         GoogleUserInfo userInfo = googleTokenVerifierService.verify(idToken);
 
         if (userInfo == null || userInfo.getEmail() == null) {
-            throw new AppException(ErrorCode.INVALID_EMAIL); // Ném lỗi
+            throw new AppException(ErrorCode.INVALID_EMAIL);
         }
 
         User user = userRepository.findByEmail(userInfo.getEmail())
@@ -120,7 +114,6 @@ public class AuthService {
                     .build();
         }
 
-        // 4. Kiểm tra trạng thái tài khoản: bị block (isActive)
         if (user.getIsActive() == false) {
             return LoginResponse.builder()
                     .build();
@@ -138,7 +131,7 @@ public class AuthService {
         newUser.setEmail(email);
         newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
         newUser.setIsPremium(false);
-        newUser.setVerified(1); // Google email được coi là đã xác minh
+        newUser.setVerified(1);
         newUser.setIsActive(true);
         newUser.setCreatedAt(LocalDateTime.now());
         newUser.setUpdatedAt(LocalDateTime.now());

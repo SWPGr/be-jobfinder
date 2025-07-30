@@ -10,6 +10,8 @@ import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.JobViewRepository;
 import com.example.jobfinder.repository.UserRepository;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,23 +26,23 @@ import java.time.LocalTime;
 
 
 @Service
+@AllArgsConstructor
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class JobViewService {
-    private static final Logger log = LoggerFactory.getLogger(JobViewService.class);
-
-    private final JobViewRepository jobViewRepository;
-    private final UserRepository userRepository;
-    private final JobRepository jobRepository;
-
-    public JobViewService(JobViewRepository jobViewRepository, UserRepository userRepository, JobRepository jobRepository) {
-        this.jobViewRepository = jobViewRepository;
-        this.userRepository = userRepository;
-        this.jobRepository = jobRepository;
-    }
+    Logger log = LoggerFactory.getLogger(JobViewService.class);
+    JobViewRepository jobViewRepository;
+    UserRepository userRepository;
+    JobRepository jobRepository;
 
     public JobViewResponse recordJobView(JobViewRequest request) {
         log.debug("Processing job view request: {}", request);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            log.debug("Anonymous user viewing job ID: {}", request.getJobId());
+            return null; // hoặc return JobViewResponse.empty(), tùy bạn
+        }
+
         String email = authentication.getName();
         log.debug("Authenticated username: {}", email);
         User jobSeeker = userRepository.findByEmail(email)
@@ -72,10 +74,7 @@ public class JobViewService {
                     .get();
             return mapToJobViewResponse(existingView);
         }
-
-
     }
-
     private JobViewResponse mapToJobViewResponse(JobView jobView) {
         return JobViewResponse.builder()
                 .id(jobView.getId())

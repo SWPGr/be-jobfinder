@@ -14,6 +14,7 @@ import com.example.jobfinder.repository.ReportRepository;
 import com.example.jobfinder.repository.ReportTypeRepository;
 import com.example.jobfinder.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -30,13 +31,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class ReportService {
-    private static final Logger log = LoggerFactory.getLogger(ReportService.class);
+    static Logger log = LoggerFactory.getLogger(ReportService.class);
 
-    private final UserRepository userRepository;
-    private final ReportTypeRepository reportTypeRepository;
-    private final JobRepository jobRepository;
-    private final ReportRepository reportRepository;
+    UserRepository userRepository;
+    ReportTypeRepository reportTypeRepository;
+    JobRepository jobRepository;
+    ReportRepository reportRepository;
 
     public ReportResponse submitReport(ReportRequest request) {
         log.debug("Processing save job request: {}", request);
