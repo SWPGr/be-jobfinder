@@ -90,5 +90,15 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
+    @DeleteMapping("/clear-all")
+    public ResponseEntity<Void> clearAllMyNotifications(Authentication authentication) {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException(userEmail));
+        Long userId = user.getId();
+
+        notificationService.clearAllNotifications(userId);
+        return ResponseEntity.noContent().build();
+    }
 
 }

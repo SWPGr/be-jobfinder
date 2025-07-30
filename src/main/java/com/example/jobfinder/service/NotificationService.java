@@ -79,4 +79,14 @@ public class NotificationService {
 
         notificationRepository.delete(notification);
     }
+
+    @Transactional // Đảm bảo hoạt động xóa diễn ra trong một transaction
+    public void clearAllNotifications(Long userId) {
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // Thực hiện xóa tất cả thông báo của người dùng này
+        notificationRepository.deleteByUser_Id(userId);
+    }
 }
