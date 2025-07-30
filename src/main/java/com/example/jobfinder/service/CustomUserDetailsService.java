@@ -4,6 +4,9 @@ import com.example.jobfinder.model.User;
 import com.example.jobfinder.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.hibernate.Filter;
 import org.hibernate.Session;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,21 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    private final UserRepository userRepository;
+    UserRepository userRepository;
     @PersistenceContext
-    private EntityManager entityManager;
-
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    EntityManager entityManager;
 
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Session session = entityManager.unwrap(Session.class);
         Filter activeUserFilter = null;
-
         try {
             activeUserFilter = session.getEnabledFilter("activeUserFilter");
             if (activeUserFilter != null) {
@@ -58,7 +58,5 @@ public class CustomUserDetailsService implements UserDetailsService {
                 session.enableFilter("activeUserFilter").setParameter("isActive", true);
             }
         }
-
-
     }
 }

@@ -22,7 +22,6 @@ public abstract class BaseNameService<T> {
 
     protected final BaseNameRepository<T, Long> repository;
 
-    // Các phương thức abstract mà các service cụ thể phải implement
     protected abstract T createEntity(SimpleNameCreationRequest request);
     protected abstract void updateEntity(T entity, SimpleNameUpdateRequest request);
     protected abstract SimpleNameResponse toResponse(T entity);

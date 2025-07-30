@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ExperienceService extends BaseNameService<Experience> {
 
-    // Constructor để truyền ExperienceRepository vào BaseNameService
     public ExperienceService(ExperienceRepository repository) {
         super(repository);
     }

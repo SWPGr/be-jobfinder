@@ -7,10 +7,8 @@ import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserMapper;
-import com.example.jobfinder.mapper.JobSeekerMapper;
-import com.example.jobfinder.mapper.EmployerMapper;
-import com.example.jobfinder.model.*; // Import tất cả các model cần thiết
-import com.example.jobfinder.repository.*; // Import tất cả các repository cần thiết
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// Annotation @Service để Spring tự động nhận diện đây là một Service component.
-// @RequiredArgsConstructor sẽ tự động tạo constructor cho các final fields (dependency injection).
-// @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true) giúp các trường được khai báo là private final.
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

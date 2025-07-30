@@ -123,7 +123,7 @@ public class JobService {
     }
 
 
-    @Transactional // Đảm bảo giao dịch được quản lý
+    @Transactional
     public JobResponse updateJob(Long jobId, JobUpdateRequest request) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
@@ -132,9 +132,8 @@ public class JobService {
             User newEmployer = userRepository.findById(request.getEmployerId())
                     .orElseThrow(() -> new AppException(ErrorCode.EMPLOYER_NOT_FOUND));
 
-            // Đảm bảo vai trò đúng cho Employer mới
             if (!"EMPLOYER".equals(newEmployer.getRole().getName()) && !"ADMIN".equals(newEmployer.getRole().getName())) { // Added ADMIN check for flexibility
-                throw new AppException(ErrorCode.UNAUTHORIZED); // Hoặc một ErrorCode cụ thể hơn như FORBIDDEN_ROLE
+                throw new AppException(ErrorCode.UNAUTHORIZED);
             }
             job.setEmployer(newEmployer);
         }
@@ -205,7 +204,6 @@ public class JobService {
         });
     }
 
-
     @Transactional(readOnly = true)
     public long getTotalJobs() {
         log.info("Service: Đếm tổng số công việc.");
@@ -233,10 +231,10 @@ public class JobService {
             int size,
             String sortBy,
             String sortDir,
-            Boolean isActive, // Lọc theo trạng thái active
-            String jobTitle,  // Lọc theo tên công việc
-            LocalDateTime fromDate, // Lọc từ ngày
-            LocalDateTime toDate    // Lọc đến ngày
+            Boolean isActive,
+            String jobTitle,
+            LocalDateTime fromDate,
+            LocalDateTime toDate
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
@@ -364,29 +362,4 @@ public class JobService {
         jobRepository.save(job);
         log.info("Job with ID {} active status updated to {}", request.getJobId(), request.getIsActive());
     }
-
-    public void notifyUserOfNewJobsFromSavedEmployers(int limit) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new IllegalStateException("User not authenticated.");
-        }
-
-        String email = authentication.getName();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("User not found: " + email));
-
-        LocalDateTime fromTime = LocalDateTime.now().minusHours(24);
-
-        Pageable pageable = PageRequest.of(0, limit);
-        List<Job> jobs = jobRepository.findRecentJobsFromSavedEmployers(currentUser.getId(), fromTime, pageable);
-
-        List<JobResponse> jobResponses = jobs.stream()
-                .map(jobMapper::toJobResponse)
-                .toList();
-
-        if (!jobResponses.isEmpty()) {
-            notificationService.sendJobNotifications(currentUser, jobResponses);
-        }
-    }
-
 }

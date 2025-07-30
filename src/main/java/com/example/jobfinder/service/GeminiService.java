@@ -37,9 +37,8 @@ public class GeminiService {
     private String geminiApiKey;
 
     @Value("${google.gemini.model-name}")
-    private String modelName; // Ví dụ: gemini-1.5-flash-latest hoặc gemini-pro
+    private String modelName;
 
-    // ✅ Thêm hằng số cấu hình retry
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_RETRY_DELAY_MS = 1000; // 1 giây
     private Class<?> responseType;
@@ -49,7 +48,7 @@ public class GeminiService {
         this.objectMapper = objectMapper;
     }
 
-    public String getGeminiResponse(String prompt) { // Loại bỏ throws IOException để xử lý nội bộ bằng AppException
+    public String getGeminiResponse(String prompt) {
         log.info("Sending text prompt to Gemini: {}", prompt);
         String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
                 modelName, geminiApiKey);
@@ -73,7 +72,6 @@ public class GeminiService {
         }
     }
 
-
     public GeminiIntentResponse.IntentAnalysisResult analyzeIntent(String userQuery, String systemInstruction) throws IOException {
         log.info("Analyzing intent for query: {}", userQuery);
 
@@ -92,7 +90,6 @@ public class GeminiService {
 
         String jsonRequestBody;
         try {
-            // ✅ Sử dụng ObjectMapper để tạo JSON từ DTO
             jsonRequestBody = objectMapper.writeValueAsString(requestBody);
         } catch (IOException e) {
             log.error("Error serializing GeminiIntentRequest: {}", e.getMessage(), e);
@@ -102,8 +99,6 @@ public class GeminiService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> request = new HttpEntity<>(jsonRequestBody, headers);
-
-        // ✅ Nhận phản hồi thô, jsonPath là null để không parse trong executeGeminiRequest
         String rawResponse = executeGeminiRequest(url, request, String.class, null);
 
         try {
@@ -120,7 +115,6 @@ public class GeminiService {
                     JsonNode textNode = firstPart.path("text");
                     if (textNode.isTextual()) {
                         String jsonString = textNode.asText();
-                        // Loại bỏ markdown code block nếu có
                         jsonString = jsonString.replace("```json", "").replace("```", "").trim();
                         return objectMapper.readValue(jsonString, GeminiIntentResponse.IntentAnalysisResult.class);
                     }
@@ -136,7 +130,7 @@ public class GeminiService {
         }
     }
 
-    public String generateResponseWithContext(String userMessage, String context) { // Loại bỏ throws IOException
+    public String generateResponseWithContext(String userMessage, String context) {
         log.info("Generating response with context for user message: '{}', context: '{}'", userMessage, context);
 
         String url = String.format("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
@@ -158,7 +152,6 @@ public class GeminiService {
 
         String jsonRequestBody;
         try {
-            // ✅ Sử dụng ObjectMapper để tạo JSON từ DTO
             jsonRequestBody = objectMapper.writeValueAsString(requestBody);
         } catch (IOException e) {
             log.error("Error serializing GeminiIntentRequest for context generation: {}", e.getMessage(), e);
@@ -239,7 +232,8 @@ public class GeminiService {
                         log.info("Retrying after {} ms...", currentDelay);
                         Thread.sleep(currentDelay);
                     } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();;
+                        Thread.currentThread().interrupt();
+                        ;
                         throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
                     }
                 } else {
@@ -274,7 +268,7 @@ public class GeminiService {
                 } else {
                     return null;
                 }
-            } else { // Xử lý đối tượng
+            } else {
                 currentNode = currentNode.path(part);
             }
             if (currentNode.isMissingNode() || currentNode.isNull()) {

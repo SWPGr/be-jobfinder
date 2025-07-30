@@ -2,6 +2,9 @@ package com.example.jobfinder.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -9,18 +12,14 @@ import org.springframework.stereotype.Service;
 import java.io.UnsupportedEncodingException;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class EmailService {
-
-    private final JavaMailSender mailSender;
-
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    JavaMailSender mailSender;
 
     public void sendVerificationEmail(String to, String token) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
         helper.setTo(to);
         helper.setSubject("verify your email");
         String verificationLink = "http://be-jobfinder-o830.onrender.com/api/auth/verify?token=" + token;
@@ -91,7 +90,6 @@ public class EmailService {
 
         helper.setTo(toEmail);
         helper.setSubject("Cập nhật trạng thái đơn ứng tuyển của bạn - " + jobTitle);
-
         StringBuilder emailContent = new StringBuilder();
         emailContent.append("<h1>Thông báo cập nhật đơn ứng tuyển của bạn</h1>")
                 .append("<p>Chào bạn,</p>")
@@ -100,8 +98,6 @@ public class EmailService {
                 .append("</b> đã được cập nhật.</p>")
                 .append("<p>Trạng thái hiện tại của đơn ứng tuyển của bạn là: <b>")
                 .append(newStatusDisplayName).append("</b></p>");
-
-        // Thêm tin nhắn của nhà tuyển dụng nếu có
         if (employerMessage != null && !employerMessage.trim().isEmpty()) {
             emailContent.append("<p><b>Tin nhắn từ nhà tuyển dụng:</b></p>")
                     .append("<div style=\"background-color: #f0f0f0; padding: 10px; border-left: 5px solid #007bff; margin: 15px 0;\">")
