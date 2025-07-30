@@ -117,7 +117,7 @@ public class JobService {
                 String message = String.format(" '<b>%s</b>' has recently posted a new job. You might be interested.",
                         newJob.getEmployer().getUserDetail().getCompanyName());
 
-                notificationService.createNotification(jobSeeker.getId(), message);
+                notificationService.createNotification(jobSeeker.getId(), message, newJob.getId());
             }
         }
     }
