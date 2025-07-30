@@ -89,4 +89,32 @@ public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificatio
 
     @Query("SELECT j FROM Job j WHERE j.active = true")
     Page<Job> findAllActive(Pageable pageable);
+
+    @Query("""
+    SELECT j FROM Job j
+    WHERE j.active = true
+    AND j.employer.id IN (
+        SELECT sj.job.employer.id
+        FROM SavedJob sj
+        WHERE sj.jobSeeker.id = :userId
+    )
+    ORDER BY j.createdAt DESC
+""")
+    List<Job> findLatestJobsFromSavedEmployers(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("""
+    SELECT j FROM Job j
+    WHERE j.active = true
+    AND j.employer.id IN (
+        SELECT sj.job.employer.id
+        FROM SavedJob sj
+        WHERE sj.jobSeeker.id = :userId
+    )
+    ORDER BY j.createdAt DESC
+""")
+    List<Job> findRecentJobsFromSavedEmployers(
+            @Param("userId") Long userId,
+            @Param("fromTime") LocalDateTime fromTime,
+            Pageable pageable);
+
 }
