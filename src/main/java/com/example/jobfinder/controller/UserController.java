@@ -73,7 +73,6 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('READ_USER_PROFILE') or #userId == authentication.principal.id")
     public ApiResponse<UserResponse> getUserById(@PathVariable Long userId) {
         log.info("API: Lấy thông tin người dùng với ID: {}", userId);
         UserResponse user = userService.getUserById(userId);
