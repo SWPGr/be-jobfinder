@@ -2,7 +2,6 @@ package com.example.jobfinder.exception;
 
 
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 public enum ErrorCode {

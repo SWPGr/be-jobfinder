@@ -7,7 +7,6 @@ import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.Experience;
 import com.example.jobfinder.repository.ExperienceRepository;
-import com.example.jobfinder.repository.BaseNameRepository; // Import BaseNameRepository
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

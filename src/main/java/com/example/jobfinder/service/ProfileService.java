@@ -41,7 +41,6 @@ public class ProfileService {
     public ProfileResponse updateProfile(ProfileRequest request) throws Exception { // Ném ra Exception vẫn được, nhưng tốt hơn là AppException
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        boolean resumeUpdated = false;
 
         boolean resumeUrlUpdatedOrCleared = false;
 

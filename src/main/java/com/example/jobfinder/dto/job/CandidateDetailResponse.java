@@ -2,7 +2,6 @@
 package com.example.jobfinder.dto.job;
 
 import com.example.jobfinder.dto.user.JobSeekerResponse;
-import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.enums.ApplicationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

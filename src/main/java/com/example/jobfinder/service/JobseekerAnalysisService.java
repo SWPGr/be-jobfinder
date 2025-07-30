@@ -5,7 +5,6 @@ import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.model.JobseekerAnalysis;
 import com.example.jobfinder.model.UserDetail;
-import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobseekerAnalysisRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;

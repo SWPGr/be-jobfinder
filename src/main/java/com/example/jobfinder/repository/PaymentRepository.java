@@ -1,8 +1,6 @@
 package com.example.jobfinder.repository;
 
 import com.example.jobfinder.model.Payment;
-import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.Subscription;
 import com.example.jobfinder.util.QueryConstants;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

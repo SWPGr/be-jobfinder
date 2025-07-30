@@ -11,8 +11,7 @@ import vn.payos.type.CheckoutResponseData; // [cite: 35]
 import vn.payos.type.PaymentData; // [cite: 36, 75]
 import vn.payos.type.ItemData; // [cite: 37, 80]
 import vn.payos.type.PaymentLinkData; // [cite: 48, 99]
-import vn.payos.type.Webhook; // [cite: 108]
-import vn.payos.type.WebhookData; // [cite: 118]
+
 
 
 @Service

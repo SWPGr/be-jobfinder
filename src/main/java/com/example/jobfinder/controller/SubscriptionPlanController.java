@@ -4,7 +4,6 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.subscriptionPlan.SubscriptionPlanResponse;
 import com.example.jobfinder.exception.AppException;
-import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +20,6 @@ import java.util.List;
 public class SubscriptionPlanController {
 
     private final SubscriptionPlanService subscriptionPlanService;
-    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("permitAll()") // Cho phép mọi truy cập (kể cả anonymous)

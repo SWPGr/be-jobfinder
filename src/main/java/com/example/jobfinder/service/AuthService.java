@@ -3,7 +3,6 @@ import com.example.jobfinder.config.JwtUtil;
 import com.example.jobfinder.dto.auth.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
 import lombok.AccessLevel;

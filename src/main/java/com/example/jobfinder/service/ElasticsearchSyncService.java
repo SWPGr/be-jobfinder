@@ -6,7 +6,6 @@ import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
