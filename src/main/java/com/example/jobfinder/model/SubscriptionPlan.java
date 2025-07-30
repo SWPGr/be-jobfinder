@@ -31,7 +31,7 @@ public class SubscriptionPlan {
     @Column(name = "max_jobs_post")
     private Integer maxJobsPost;
 
-    @Column(name = "max_applications_view")
+    @Column(name = "max_applications")
     private Integer maxApplicationsView;
 
     @Column(name = "highlight_jobs")

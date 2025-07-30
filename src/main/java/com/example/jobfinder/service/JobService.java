@@ -49,6 +49,7 @@ public class JobService {
     ApplicationRepository applicationRepository;
     NotificationService notificationService;
     SavedJobRepository savedJobRepository;
+    SubscriptionRepository subscriptionRepository;
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -63,6 +64,17 @@ public class JobService {
         if (!employer.getRole().getName().equals("EMPLOYER") && !employer.getRole().getName().equals("COMPANY_ADMIN")) {
             throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
         }
+
+        Subscription subscription = subscriptionRepository.findByUserId(employer.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        Integer maxJobsPost = subscription.getPlan().getMaxJobsPost();
+        long currentJobCount = jobRepository.countActiveJobsByEmployer(employer.getId());
+
+        if (maxJobsPost != null && currentJobCount >= maxJobsPost) {
+            throw new AppException(ErrorCode.JOB_POST_LIMIT_EXCEEDED);
+        }
+
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         System.out.println("DEBUG: Fetched Category: ID=" + category.getId() + ", Name=" + category.getName());
@@ -346,7 +358,7 @@ public class JobService {
                 .collect(Collectors.toList());
 
         return PageResponse.<JobResponse>builder()
-                .pageNumber(jobsPage.getNumber())
+                .pageNumber(jobsPage.getNumber() + 1)
                 .pageSize(jobsPage.getSize())
                 .totalElements(jobsPage.getTotalElements())
                 .totalPages(jobsPage.getTotalPages())
