@@ -110,7 +110,8 @@ public class SecurityConfig {
                                 "/api/payments/**",
                                 "/api/green-test/**",
                                 "api/debug/**",
-                                "api/report/**"
+                                "api/report/**",
+                                "/api/admin"
                         ).permitAll()
                         .requestMatchers("/api/auth/change-password").authenticated()
                         .anyRequest().authenticated()
