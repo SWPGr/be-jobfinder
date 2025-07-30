@@ -56,6 +56,7 @@ public interface UserMapper {
     @Mapping(source = "userDetail.description", target = "description")
     @Mapping(source = "userDetail.resumeUrl", target = "resumeUrl")
     @Mapping(source = "verified", target = "verified")
+    @Mapping(source = "isActive", target = "active")
     @Mapping(source = "isPremium", target = "isPremium")
     @Mapping(source = "userDetail.avatarUrl", target = "avatarUrl")
     @Mapping(target = "organization", ignore = true) // Will be handled separately

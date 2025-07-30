@@ -70,24 +70,24 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         User user;
         try {
+            user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + request.getEmail()));
+
+            if (user.getVerified() == 0) {
+                throw new AppException(ErrorCode.USER_NOT_VERIFIED);
+            }
+
+            if (user.getIsActive() == false) {
+                throw new AppException(ErrorCode.ACCOUNT_BLOCKED);
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(), request.getPassword()
                     )
             );
-            user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found after authentication: " + request.getEmail()));
-
         } catch (BadCredentialsException e) {
             throw new AppException(ErrorCode.WRONG_PASSWORD);
-        }
-
-        if (user.getVerified() == 0) {
-            throw new AppException(ErrorCode.USER_NOT_VERIFIED);
-        }
-
-        if (user.getIsActive() == false) {
-            throw new AppException(ErrorCode.ACCOUNT_BLOCKED);
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().getName());
