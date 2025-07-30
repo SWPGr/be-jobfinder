@@ -1,5 +1,7 @@
 package com.example.jobfinder.service; // Thay đổi package cho phù hợp với dự án của bạn
 
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
@@ -14,25 +16,25 @@ import vn.payos.type.WebhookData; // [cite: 118]
 
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PayOSService {
 
     @Value("${payos.client-id}")
-    private String clientId;
+    String clientId;
 
     @Value("${payos.api-key}")
-    private String apiKey;
+    String apiKey;
 
     @Value("${payos.checksum-key}")
-    private String checksumKey;
+    String checksumKey;
 
-    private PayOS payOS;
+    PayOS payOS;
 
     @PostConstruct
     public void init() {
         payOS = new PayOS(clientId, apiKey, checksumKey);
         System.out.println("PayOS initialized successfully.");
     }
-
 
     public CheckoutResponseData createPaymentLink(
             long orderCode,
@@ -58,18 +60,5 @@ public class PayOSService {
 
     public PaymentLinkData getPaymentLinkInformation(long orderCode) throws Exception {
         return payOS.getPaymentLinkInformation(orderCode);
-    }
-
-    public PaymentLinkData cancelPaymentLink(long orderCode, String cancellationReason) throws Exception {
-        return payOS.cancelPaymentLink(orderCode, cancellationReason);
-    }
-
-    public String confirmWebhook(String webhookUrl) throws Exception {
-        return payOS.confirmWebhook(webhookUrl);
-    }
-
-
-    public WebhookData verifyPaymentWebhookData(Webhook webhookBody) throws Exception {
-        return payOS.verifyPaymentWebhookData(webhookBody);
     }
 }

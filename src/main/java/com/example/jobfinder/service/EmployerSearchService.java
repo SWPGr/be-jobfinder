@@ -13,7 +13,9 @@ import com.example.jobfinder.model.User;
 import com.example.jobfinder.model.SearchHistory;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.repository.SearchHistoryRepository;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -27,14 +29,15 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EmployerSearchService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(EmployerSearchService.class);
 
-    private final ElasticsearchClient client;
-    private final UserDocumentMapper userDocumentMapper;
-    private final UserRepository userRepository;
-    private final SearchHistoryRepository searchHistoryRepository;
+    private ElasticsearchClient client;
+    private UserDocumentMapper userDocumentMapper;
+    private UserRepository userRepository;
+    private SearchHistoryRepository searchHistoryRepository;
 
     public EmployerSearchResponse search(EmployerSearchRequest request) throws IOException {
         List<Query> mustQueries = new ArrayList<>();
@@ -46,11 +49,11 @@ public class EmployerSearchService {
 
         if (request.getName() != null && !request.getName().isBlank()) {
             String name = request.getName().trim();
-            
+
             mustQueries.add(Query.of(q -> q.bool(b -> b.should(
                     List.of(
                             Query.of(q1 -> q1.multiMatch(m -> m
-                                    .fields( "companyName")
+                                    .fields("companyName")
                                     .query(name)
                             )),
                             Query.of(q3 -> q3.matchPhrasePrefix(m -> m
@@ -63,7 +66,7 @@ public class EmployerSearchService {
 
         if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
             String keyword = request.getKeyword().trim();
-            
+
             mustQueries.add(Query.of(q -> q.bool(b -> b.should(
                     List.of(
                             Query.of(q1 -> q1.multiMatch(m -> m
@@ -85,7 +88,7 @@ public class EmployerSearchService {
         if (request.getOrganizationId() != null) {
             mustQueries.add(termQuery("organizationId", request.getOrganizationId()));
         }
-        
+
 
         Query finalQuery = mustQueries.isEmpty()
                 ? Query.of(q -> q.matchAll(m -> m))
@@ -149,28 +152,28 @@ public class EmployerSearchService {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
                 String email = auth.getName();
                 User user = userRepository.findByEmail(email).orElse(null);
-                
+
                 if (user != null) {
                     String searchQuery = buildEmployerSearchQueryString(request);
-                    
+
                     if (searchQuery != null && !searchQuery.trim().isEmpty()) {
                         SearchHistory lastSearchHistory = searchHistoryRepository.findFirstByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.COMPANY);
-                        
+
                         boolean isDuplicate = lastSearchHistory != null &&
                                 normalizeForComparison(searchQuery).equals(
-                                    normalizeForComparison(lastSearchHistory.getSearchQuery())
+                                        normalizeForComparison(lastSearchHistory.getSearchQuery())
                                 );
-                        
+
                         if (!isDuplicate) {
                             SearchHistory searchHistory = SearchHistory.builder()
                                     .user(user)
                                     .searchQuery(searchQuery)
                                     .searchType(SearchHistory.SearchType.COMPANY)
                                     .build();
-                            
+
                             searchHistoryRepository.save(searchHistory);
                             log.debug("Saved new employer search history for user {}: {}", email, searchQuery);
-                            
+
                             cleanupOldSearchHistory(user, 50);
                         } else {
                             log.debug("Skipped saving duplicate employer search history for user {}: {} (normalized comparison)", email, searchQuery);
@@ -189,10 +192,10 @@ public class EmployerSearchService {
             if (totalRecords > maxRecords) {
                 List<SearchHistory> allHistories = searchHistoryRepository.findByUserAndSearchTypeOrderByCreatedAtDesc(user, SearchHistory.SearchType.COMPANY);
                 int recordsToDelete = (int) (totalRecords - maxRecords);
-                
+
                 List<SearchHistory> historiesToDelete = allHistories.subList(0, recordsToDelete);
                 searchHistoryRepository.deleteAll(historiesToDelete);
-                
+
                 log.debug("Cleaned up {} old search history records for user {}", recordsToDelete, user.getEmail());
             }
         } catch (Exception e) {
@@ -203,18 +206,17 @@ public class EmployerSearchService {
     private String buildEmployerSearchQueryString(EmployerSearchRequest request) {
         List<String> queryParts = new ArrayList<>();
 
-        
+
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
             queryParts.add(request.getName().trim());
         }
-        
+
         if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
             queryParts.add(request.getKeyword().trim());
         }
 
         return queryParts.isEmpty() ? null : String.join(", ", queryParts);
     }
-
 
     private String normalizeForComparison(String text) {
         if (text == null) return null;

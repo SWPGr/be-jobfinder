@@ -27,22 +27,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
-    // @ExceptionHandler(value = AppException.class): Chỉ định rằng phương thức này sẽ bắt
-    // và xử lý các ngoại lệ thuộc loại AppException. AppException là một ngoại lệ tùy chỉnh
-    // được định nghĩa để xử lý các lỗi nghiệp vụ cụ thể.
-    // Các message mà chúng ta bắt được sẽ cho vào handleAppException (lỗi nghiệp vụ đã định nghĩa)
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse> handleAppException(AppException ex) {
         // Lấy ErrorCode (chứa mã và thông điệp lỗi cụ thể) từ đối tượng AppException được ném ra.
         ErrorCode errorCode = ex.getErrorCode();
+
+
 
         ApiResponse apiResponse = new ApiResponse();
         // Gán mã lỗi và thông điệp từ ErrorCode đã lấy được.
         apiResponse.setCode(errorCode.getErrorCode());
         apiResponse.setMessage(errorCode.getErrorMessage());
 
-        // Trả về ResponseEntity với HTTP status code 400 (Bad Request)
-        // và body chứa đối tượng ApiResponse với thông tin lỗi nghiệp vụ cụ thể.
         return ResponseEntity.badRequest().body(apiResponse);
     }
 

@@ -3,16 +3,17 @@ package com.example.jobfinder.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.InfoResponse;
 import jakarta.annotation.PostConstruct;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Component;
 
 @Component
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class ElasticsearchConnectionTester {
 
-    private final ElasticsearchClient elasticsearchClient;
-
-    public ElasticsearchConnectionTester(ElasticsearchClient elasticsearchClient) {
-        this.elasticsearchClient = elasticsearchClient;
-    }
+    ElasticsearchClient elasticsearchClient;
 
     @PostConstruct
     public void testConnection() {

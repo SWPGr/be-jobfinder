@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -33,14 +32,11 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class StatisticService {
-
     UserRepository userRepository;
     JobRepository jobRepository;
     ApplicationRepository applicationRepository;
-
     SavedJobRepository savedJobRepository;
     JobRecommendationRepository jobRecommendationRepository;
-
     PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
@@ -49,33 +45,26 @@ public class StatisticService {
 
         List<MonthlyTrendResponse> trends = new ArrayList<>();
 
-        // 1. Xác định tháng bắt đầu thống kê
-        // Lấy ngày tạo của user sớm nhất để làm mốc bắt đầu (hoặc bạn có thể đặt một mốc cố định)
-        LocalDate startDate = userRepository.findFirstByOrderByCreatedAtAsc() // Giả định bạn có phương thức này
+        LocalDate startDate = userRepository.findFirstByOrderByCreatedAtAsc()
                 .map(User::getCreatedAt)
                 .map(LocalDateTime::toLocalDate)
-                .orElse(LocalDate.of(2023, 1, 1)); // Mốc mặc định nếu không có user nào
+                .orElse(LocalDate.of(2023, 1, 1));
 
         YearMonth startMonth = YearMonth.from(startDate);
         YearMonth currentMonth = YearMonth.now();
 
-        // 2. Lặp qua từng tháng từ tháng bắt đầu đến tháng hiện tại
         for (YearMonth ym = startMonth; !ym.isAfter(currentMonth); ym = ym.plusMonths(1)) {
             LocalDateTime endDateOfMonth = ym.atEndOfMonth().atTime(23, 59, 59); // Cuối ngày cuối cùng của tháng
 
-            // 3. Tính toán tổng số lượng cho từng category đến cuối tháng đó
             long totalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endDateOfMonth);
             long totalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endDateOfMonth);
             long totalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endDateOfMonth);
             long totalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endDateOfMonth); // Sử dụng đếm unique applied jobs
 
-            // 4. Tính Total Active Jobs
             long totalActiveJobs = totalJobs - totalAppliedJobs;
-            if (totalActiveJobs < 0) { // Đảm bảo không có giá trị âm nếu có sự không nhất quán dữ liệu
+            if (totalActiveJobs < 0) {
                 totalActiveJobs = 0;
             }
-
-            // 5. Thêm vào danh sách kết quả
             trends.add(MonthlyTrendResponse.builder()
                     .monthYear(ym.toString()) // Format "YYYY-MM"
                     .totalJobSeekers(totalJobSeekers)
@@ -95,7 +84,6 @@ public class StatisticService {
 
         List<DailyTrendResponse> trends = new ArrayList<>();
 
-        // 1. Xác định ngày bắt đầu thống kê
         Optional<User> firstUserOptional = userRepository.findFirstByOrderByCreatedAtAsc();
         LocalDate startDate = firstUserOptional
                 .map(User::getCreatedAt)
@@ -104,31 +92,22 @@ public class StatisticService {
 
         LocalDate currentDate = LocalDate.now();
 
-        // 2. Lặp qua từng ngày từ ngày bắt đầu đến ngày hiện tại
-        // Đảm bảo startDate không muộn hơn currentDate
         if (startDate.isAfter(currentDate)) {
             log.warn("Ngày bắt đầu ({}) muộn hơn ngày hiện tại ({}). Không có dữ liệu để thống kê theo ngày.", startDate, currentDate);
-            return trends; // Trả về danh sách trống
+            return trends;
         }
-
         for (LocalDate date = startDate; !date.isAfter(currentDate); date = date.plusDays(1)) {
             LocalDateTime endOfDay = date.atTime(23, 59, 59); // Cuối ngày
-
-            // 3. Tính toán tổng số lượng cho từng category đến cuối ngày đó
             long totalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endOfDay);
             long totalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endOfDay);
             long totalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endOfDay);
-            long totalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfDay); // Đếm unique applied jobs
-
-            // 4. Tính Total Active Jobs
+            long totalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfDay);
             long totalActiveJobs = totalJobs - totalAppliedJobs;
             if (totalActiveJobs < 0) {
                 totalActiveJobs = 0;
             }
-
-            // 5. Thêm vào danh sách kết quả
             trends.add(DailyTrendResponse.builder()
-                    .date(date.toString()) // Format "YYYY-MM-DD"
+                    .date(date.toString())
                     .totalJobSeekers(totalJobSeekers)
                     .totalEmployers(totalEmployers)
                     .totalJobs(totalJobs)
@@ -142,27 +121,22 @@ public class StatisticService {
 
     @Transactional(readOnly = true)
     public MonthlyComparisonResponse getMonthOverMonthComparison() {
-        log.info("Service: Bắt đầu tính toán so sánh giữa tháng này và tháng trước.");
-
-        // Xác định tháng hiện tại và tháng trước
         YearMonth currentMonth = YearMonth.now();
         YearMonth previousMonth = currentMonth.minusMonths(1);
 
-        // Lấy số liệu của tháng hiện tại (cuối tháng hiện tại)
         LocalDateTime endOfCurrentMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
         long currentMonthTotalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endOfCurrentMonth);
         long currentMonthTotalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfCurrentMonth);
         long currentMonthTotalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endOfCurrentMonth);
         long currentMonthTotalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endOfCurrentMonth);
 
-        // Lấy số liệu của tháng trước (cuối tháng trước)
         LocalDateTime endOfPreviousMonth = previousMonth.atEndOfMonth().atTime(23, 59, 59);
         long previousMonthTotalJobs = jobRepository.countTotalJobsPostedBeforeOrEquals(endOfPreviousMonth);
         long previousMonthTotalAppliedJobs = applicationRepository.countUniqueAppliedJobsBeforeOrEquals(endOfPreviousMonth);
         long previousMonthTotalJobSeekers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("JOB_SEEKER", endOfPreviousMonth);
         long previousMonthTotalEmployers = userRepository.countUsersByRoleNameAndCreatedAtBeforeOrEquals("EMPLOYER", endOfPreviousMonth);
 
-        // --- Tính toán phần trăm thay đổi và trạng thái cho từng chỉ số ---
+
         MonthlyComparisonResponse.MonthlyComparisonResponseBuilder builder = MonthlyComparisonResponse.builder()
                 .monthYear(currentMonth.toString())
                 .currentMonthTotalJobs(currentMonthTotalJobs)
@@ -222,32 +196,20 @@ public class StatisticService {
         log.info("Calculating hourly activities for today on the fly.");
 
         LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay(); // Bắt đầu từ 00:00:00 của hôm nay
-        LocalDateTime endOfDay = today.atTime(LocalTime.MAX); // Kết thúc vào 23:59:59.999999999 của hôm nay
-
-        // Lấy tất cả người dùng được tạo trong ngày hôm nay
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
         List<User> usersToday = userRepository.findByCreatedAtBetweenAndIsActive(startOfDay, endOfDay, false);
-        // Lấy tất cả công việc được tạo trong ngày hôm nay
         List<Job> jobsToday = jobRepository.findByCreatedAtBetween(startOfDay, endOfDay);
-        // Lấy tất cả đơn ứng tuyển được tạo trong ngày hôm nay
         List<Application> applicationsToday = applicationRepository.findByAppliedAtBetween(startOfDay, endOfDay);
-
-
-        // Nhóm người dùng theo giờ tạo
         Map<Integer, Long> usersByHour = usersToday.stream()
                 .collect(Collectors.groupingBy(user -> user.getCreatedAt().getHour(), Collectors.counting()));
-
-        // Nhóm công việc theo giờ tạo
         Map<Integer, Long> jobsByHour = jobsToday.stream()
                 .collect(Collectors.groupingBy(job -> job.getCreatedAt().getHour(), Collectors.counting()));
-
-        // Nhóm đơn ứng tuyển theo giờ tạo
         Map<Integer, Long> applicationsByHour = applicationsToday.stream()
                 .collect(Collectors.groupingBy(application -> application.getAppliedAt().getHour(), Collectors.counting()));
 
         List<HourlyActivityResponse> hourlyActivities = new ArrayList<>();
 
-        // Tạo danh sách kết quả cho 24 giờ trong ngày
         for (int hour = 0; hour < 24; hour++) {
             hourlyActivities.add(HourlyActivityResponse.builder()
                     .hourOfDay(hour)
@@ -256,30 +218,25 @@ public class StatisticService {
                     .newApplications(applicationsByHour.getOrDefault(hour, 0L))
                     .build());
         }
-
         log.debug("Generated hourly activities: {}", hourlyActivities);
         return hourlyActivities;
     }
 
-    @Transactional(readOnly = true) // Chỉ đọc dữ liệu
+    @Transactional(readOnly = true)
     public List<JobPostCountByCategoryAndDateResponse> getTotalJobPostCountByCategory() {
         log.info("Calculating total job post count by category.");
 
-        // Gọi phương thức từ JobRepository để lấy kết quả dạng List<Object[]>
         List<Object[]> rawResults = jobRepository.countTotalJobsByCategory();
-
-        // Chuyển đổi List<Object[]> sang List<JobPostCountByCategoryAndDateResponse>
         return rawResults.stream()
                 .map(result -> JobPostCountByCategoryAndDateResponse.builder()
-                        .categoryName((String) result[0]) // result[0] là tên category
-                        .jobCount((Long) result[1])       // result[1] là tổng số lượng
+                        .categoryName((String) result[0])
+                        .jobCount((Long) result[1])
                         .build())
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public JobSeekerDashboardResponse getDashboardSummaryForCurrentUser() {
-        // 1. Lấy thông tin người dùng hiện tại từ SecurityContext
         String authenticatedEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(authenticatedEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -305,8 +262,6 @@ public class StatisticService {
                 .totalJobRecommendations(totalJobRecommendations)
                 .build();
     }
-
-
     @Transactional(readOnly = true)
     public PaymentComparisonResponse getPaymentMonthOverMonthComparison() {
         YearMonth currentMonth = YearMonth.now();
@@ -343,31 +298,24 @@ public class StatisticService {
                 .count();
         long previousMonthTotalPayments = previousMonthPayments.size();
 
-
-        // --- Tính toán phần trăm thay đổi và trạng thái ---
         return PaymentComparisonResponse.builder()
                 .monthYear(currentMonth.toString())
-
                 // Tổng doanh thu
                 .currentMonthTotalRevenue(currentMonthTotalRevenue)
                 .revenueChangePercentage(calculateChangePercentage(currentMonthTotalRevenue, previousMonthTotalRevenue))
                 .revenueStatus(getChangeStatus(currentMonthTotalRevenue, previousMonthTotalRevenue))
-
                 // Tổng Paid Payments
                 .currentMonthTotalPaidPayments(currentMonthTotalPaidPayments)
                 .paidPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPaidPayments, previousMonthTotalPaidPayments))
                 .paidPaymentsStatus(getChangeStatus(currentMonthTotalPaidPayments, previousMonthTotalPaidPayments))
-
                 // Tổng Pending Payments
                 .currentMonthTotalPendingPayments(currentMonthTotalPendingPayments)
                 .pendingPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPendingPayments, previousMonthTotalPendingPayments))
                 .pendingPaymentsStatus(getChangeStatus(currentMonthTotalPendingPayments, previousMonthTotalPendingPayments))
-
                 // Tổng số lượng Payments
                 .currentMonthTotalPayments(currentMonthTotalPayments)
                 .totalPaymentsChangePercentage(calculateChangePercentage(currentMonthTotalPayments, previousMonthTotalPayments))
                 .totalPaymentsStatus(getChangeStatus(currentMonthTotalPayments, previousMonthTotalPayments))
-
                 .build();
     }
 
