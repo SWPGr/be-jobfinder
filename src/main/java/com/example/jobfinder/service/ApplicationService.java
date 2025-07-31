@@ -64,6 +64,7 @@ public class ApplicationService {
     ResumeSummaryRepository resumeSummaryRepository;
     EmailService emailService;
     NotificationService notificationService;
+    SubscriptionRepository subscriptionRepository;
 
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
@@ -84,6 +85,20 @@ public class ApplicationService {
         if (!role.equals("JOB_SEEKER")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
+        Subscription subscription = subscriptionRepository.findByUserId(jobSeeker.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        Integer maxApplications = subscription.getPlan().getMaxApplications();
+        LocalDateTime subscriptionStart = subscription.getStartDate();
+        long applicationsSinceSubscription = applicationRepository.countApplicationsSince(jobSeeker.getId(), subscriptionStart);
+
+        if (maxApplications != null && applicationsSinceSubscription >= maxApplications) {
+            throw new AppException(ErrorCode.APPLICATION_LIMIT_EXCEEDED);
+        }
+        if (subscription.getEndDate() != null && subscription.getEndDate().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
+        }
+
 
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.JOB_NOT_FOUND.getErrorMessage()));
@@ -127,7 +142,7 @@ public class ApplicationService {
                 job.getTitle()
         );
         try {
-            notificationService.createNotification(employerId, notificationMessage);
+            notificationService.createNotification(employerId, notificationMessage, null);
             log.info("Notification sent to employer {} (ID: {}) for new application on job '{}' (ID: {}).",
                     employerName, employerId, job.getTitle(), job.getId());
         } catch (Exception e) {

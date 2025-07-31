@@ -94,8 +94,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/ws/**",
                                 "/app/**",
-                                "api/options/**",
-                                "api/admin/**",
+                                "/api/options/**",
+                                "/api/admin/**",
                                 "/api/jobs/**",
                                 "/api/categories/**",
                                 "/api/analytics/employer/**",
@@ -107,8 +107,8 @@ public class SecurityConfig {
                                 "/api/subscription-plans/**",
                                 "/api/payments/**",
                                 "/api/green-test/**",
-                                "api/debug/**",
-                                "api/report/**",
+                                "/api/debug/**",
+                                "/api/report/**",
                                 "/api/admin"
                         ).permitAll()
                         .requestMatchers("/api/auth/change-password").authenticated()

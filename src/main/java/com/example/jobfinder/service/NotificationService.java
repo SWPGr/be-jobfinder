@@ -5,8 +5,10 @@ import com.example.jobfinder.dto.notification.NotificationResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.NotificationMapper;
+import com.example.jobfinder.model.Job;
 import com.example.jobfinder.model.Notification;
 import com.example.jobfinder.model.User;
+import com.example.jobfinder.repository.JobRepository;
 import com.example.jobfinder.repository.NotificationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import lombok.AccessLevel;
@@ -25,17 +27,31 @@ public class NotificationService {
     NotificationRepository notificationRepository;
     UserRepository userRepository;
     NotificationMapper notificationMapper;
+    JobRepository jobRepository;
 
-    public void createNotification(Long userId, String message) {
+    public void createNotification(Long userId, String message, Long jobId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (jobId != null) {
+            Job job = jobRepository.findById(jobId)
+                    .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+
+
+
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .message(message)
+                    .isRead(false)
+                    .job(job)
+                    .build();
+            notificationMapper.toNotificationResponse(notificationRepository.save(notification));
+        }
 
         Notification notification = Notification.builder()
                 .user(user)
                 .message(message)
                 .isRead(false)
                 .build();
-
         notificationMapper.toNotificationResponse(notificationRepository.save(notification));
     }
 

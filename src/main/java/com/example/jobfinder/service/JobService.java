@@ -49,6 +49,7 @@ public class JobService {
     ApplicationRepository applicationRepository;
     NotificationService notificationService;
     SavedJobRepository savedJobRepository;
+    SubscriptionRepository subscriptionRepository;
 
     public Job createJob(JobCreationRequest jobCreationRequest) {
 
@@ -63,6 +64,23 @@ public class JobService {
         if (!employer.getRole().getName().equals("EMPLOYER") && !employer.getRole().getName().equals("COMPANY_ADMIN")) {
             throw new AppException(ErrorCode.UNAUTHORIZED); // Thay vì USER_EXIST
         }
+
+        Subscription subscription = subscriptionRepository.findByUserId(employer.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
+
+        Integer maxJobsPost = subscription.getPlan().getMaxJobsPost();
+        LocalDateTime subscriptionStart = subscription.getStartDate();
+        long jobCountSinceSubscription = jobRepository.countJobsPostedSince(employer.getId(), subscriptionStart);
+
+        if (maxJobsPost != null && jobCountSinceSubscription >= maxJobsPost) {
+            throw new AppException(ErrorCode.JOB_POST_LIMIT_EXCEEDED);
+        }
+        if (subscription.getEndDate() != null && subscription.getEndDate().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
+        }
+
+
+
         Category category = categoryRepository.findById(jobCreationRequest.getCategoryId())
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         System.out.println("DEBUG: Fetched Category: ID=" + category.getId() + ", Name=" + category.getName());
@@ -114,10 +132,10 @@ public class JobService {
             User jobSeeker = userRepository.findById(jobSeekerId)
                     .orElse(null);
             if (jobSeeker != null) {
-                String message = String.format(" '<b>%s</b>' has recently posted a new job. You might be interested.",
+                String message = String.format(" **%s** has recently posted a new job. You might be interested.",
                         newJob.getEmployer().getUserDetail().getCompanyName());
 
-                notificationService.createNotification(jobSeeker.getId(), message);
+                notificationService.createNotification(jobSeeker.getId(), message, newJob.getId());
             }
         }
     }
@@ -346,7 +364,7 @@ public class JobService {
                 .collect(Collectors.toList());
 
         return PageResponse.<JobResponse>builder()
-                .pageNumber(jobsPage.getNumber())
+                .pageNumber(jobsPage.getNumber() + 1)
                 .pageSize(jobsPage.getSize())
                 .totalElements(jobsPage.getTotalElements())
                 .totalPages(jobsPage.getTotalPages())

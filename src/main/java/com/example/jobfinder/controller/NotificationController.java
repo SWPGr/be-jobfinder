@@ -1,9 +1,7 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.notification.NotificationResponse;
-import com.example.jobfinder.model.Notification;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.repository.NotificationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.NotificationService;
 import lombok.AccessLevel;
@@ -11,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +24,6 @@ public class NotificationController {
 
     NotificationService notificationService;
     UserRepository userRepository;
-    NotificationRepository notificationRepository;
 
     @GetMapping
     public ResponseEntity<List<NotificationResponse>> getMyNotifications(Authentication authentication) {
@@ -76,7 +72,7 @@ public class NotificationController {
     }
 
     @GetMapping("/get-saved-job")
-    public ResponseEntity<List<Notification>> getUserNotifications() {
+    public ResponseEntity<List<NotificationResponse>> getUserNotifications() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -86,7 +82,7 @@ public class NotificationController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        List<NotificationResponse> notifications = notificationService.getNotificationsForUser(user.getId());
         return ResponseEntity.ok(notifications);
     }
 
