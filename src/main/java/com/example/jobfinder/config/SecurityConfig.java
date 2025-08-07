@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,7 +31,6 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-@EnableWebSocketSecurity
 public class SecurityConfig {
     JwtRequestFilter jwtRequestFilter;
     OAuth2JwtSuccessHandler oAuth2JwtSuccessHandler;
@@ -69,7 +67,7 @@ public class SecurityConfig {
                                 "/api/auth/resend-verification",
                                 "/api/auth/verify",
                                 "/api/auth/reset-password",
-                                "/api/users",
+                                "/api/users/**",
                                 "/api/debug/**",
                                 "/api/profiles/**",
                                 "/api/profiles/me",
@@ -96,8 +94,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/ws/**",
                                 "/app/**",
-                                "api/options/**",
-                                "api/admin/**",
+                                "/api/options/**",
+                                "/api/admin/**",
                                 "/api/jobs/**",
                                 "/api/categories/**",
                                 "/api/analytics/employer/**",
@@ -109,8 +107,8 @@ public class SecurityConfig {
                                 "/api/subscription-plans/**",
                                 "/api/payments/**",
                                 "/api/green-test/**",
-                                "api/debug/**",
-                                "api/report/**",
+                                "/api/debug/**",
+                                "/api/report/**",
                                 "/api/admin"
                         ).permitAll()
                         .requestMatchers("/api/auth/change-password").authenticated()
@@ -156,8 +154,9 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:3030",
-                "http://localhost:3031",
-                "http://localhost:8080"
+                "http://localhost:8080",
+                "https://fe-jobfinder.vercel.app/",
+                "http://localhost:8081"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));

@@ -31,50 +31,36 @@ public class EmployerReviewService {
     EmployerReviewMapper employerReviewMapper;
     AuthService authService;
     ApplicationRepository applicationRepository;
-
     @Transactional
     public EmployerReviewResponse createEmployerReview(EmployerReviewRequest request) {
         User jobSeeker = authService.getAuthenticatedUser();
         Long jobSeekerId = jobSeeker.getId();
 
-        // 1. Kiểm tra quyền: Chỉ JOB_SEEKER mới được review
         if (!jobSeeker.getRole().getName().equals("JOB_SEEKER")) {
             throw new AppException(ErrorCode.UNAUTHORIZED_REVIEW_ACTION);
         }
-
-        // 2. Kiểm tra Employer tồn tại và là Employer
         User employer = userRepository.findById(request.getEmployerId())
                 .orElseThrow(() -> new AppException(ErrorCode.EMPLOYER_NOT_FOUND));
         if (!employer.getRole().getName().equals("EMPLOYER")) {
             throw new AppException(ErrorCode.EMPLOYER_NOT_FOUND);
         }
 
-        // 3. Kiểm tra Job Seeker không tự review chính mình
         if (jobSeekerId.equals(request.getEmployerId())) {
             throw new AppException(ErrorCode.CANNOT_REVIEW_SELF);
         }
 
-        // 4. Kiểm tra Job Seeker đã review Employer này chưa (chỉ 1 review duy nhất)
         if (employerReviewRepository.findByJobSeekerIdAndEmployerId(jobSeekerId, request.getEmployerId()).isPresent()) {
             throw new AppException(ErrorCode.REVIEW_ALREADY_EXISTS);
         }
 
-        // Kiểm tra mối quan hệ ứng tuyển
-        //"Job Seeker chỉ được review một Employer nếu họ đã từng ứng tuyển thành công vào ÍT NHẤT MỘT job của Employer đó."
         boolean hasAppliedToEmployer = applicationRepository.existsByJobSeeker_IdAndJob_Employer_Id(
                 jobSeekerId, request.getEmployerId());
         if (!hasAppliedToEmployer) {
             throw new AppException(ErrorCode.REVIEW_UNAUTHORIZED_NO_RELATION);
         }
-
-        //Chỉ được review một lần và diễn ra khi đã apply job đó rồi mới dược review
-
-        // 6. Kiểm tra điểm đánh giá
         if (request.getRating() < 1 || request.getRating() > 5) {
             throw new AppException(ErrorCode.INVALID_RATING_VALUE);
         }
-
-        // Tạo và lưu review
         EmployerReview employerReview = employerReviewMapper.toEmployerReview(request);
         employerReview.setJobSeeker(jobSeeker);
         employerReview.setEmployer(employer);
@@ -90,8 +76,6 @@ public class EmployerReviewService {
 
     public EmployerReviewResponse getMyReviewForEmployer(Long employerId) {
         Long jobSeekerId = authService.getAuthenticatedUserId();
-
-        // Kiểm tra Job Seeker này đã review Employer này chưa
         EmployerReview review = employerReviewRepository.findByJobSeekerIdAndEmployerId(jobSeekerId, employerId)
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
         if (!review.getJobSeeker().getId().equals(jobSeekerId)) {
@@ -114,21 +98,16 @@ public class EmployerReviewService {
 
         EmployerReview existingReview = employerReviewRepository.findById(reviewId)
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
-
-        // Đảm bảo người dùng đang đăng nhập là người tạo review này
         if (!existingReview.getJobSeeker().getId().equals(jobSeekerId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED_REVIEW_ACTION);
         }
 
-        // Kiểm tra Employer ID trong request có khớp với review hiện có không (ngăn thay đổi employer được review)
+
         if (!existingReview.getEmployer().getId().equals(request.getEmployerId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED_REVIEW_ACTION); // Không cho phép thay đổi employer được review
         }
-
-        // Cập nhật các trường
         existingReview.setRating(request.getRating());
         existingReview.setComment(request.getComment());
-        // existingReview.setUpdatedAt(LocalDateTime.now()); // Nếu bạn có trường này
 
         EmployerReview updatedReview = employerReviewRepository.save(existingReview);
         return employerReviewMapper.toEmployerReviewResponse(updatedReview);
@@ -142,7 +121,6 @@ public class EmployerReviewService {
         EmployerReview existingReview = employerReviewRepository.findById(reviewId)
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
-        // Kiểm tra quyền: Người tạo review HOẶC Admin mới được xóa
         if (!existingReview.getJobSeeker().getId().equals(currentUserId) &&
                 !currentUser.getRole().getName().equals("ADMIN")) {
             throw new AppException(ErrorCode.UNAUTHORIZED_REVIEW_ACTION);

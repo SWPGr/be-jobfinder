@@ -24,17 +24,17 @@ import java.util.List;
 @Slf4j
 @Profile("!test")
 @ConditionalOnProperty(
-    value = "app.scheduler.enabled", 
-    havingValue = "true", 
-    matchIfMissing = true
-) 
+        value = "app.scheduler.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 public class SubscriptionSchedulerService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
 
-    private SubscriptionPlan basicSeekerPlan; // Thay vì basicPlan chung chung, cache một loại cụ thể
-    private SubscriptionPlan basicEmployerPlan; // Cache loại còn lại
+    private SubscriptionPlan basicSeekerPlan;
+    private SubscriptionPlan basicEmployerPlan;
 
     @jakarta.annotation.PostConstruct
     public void init() {
@@ -66,31 +66,21 @@ public class SubscriptionSchedulerService {
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void downgradeExpiredPremiumSubscriptions() {
-        log.info("Running scheduled task: Checking for expired premium subscriptions to downgrade to BASIC.");
-
-        // Lấy tất cả các gói Basic từ database một lần để có thể sử dụng linh hoạt
-        // Hoặc bạn có thể tìm kiếm cụ thể từng gói basic khi cần
         List<SubscriptionPlan> allBasicPlans = subscriptionPlanRepository.findBySubscriptionPlanName("Basic Plan");
 
         if (allBasicPlans.isEmpty()) {
-            log.error("CRITICAL: No 'Basic Plan' found in the database. Cannot downgrade subscriptions.");
             return;
         }
 
         List<Subscription> expiredPremiumSubscriptions = subscriptionRepository
                 .findByEndDateBeforeAndIsActiveTrueAndPlanNotIn(LocalDateTime.now(), allBasicPlans);
-        // Bạn sẽ cần tạo phương thức này trong SubscriptionRepository
 
         if (expiredPremiumSubscriptions.isEmpty()) {
-            log.info("No expired premium subscriptions found.");
             return;
         }
 
-        log.info("Found {} expired premium subscriptions to downgrade.", expiredPremiumSubscriptions.size());
-
         for (Subscription subscription : expiredPremiumSubscriptions) {
             try {
-                // Xác định gói Basic phù hợp dựa trên role của người dùng
                 SubscriptionPlan targetBasicPlan = null;
                 if (subscription.getUser().getRole().getId().equals(1L)) { // Job Seeker
                     targetBasicPlan = basicSeekerPlan;
@@ -104,12 +94,10 @@ public class SubscriptionSchedulerService {
                     continue;
                 }
 
-                // Kiểm tra lại một lần nữa để chắc chắn đây không phải là gói BASIC mục tiêu
                 if (!subscription.getPlan().equals(targetBasicPlan)) {
                     log.info("Downgrading user {} (current plan: {}) to BASIC plan for role {}.",
                             subscription.getUser().getEmail(), subscription.getPlan().getSubscriptionPlanName(),
-                            subscription.getUser().getRole().getName()); // Giả sử Role có getName()
-
+                            subscription.getUser().getRole().getName());
                     subscription.setPlan(targetBasicPlan);
                     subscription.setStartDate(LocalDateTime.now());
                     subscription.setEndDate(LocalDateTime.now().plusYears(100));

@@ -23,4 +23,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findNotificationsByCriteria(@Param("userEmail") String userEmail,
                                                    @Param("isRead") Boolean isRead,
                                                    @Param("messageKeyword") String messageKeyword);
+
+
+    List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    void deleteByUser_Id(Long userId);
+
 }

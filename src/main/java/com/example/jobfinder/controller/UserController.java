@@ -1,6 +1,7 @@
 package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.ApiResponse;
+import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.dto.user.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.service.UserService;
@@ -149,5 +150,11 @@ public class UserController {
                             .message("Failed to update user status: " + e.getMessage())
                             .build());
         }
+    }
+
+    @GetMapping("/top-company")
+    public ResponseEntity<List<TopEmployerProjection>> getTopEmployers(@RequestParam(defaultValue = "10") int limit) {
+        List<TopEmployerProjection> topEmployers = userService.getTopEmployers(limit);
+        return ResponseEntity.ok(topEmployers);
     }
 }

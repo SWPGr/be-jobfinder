@@ -42,7 +42,8 @@ public class PaymentController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String fromDate,
             @RequestParam(required = false) String toDate,
-            @RequestParam(required = false) String paymentStatus
+            @RequestParam(required = false) String paymentStatus,
+            @RequestParam(required = false) String userEmail
     ) {
         try {
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
@@ -51,7 +52,7 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false); // Parse fromDate
             LocalDateTime parsedToDate = parseDate(toDate, true);     // Parse toDate
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus);
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getAllPaymentHistory(pageable, parsedFromDate, parsedToDate, paymentStatus, userEmail);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
                     .code(HttpStatus.OK.value())
@@ -85,7 +86,9 @@ public class PaymentController {
             @RequestParam(defaultValue = "paidAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate) {
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String paymentStatus
+    ) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
@@ -99,10 +102,11 @@ public class PaymentController {
             LocalDateTime parsedFromDate = parseDate(fromDate, false);
             LocalDateTime parsedToDate = parseDate(toDate, true);
 
-            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getMyPaymentHistory(currentUser.getId(), pageable, parsedFromDate, parsedToDate);
+            // Truyền paymentStatus xuống service
+            PageResponse<PaymentResponse> paymentsPageResponse = subscriptionPaymentService.getMyPaymentHistory(currentUser.getId(), pageable, parsedFromDate, parsedToDate, paymentStatus);
 
             ApiResponse<PageResponse<PaymentResponse>> apiResponse = ApiResponse.<PageResponse<PaymentResponse>>builder()
-                    .code(200)
+                    .code(HttpStatus.OK.value())
                     .message("My payment history retrieved successfully")
                     .result(paymentsPageResponse)
                     .build();

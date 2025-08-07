@@ -2,6 +2,9 @@ package com.example.jobfinder.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.example.jobfinder.model.JobDocument;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -10,13 +13,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class JobSuggestionService {
-    private static final Logger log = LoggerFactory.getLogger(JobSuggestionService.class);
-    private final ElasticsearchClient client;
-
-    public JobSuggestionService(ElasticsearchClient client) {
-        this.client = client;
-    }
+    Logger log = LoggerFactory.getLogger(JobSuggestionService.class);
+    ElasticsearchClient client;
 
     public List<String> suggestTitles(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) return List.of();

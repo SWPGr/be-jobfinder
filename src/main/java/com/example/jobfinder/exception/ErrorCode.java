@@ -151,6 +151,9 @@ public enum ErrorCode {
 
     GEMINI_API_ERROR(2005, "GEMINI_API_ERROR"),
     UNEXPECTED_ERROR(2006, "Unexpected error"),
+    INTERNAL_SERVER_ERROR(2007, "Internal server error"),
+    GEMINI_RESPONSE_PARSING_ERROR(2008, "GEMINI_RESPONSE_PARSING_ERROR"),
+    NETWORK_ERROR(2009, "Network error"),
 
     CHATBOT_HISTORY_NOT_FOUND(2007, "Chatbot history not found"),
     FAILED_TO_SAVE_CHAT_HISTORY(2008, "Failed to save chatbot history"),
@@ -180,7 +183,8 @@ public enum ErrorCode {
 
     EXPERIENCE_EXISTED(2015, "EXPERIENCE_EXISTED"),
     REPORT_TYPE_NOT_FOUND(2016,  "Report type not found"),
-    ALREADY_REPORTED(2017, "You have already reported this job with the same content.");
+    ALREADY_REPORTED(2017, "You have already reported this job with the same content."),
+    JOB_NO_VACANCY(2018, "Job has out of vacancy");
 
 
 

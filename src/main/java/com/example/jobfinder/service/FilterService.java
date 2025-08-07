@@ -33,7 +33,6 @@ public class FilterService {
             String userEmail = authentication.getName();
             User currentUser = userRepository.findByEmail(userEmail).orElse(null);
 
-            //Với admin thig sẽ vô hiệu hóa filter activeUserFilter và activeRelatedUserFilter để có thể thấy được các thằng bị block
             if (currentUser != null && Objects.equals(currentUser.getRole().getName(), "ADMIN")) {
                 session.disableFilter("activeUserFilter");
                 session.disableFilter("activeRelatedUserFilter");

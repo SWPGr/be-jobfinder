@@ -18,5 +18,6 @@ public class NotificationResponse {
     UserResponse user;
     String message;
     Boolean isRead;
+    Long jobId;
     LocalDateTime createdAt;
 }

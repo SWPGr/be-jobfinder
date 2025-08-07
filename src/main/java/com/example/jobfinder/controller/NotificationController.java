@@ -7,9 +7,10 @@ import com.example.jobfinder.service.NotificationService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -67,6 +68,32 @@ public class NotificationController {
         Long userId = user.getId();
 
         notificationService.deleteNotification(notificationId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/get-saved-job")
+    public ResponseEntity<List<NotificationResponse>> getUserNotifications() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email));
+
+        List<NotificationResponse> notifications = notificationService.getNotificationsForUser(user.getId());
+        return ResponseEntity.ok(notifications);
+    }
+
+    @DeleteMapping("/clear-all")
+    public ResponseEntity<Void> clearAllMyNotifications(Authentication authentication) {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException(userEmail));
+        Long userId = user.getId();
+
+        notificationService.clearAllNotifications(userId);
         return ResponseEntity.noContent().build();
     }
 

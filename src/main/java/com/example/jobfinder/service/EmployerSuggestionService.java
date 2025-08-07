@@ -3,6 +3,8 @@ package com.example.jobfinder.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.example.jobfinder.model.UserDocument;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,17 +13,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EmployerSuggestionService {
     private static final Logger log = LoggerFactory.getLogger(EmployerSuggestionService.class);
-    private final ElasticsearchClient client;
+    private ElasticsearchClient client;
 
     public EmployerSuggestionService(ElasticsearchClient client) {
         this.client = client;
     }
 
-    /**
-     * Suggest company names based on keyword input
-     */
     public List<String> suggestCompanyNames(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) return List.of();
 

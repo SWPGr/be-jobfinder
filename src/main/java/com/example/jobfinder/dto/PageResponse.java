@@ -19,4 +19,6 @@ public class PageResponse<T> {
     private boolean isLast;
     private boolean isFirst;
     private List<T> content;
+    private Long totalApplication;
+    private Long totalOpenJob;
 }

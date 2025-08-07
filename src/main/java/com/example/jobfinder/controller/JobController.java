@@ -1,13 +1,12 @@
 package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.PageResponse;
-import com.example.jobfinder.dto.job.JobCreationRequest;
-import com.example.jobfinder.dto.job.JobResponse;
-import com.example.jobfinder.dto.job.JobStatusUpdateRequest;
-import com.example.jobfinder.dto.job.JobUpdateRequest;
+import com.example.jobfinder.dto.job.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.model.Job;
+import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.service.JobService;
+import com.example.jobfinder.service.JobViewService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +32,7 @@ import java.util.List;
 public class JobController {
 
     JobService jobService;
+    JobViewService jobViewService;
 
     @PostMapping("/create")
     public ApiResponse<Job> createJob(@RequestBody @Valid JobCreationRequest request) {
@@ -65,8 +65,10 @@ public class JobController {
 
 
     @GetMapping("/{jobId}")
-    public JobResponse getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long
-        return jobService.getJobById(jobId);
+    public ResponseEntity<JobResponse> getJobById(@PathVariable Long jobId) { // Kiểu dữ liệu của ID là Long
+        jobViewService.recordJobView(new JobViewRequest(jobId));
+        JobResponse jobResponse = jobService.getJobById(jobId);
+        return ResponseEntity.ok(jobResponse);
     }
 
     @GetMapping("/latest")

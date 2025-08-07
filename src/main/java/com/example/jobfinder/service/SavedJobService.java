@@ -44,26 +44,18 @@ public class SavedJobService {
     JobMapper  jobMapper;
 
     public Page<JobResponse> getSavedJobsByJobSeekerId(Long jobSeekerId, Pageable pageable) {
-        // Kiểm tra sự tồn tại của Job Seeker
         userRepository.findById(jobSeekerId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)); // Sử dụng AppException nếu bạn muốn
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Lấy Page các SavedJob từ Repository
         Page<SavedJob> savedJobsPage = savedJobRepository.findByJobSeeker_Id(jobSeekerId, pageable);
 
-        // Lấy danh sách Job từ Page<SavedJob>
         List<Job> jobs = savedJobsPage.getContent().stream()
                 .map(SavedJob::getJob)
                 .collect(Collectors.toList());
 
-        // Chuyển đổi List<Job> sang List<JobResponse>
         List<JobResponse> jobResponses = jobMapper.toJobResponseList(jobs);
-
-        // Tạo một đối tượng Page<JobResponse> mới từ List<JobResponse> và thông tin phân trang của savedJobsPage
         return new PageImpl<>(jobResponses, pageable, savedJobsPage.getTotalElements());
     }
-
-
     public SavedJobResponse savedJob(SavedJobRequest request) {
         log.debug("Processing save job request: {}", request);
 
@@ -112,79 +104,20 @@ public class SavedJobService {
     }
 
     public void unSaveJob(Long jobId) {
-        log.debug("Processing save job request: {}", jobId);
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        log.debug("Authenticated email: {}", email);
         User jobSeeker = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
         String role = jobSeeker.getRole().getName();
         if (!role.equals("JOB_SEEKER")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can unSave jobs");
         }
-
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
-
         SavedJob savedJob = savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.SAVED_JOB_NOT_FOUND));
 
         savedJobRepository.delete(savedJob);
         log.debug("unsaved job for user: {} and job: {}", jobSeeker.getId(), job.getId());
     }
-
-//    @Transactional // Đảm bảo phương thức này chạy trong một transaction
-//    public SavedJobResponse saveJob(SavedJobRequest request) { // Đổi tên phương thức để rõ ràng hơn
-//        log.debug("Processing save job request: {}", request);
-//
-//        // 1. Xác thực người dùng và vai trò
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        if (authentication == null || authentication.getName() == null) {
-//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
-//        }
-//        String email = authentication.getName();
-//        log.debug("Authenticated email: {}", email);
-//
-//        User jobSeeker = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new UsernameNotFoundException(email));
-//
-//        String role = jobSeeker.getRole().getName(); // Role đã được tải EAGERLY (như bạn đã sửa trước đó)
-//        log.debug("Role: {}", role);
-//        if (!role.equals("JOB_SEEKER")) {
-//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only job seekers can save jobs");
-//        }
-//
-//        // 2. Tìm kiếm Job
-//        Job job = jobRepository.findById(request.getJobId())
-//                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job not found with ID: " + request.getJobId()));
-//
-//        // 3. Kiểm tra trùng lặp
-//        if (savedJobRepository.findByJobSeekerIdAndJobId(jobSeeker.getId(), job.getId()).isPresent()) {
-//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You have already saved this job");
-//        }
-//
-//        // 4. Tạo và lưu SavedJob entity
-//        SavedJob savedJob = new SavedJob();
-//        savedJob.setJobSeeker(jobSeeker);
-//        savedJob.setJob(job);
-//        // savedAt được tự động điền bởi @PrePersist trong entity nếu bạn đã có,
-//        // nếu không, hãy uncomment dòng dưới:
-//        // savedJob.setSavedAt(LocalDateTime.now());
-//
-//        SavedJob createdSavedJob = savedJobRepository.save(savedJob);
-//
-//        // 5. Chuyển đổi SavedJob entity sang SavedJobResponse DTO để trả về
-//        // Quan trọng: Vì @Transactional, các đối tượng jobSeeker và job
-//        // vẫn đang trong trạng thái managed và có thể được truy cập để lấy dữ liệu.
-//        return SavedJobResponse.builder()
-//                .id(createdSavedJob.getId())
-//                .savedAt(createdSavedJob.getSavedAt())
-//                .jobSeekerId(createdSavedJob.getJobSeeker().getId())
-//                .jobSeekerEmail(createdSavedJob.getJobSeeker().getEmail()) // Lấy email từ đối tượng User đã tải
-//                .jobId(createdSavedJob.getJob().getId())
-//                .jobTitle(createdSavedJob.getJob().getTitle()) // Lấy title từ đối tượng Job đã tải
-//                .build();
-//    }
 }

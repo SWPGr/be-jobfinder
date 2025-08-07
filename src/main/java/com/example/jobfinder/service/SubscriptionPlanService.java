@@ -63,15 +63,12 @@ public class SubscriptionPlanService {
                 .collect(Collectors.toList());
     }
 
-
-
     @Transactional(readOnly = true)
     public List<SubscriptionPlanResponse> getSubscriptionPlansByCurrentUserRole() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         Role currentUserRole = currentUser.getRole();
-        Long currentRoleId = currentUserRole.getId();
 
         List<SubscriptionPlan> plans = subscriptionPlanRepository.findByRole(currentUserRole);
 

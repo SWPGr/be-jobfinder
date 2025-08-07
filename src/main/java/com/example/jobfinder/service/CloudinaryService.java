@@ -2,6 +2,9 @@ package com.example.jobfinder.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,12 +12,11 @@ import java.io.IOException;
 import java.util.Map;
 
 @Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@AllArgsConstructor
 public class CloudinaryService {
-    private final Cloudinary cloudinary;
+    Cloudinary cloudinary;
 
-    public CloudinaryService(Cloudinary cloudinary) {
-        this.cloudinary = cloudinary;
-    }
     public String uploadFile(MultipartFile file) throws IOException {
         try {
             String contentType = file.getContentType();
@@ -23,8 +25,10 @@ public class CloudinaryService {
 
             String publicId;
             if ("raw".equals(resourceType) && contentType != null && contentType.equals("application/pdf")) {
+                assert originalFilename != null;
                 publicId = "resumes/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
             } else {
+                assert originalFilename != null;
                 publicId = "resumes/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
             }
 
@@ -36,7 +40,7 @@ public class CloudinaryService {
                     "access_mode", "public",
                     "type", "upload"
             );
-            
+
             if ("raw".equals(resourceType)) {
                 uploadParams.put("use_filename", false);
                 uploadParams.put("unique_filename", false);
@@ -47,7 +51,7 @@ public class CloudinaryService {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
 
             String url = uploadResult.get("secure_url").toString();
-            
+
             if ("raw".equals(resourceType)) {
                 if (contentType != null && contentType.equals("application/pdf")) {
                     if (!url.contains("?")) {
@@ -72,7 +76,6 @@ public class CloudinaryService {
         return (dotIndex == -1) ? filename : filename.substring(0, dotIndex);
     }
 
-    // Hàm phụ để xác định loại file
     private String determineResourceType(String contentType) {
         if (contentType == null) return "raw";
 
@@ -88,102 +91,6 @@ public class CloudinaryService {
         }
 
         return "raw";  // fallback
-    }
-
-    public String uploadPDF(MultipartFile file) throws IOException {
-        try {
-            String originalFilename = file.getOriginalFilename();
-            
-            String publicId = "pdfs/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
-                    "resource_type", "raw",
-                    "public_id", publicId,
-                    "access_mode", "public",
-                    "type", "upload",
-                    "use_filename", false,
-                    "unique_filename", false,
-                    "overwrite", true,
-                    "invalidate", true
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
-
-            String url = uploadResult.get("secure_url").toString();
-            
-            if (!url.contains("?")) {
-                url += "?";
-            } else {
-                url += "&";
-            }
-            url += "content_type=application/pdf";
-            
-            return url;
-            
-        } catch (IOException e) {
-            throw new RuntimeException("PDF upload failed: " + e.getMessage(), e);
-        }
-    }
-
-    public String uploadPDFWithStream(MultipartFile file) throws IOException {
-        try {
-            String originalFilename = file.getOriginalFilename();
-            
-            String publicId = "pdfs/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis() + ".pdf";
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
-                    "resource_type", "raw",
-                    "public_id", publicId,
-                    "access_mode", "public",
-                    "type", "upload",
-                    "use_filename", false,
-                    "unique_filename", false,
-                    "overwrite", true
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getInputStream(), uploadParams);
-
-            String url = uploadResult.get("secure_url").toString();
-            
-            return url;
-            
-        } catch (IOException e) {
-            throw new RuntimeException("PDF upload with stream failed: " + e.getMessage(), e);
-        }
-    }
-
-    public String uploadPDFWithTransformation(MultipartFile file) throws IOException {
-        try {
-            String originalFilename = file.getOriginalFilename();
-            
-            String publicId = "documents/" + removeExtension(originalFilename) + "_" + System.currentTimeMillis();
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> uploadParams = (Map<String, Object>) ObjectUtils.asMap(
-                    "resource_type", "raw",
-                    "public_id", publicId,
-                    "access_mode", "public",
-                    "type", "upload",
-                    "use_filename", false,
-                    "unique_filename", true,
-                    "overwrite", false,
-                    "flags", "immutable",
-                    "raw_convert", "aspose"
-            );
-
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getInputStream(), uploadParams);
-
-            String url = uploadResult.get("secure_url").toString();
-            
-            url = url.replace("/upload/", "/upload/f_auto/");
-            
-            return url;
-            
-        } catch (IOException e) {
-            throw new RuntimeException("PDF upload with transformation failed: " + e.getMessage(), e);
-        }
     }
 }
 

@@ -5,7 +5,10 @@ import com.example.jobfinder.model.JobDocument;
 import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.JobDocumentRepository;
 import com.example.jobfinder.repository.JobRepository;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,18 +19,14 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ElasticsearchSyncService {
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchSyncService.class);
-
     private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private static final DateTimeFormatter EXPIRED_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-
-    private final JobRepository jobRepository;
-    private final JobDocumentRepository jobDocumentRepository;
-    private final ApplicationRepository applicationRepository;
-
-
+    private JobRepository jobRepository;
+    private JobDocumentRepository jobDocumentRepository;
+    private ApplicationRepository applicationRepository;
 
     @Scheduled(cron = "0 0 0 * * *")
     public void syncAllJobs() {
@@ -38,8 +37,6 @@ public class ElasticsearchSyncService {
                     return mapToDocument(job, count);
                 })
                 .toList();
-
-
         jobDocumentRepository.saveAll(jobDocuments);
     log.info("Completed job data sync to Elasticsearch, indexed {} jobs", jobs.size());
     }
@@ -70,9 +67,7 @@ public class ElasticsearchSyncService {
                 ? job.getCreatedAt().format(CREATED_AT_FORMATTER)
                 : null);
         log.info("Job {} createdAt raw: {}", job.getId(), job.getCreatedAt());
-
         doc.setJobApplicationCounts(applicationCount);
-
         return doc;
     }
 }

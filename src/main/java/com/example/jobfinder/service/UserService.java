@@ -1,31 +1,27 @@
 // src/main/java/com/example/jobfinder/service/UserService.java
 package com.example.jobfinder.service;
 
+import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.dto.user.*;
 import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
 import com.example.jobfinder.mapper.UserMapper;
-import com.example.jobfinder.mapper.JobSeekerMapper;
-import com.example.jobfinder.mapper.EmployerMapper;
-import com.example.jobfinder.model.*; // Import tất cả các model cần thiết
-import com.example.jobfinder.repository.*; // Import tất cả các repository cần thiết
+import com.example.jobfinder.model.*;
+import com.example.jobfinder.repository.*;
 import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// Annotation @Service để Spring tự động nhận diện đây là một Service component.
-// @RequiredArgsConstructor sẽ tự động tạo constructor cho các final fields (dependency injection).
-// @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true) giúp các trường được khai báo là private final.
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -137,29 +133,9 @@ public class UserService {
                     UserDetail userDetail = (UserDetail) row[1];
                     Role role = (Role) row[2];
 
-                    UserResponse userResponse = UserResponse.builder()
-                            .id(user.getId())
-                            .email(user.getEmail())
-                            .isPremium(user.getIsPremium())
-                            .createdAt(user.getCreatedAt()) // Chuyển đổi LocalDateTime sang String
-                            .updatedAt(user.getUpdatedAt()) // Chuyển đổi LocalDateTime sang String
-                            .role(role != null ? new SimpleNameResponse(role.getId(), role.getName()) : null)
-                            .verified(user.getVerified())
-                            .totalApplications(null) // Khởi tạo là null
-                            .totalJobsPosted(null)   // Khởi tạo là null
-                            .active(user.getIsActive())
-                            .build();
+                    UserResponse userResponse = userMapper.toUserResponse(user);
 
-                    // Map UserDetail nếu có
-                    if (userDetail != null) {
-                        userResponse.setFullName(userDetail.getFullName());
-                        userResponse.setPhone(userDetail.getPhone());
-                        userResponse.setLocation(userDetail.getLocation());
-                        userResponse.setCompanyName(userDetail.getCompanyName());
-                        userResponse.setWebsite(userDetail.getWebsite());
-                    }
 
-                    // Điền totalJobsPosted cho EMPLOYER (chỉ đếm job active)
                     if (role != null && "EMPLOYER".equals(role.getName())) {
                         long totalActiveJobs = jobRepository.countByEmployerIdAndActiveTrue(user.getId());
                         userResponse.setTotalJobsPosted(totalActiveJobs);
@@ -209,5 +185,10 @@ public class UserService {
                 log.error("Failed to send account blocked email to {}: {}", user.getEmail(), e.getMessage());
             }
         }
+    }
+
+    public List<TopEmployerProjection> getTopEmployers(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        return applicationRepository.findTopEmployers(pageable);
     }
 }

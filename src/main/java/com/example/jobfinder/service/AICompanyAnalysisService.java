@@ -30,6 +30,7 @@ public class AICompanyAnalysisService {
 
     @Value("${google.gemini.model-name}")
     private String geminiModelUsedForAnalysis;
+
     private String buildCompanyAnalysisPrompt(UserDetail userDetail) {
 
         String prompt = "Bạn là một chuyên gia phân tích doanh nghiệp và hợp tác chiến lược. Nhiệm vụ của bạn là phân tích sâu hồ sơ công ty và cung cấp các thông tin chi tiết có cấu trúc JSON, phục vụ cho việc đánh giá tiềm năng hợp tác trong các sự kiện đa dạng (ví dụ: tuyển dụng, công nghệ, cộng đồng, bền vững).\n" +
@@ -122,7 +123,7 @@ public class AICompanyAnalysisService {
         if (text == null || text.trim().isEmpty()) {
             return "";
         }
-        Pattern pattern = Pattern.compile("```json\\s*([\\s\\S]*?)\\s*```|(\\{[\\s\\S]*\\})", Pattern.DOTALL);
+        Pattern pattern = Pattern.compile("```json\\s*([\\s\\S]*?)\\s*```|(\\{[\\s\\S]*})", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(text);
 
         if (matcher.find()) {
