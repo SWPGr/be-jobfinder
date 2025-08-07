@@ -30,13 +30,13 @@ public class GeminiService { // GIỮ NGUYÊN TÊN CLASS LÀ GeminiService
     private final ObjectMapper objectMapper;
 
     // Cập nhật các biến @Value để trỏ đến cấu hình OpenAI
-    @Value("${OPENAI_API_KEY}")
+    @Value("${GEMINI_API_KEY}")
     private String openaiApiKey;
 
-    @Value("${OPENAI_MODEL_NAME}")
+    @Value("${GEMINI_API_KEY}")
     private String modelName; // Sẽ là tên model của OpenAI (ví dụ: gpt-4o-mini)
 
-    @Value("${OPENAI_BASE_URL}") // Thêm thuộc tính mới cho base URL của OpenAI
+    @Value("${GEMINI_API_KEY}") // Thêm thuộc tính mới cho base URL của OpenAI
     private String openaiBaseUrl;
 
     private static final int MAX_RETRIES = 3;
