@@ -207,4 +207,79 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+
+    // Trong lớp EmailService
+    public void sendApplicationConfirmationEmail(String toEmail, String jobTitle, String employerCompanyName) throws MessagingException, UnsupportedEncodingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("no-reply@jobfinder.com", "JobFinder Support");
+        helper.setTo(toEmail);
+        helper.setSubject("Xác nhận đã nộp đơn ứng tuyển thành công - " + jobTitle);
+
+        // Xây dựng nội dung email HTML
+        String emailContent = "<!DOCTYPE html>" +
+                "<html lang=\"vi\">" +
+                "<head>" +
+                "  <meta charset=\"UTF-8\">" +
+                "  <title>Xác nhận nộp đơn ứng tuyển</title>" +
+                "  <style>" +
+                "    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }" +
+                "    .container { width: 80%; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }" +
+                "    h1 { color: #007bff; }" +
+                "  </style>" +
+                "</head>" +
+                "<body>" +
+                "<div class=\"container\">" +
+                "  <h1>Chúc mừng! Bạn đã nộp đơn thành công</h1>" +
+                "  <p>Chào bạn,</p>" +
+                "  <p>Bạn đã nộp đơn ứng tuyển thành công cho vị trí <strong>" + jobTitle + "</strong> tại công ty <strong>" + employerCompanyName + "</strong>.</p>" +
+                "  <p>Đơn ứng tuyển của bạn hiện đang ở trạng thái <strong>Chờ xét duyệt</strong>. Nhà tuyển dụng sẽ xem xét và liên hệ với bạn trong thời gian sớm nhất.</p>" +
+                "  <p>Chúc bạn may mắn!</p>" +
+                "  <p>Trân trọng,<br>Đội ngũ JobFinder</p>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+
+        helper.setText(emailContent, true);
+        mailSender.send(message);
+    }
+
+    // Trong lớp EmailService
+    public void sendNewApplicationNotificationEmail(String toEmail, String jobTitle, String jobSeekerName) throws MessagingException, UnsupportedEncodingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom("no-reply@jobfinder.com", "JobFinder Support");
+        helper.setTo(toEmail);
+        helper.setSubject("Có đơn ứng tuyển mới cho vị trí " + jobTitle);
+
+        // Xây dựng nội dung email HTML
+        String emailContent = "<!DOCTYPE html>" +
+                "<html lang=\"vi\">" +
+                "<head>" +
+                "  <meta charset=\"UTF-8\">" +
+                "  <title>Thông báo ứng viên mới</title>" +
+                "  <style>" +
+                "    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }" +
+                "    .container { width: 80%; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }" +
+                "    h1 { color: #007bff; }" +
+                "  </style>" +
+                "</head>" +
+                "<body>" +
+                "<div class=\"container\">" +
+                "  <h1>Thông báo: Có đơn ứng tuyển mới</h1>" +
+                "  <p>Xin chào nhà tuyển dụng,</p>" +
+                "  <p>Có một ứng viên mới tên là <strong>" + jobSeekerName + "</strong> vừa nộp đơn cho công việc <strong>" + jobTitle + "</strong> mà bạn đã đăng.</p>" +
+                "  <p>Vui lòng đăng nhập vào hệ thống JobFinder để xem chi tiết hồ sơ của ứng viên và quản lý đơn ứng tuyển.</p>" +
+                "  <p>Chúc bạn tìm được ứng viên phù hợp!</p>" +
+                "  <p>Trân trọng,<br>Đội ngũ JobFinder</p>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+
+        helper.setText(emailContent, true);
+        mailSender.send(message);
+    }
 }
