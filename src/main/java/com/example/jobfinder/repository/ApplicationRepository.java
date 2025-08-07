@@ -186,5 +186,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     """, nativeQuery = true)
     List<TopEmployerProjection> findTopEmployers(Pageable pageable);
 
+    @Query("SELECT COUNT(a) FROM Application a WHERE a.jobSeeker.id = :jobSeekerId AND a.appliedAt >= :startDate")
+    long countApplicationsSince(@Param("jobSeekerId") Long jobSeekerId, @Param("startDate") LocalDateTime startDate);
+
+
 }
 

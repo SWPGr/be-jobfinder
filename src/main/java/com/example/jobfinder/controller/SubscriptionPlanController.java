@@ -61,7 +61,6 @@ public class SubscriptionPlanController {
                             .message(e.getErrorCode().getErrorMessage())
                             .build());
         } catch (Exception e) {
-            // Xử lý các lỗi không mong muốn khác
             System.err.println("Lỗi nội bộ server khi lấy gói đăng ký theo vai trò của người dùng: " + e.getMessage());
             e.printStackTrace(); // In stack trace ra console để debug
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

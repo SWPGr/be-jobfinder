@@ -3,9 +3,10 @@ package com.example.jobfinder.service;
 
 import com.example.jobfinder.dto.employer.TopEmployerProjection;
 import com.example.jobfinder.dto.user.*;
-import com.example.jobfinder.dto.simple.SimpleNameResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
+import com.example.jobfinder.mapper.EducationMapper;
+import com.example.jobfinder.mapper.ExperienceMapper;
 import com.example.jobfinder.mapper.UserMapper;
 import com.example.jobfinder.model.*;
 import com.example.jobfinder.repository.*;
@@ -37,6 +38,8 @@ public class UserService {
     ExperienceRepository experienceRepository;
     ApplicationRepository applicationRepository;
     EmailService emailService;
+    EducationMapper educationMapper;
+    ExperienceMapper experienceMapper;
 
     public List<UserResponse> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -48,7 +51,19 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         // Chuyển đổi User entity sang UserResponse DTO.
-        return userMapper.toUserResponse(user);
+        UserResponse response =userMapper.toUserResponse(user);
+
+
+        var detail = user.getUserDetail();
+        if (detail.getEducation() != null) {
+            response.setEducation(educationMapper.toEducationResponse(detail.getEducation()));
+        }
+
+        if (detail.getExperience() != null) {
+            response.setExperience(experienceMapper.toExperienceResponse(detail.getExperience()));
+        }
+
+        return response;
     }
 
     @Transactional
