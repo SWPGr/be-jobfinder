@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -69,6 +70,8 @@ public class ApplicationService {
     @Transactional
     public ApplicationResponse applyJob(ApplicationRequest request) throws IOException {
         log.debug("Processing apply job request: {}", request);
+
+        // 1. Xác thực và tìm kiếm người dùng
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getName() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.getErrorMessage());
@@ -85,6 +88,8 @@ public class ApplicationService {
         if (!role.equals("JOB_SEEKER")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, ErrorCode.UNAUTHORIZED.getErrorMessage());
         }
+
+        // 2. Kiểm tra subscription và giới hạn nộp đơn
         Subscription subscription = subscriptionRepository.findByUserId(jobSeeker.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_NOT_FOUND));
 
@@ -99,7 +104,7 @@ public class ApplicationService {
             throw new AppException(ErrorCode.SUBSCRIPTION_EXPIRED);
         }
 
-
+        // 3. Kiểm tra công việc và đơn ứng tuyển trùng lặp
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ErrorCode.JOB_NOT_FOUND.getErrorMessage()));
 
@@ -108,8 +113,14 @@ public class ApplicationService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ErrorCode.APPLICATION_ALREADY_SUBMITTED.getErrorMessage());
         }
 
+        // 4. Xử lý CV và tạo đơn ứng tuyển
         MultipartFile resumeFile = request.getResume();
         String resumeUrl;
+        if (resumeFile != null && !resumeFile.isEmpty()) {
+            resumeUrl = cloudinaryService.uploadFile(resumeFile);
+        } else {
+            resumeUrl = userDetail.getResumeUrl();
+        }
 
         Application application = new Application();
         application.setJobSeeker(jobSeeker);
@@ -117,28 +128,20 @@ public class ApplicationService {
         application.setStatus(ApplicationStatus.PENDING);
         application.setEmail(request.getEmail());
         application.setPhone(request.getPhone());
-        if (resumeFile != null && !resumeFile.isEmpty()) {
-            resumeUrl = cloudinaryService.uploadFile(resumeFile);
-        } else {
-            resumeUrl = userDetail.getResumeUrl();
-        }
         application.setResume(resumeUrl);
         application.setCoverLetter(request.getCoverLetter());
         application.setAppliedAt(LocalDateTime.now());
         Application createdApplication = applicationRepository.save(application);
 
-        // Xây dựng nội dung thông báo
-        String jobSeekerName = application.getJobSeeker().getUserDetail() != null
-                ? application.getJobSeeker().getUserDetail().getFullName()
-                : null;
-
+        // 5. Gửi thông báo trên hệ thống cho nhà tuyển dụng
+        String jobSeekerName = userDetail.getFullName() != null ? userDetail.getFullName() : jobSeeker.getEmail();
         Long employerId = job.getEmployer().getId();
         String employerName = job.getEmployer().getUserDetail() != null
                 ? job.getEmployer().getUserDetail().getCompanyName()
                 : "Nhà tuyển dụng";
         String notificationMessage = String.format(
                 "%s has applied for your job '%s'",
-                jobSeekerName != null && !jobSeekerName.isEmpty() ? jobSeekerName : jobSeeker.getEmail(),
+                jobSeekerName,
                 job.getTitle()
         );
         try {
@@ -149,8 +152,27 @@ public class ApplicationService {
             log.error("Failed to create notification for employer {} (ID: {}) for new application: {}",
                     employerName, employerId, e.getMessage());
         }
+
+        // 6. Gửi email xác nhận cho người tìm việc và thông báo cho nhà tuyển dụng
+        try {
+            String employerEmail = job.getEmployer().getEmail();
+            String jobTitle = job.getTitle();
+            String companyName = job.getEmployer().getUserDetail().getCompanyName();
+
+            // Gửi email xác nhận cho người tìm việc
+            emailService.sendApplicationConfirmationEmail(email, jobTitle, companyName);
+
+            // Gửi email thông báo cho nhà tuyển dụng
+            emailService.sendNewApplicationNotificationEmail(employerEmail, jobTitle, jobSeekerName);
+
+            log.info("Emails sent successfully for new application ID: {}", createdApplication.getId());
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            log.error("Failed to send email for new application ID: {}. Error: {}", createdApplication.getId(), e.getMessage());
+        }
+
         return applicationMapper.toApplicationResponse(createdApplication);
     }
+
 
     public boolean isJobOwnedByEmployer(Long jobId, Long employerId) {
         return jobRepository.existsByIdAndEmployerId(jobId, employerId);
