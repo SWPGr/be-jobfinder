@@ -4,7 +4,6 @@ import com.example.jobfinder.dto.PageResponse;
 import com.example.jobfinder.dto.job.*;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.model.Job;
-import com.example.jobfinder.model.JobView;
 import com.example.jobfinder.service.JobService;
 import com.example.jobfinder.service.JobViewService;
 import jakarta.validation.Valid;

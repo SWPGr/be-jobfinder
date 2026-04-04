@@ -5,7 +5,6 @@ import com.example.jobfinder.dto.payment.PaymentResponse;
 import com.example.jobfinder.model.Payment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring") // componentModel = "spring" để Spring tự động inject mapper
 public interface PaymentMapper {

@@ -9,7 +9,6 @@ import com.example.jobfinder.mapper.CategoryMapper;
 import com.example.jobfinder.model.Category;
 import com.example.jobfinder.repository.BaseNameRepository;
 import com.example.jobfinder.repository.CategoryRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

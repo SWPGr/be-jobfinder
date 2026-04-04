@@ -2,13 +2,8 @@ package com.example.jobfinder.controller;
 
 import com.example.jobfinder.dto.job_seeker.JobSeekerSearchRequest;
 import com.example.jobfinder.dto.job_seeker.JobSeekerSearchResponse;
-import com.example.jobfinder.exception.AppException;
-import com.example.jobfinder.model.JobseekerAnalysis;
 import com.example.jobfinder.service.JobSeekerSearchService;
-import com.example.jobfinder.service.JobseekerAnalysisService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -20,7 +15,6 @@ public class JobSeekerSearchController {
     
     private final JobSeekerSearchService jobSeekerSearchService;
 
-    private final JobseekerAnalysisService jobseekerAnalysisService;
 
     @GetMapping("/search")
     public JobSeekerSearchResponse searchJobSeekers(

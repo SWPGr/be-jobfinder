@@ -3,20 +3,12 @@ package com.example.jobfinder.controller;
 import com.example.jobfinder.dto.ApiResponse;
 import com.example.jobfinder.dto.application.*;
 import com.example.jobfinder.dto.job.CandidateDetailResponse;
-import com.example.jobfinder.dto.job.JobResponse;
-import com.example.jobfinder.dto.statistic_admin.DailyApplicationCountResponse;
-import com.example.jobfinder.dto.statistic_admin.MonthlyApplicationStatsResponse;
-import com.example.jobfinder.dto.user.UserResponse;
 import com.example.jobfinder.exception.AppException;
 import com.example.jobfinder.exception.ErrorCode;
-import com.example.jobfinder.model.Application;
 import com.example.jobfinder.model.User;
-import com.example.jobfinder.model.UserDetail;
 import com.example.jobfinder.model.enums.ApplicationStatus;
-import com.example.jobfinder.repository.ApplicationRepository;
 import com.example.jobfinder.repository.UserRepository;
 import com.example.jobfinder.service.ApplicationService;
-import com.example.jobfinder.service.JobService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,21 +20,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.*;
 
 
-import java.time.LocalDate;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.log;
 
 @RestController
 @RequestMapping("api/apply")

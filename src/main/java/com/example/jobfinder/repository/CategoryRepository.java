@@ -3,7 +3,6 @@ package com.example.jobfinder.repository;
 import com.example.jobfinder.dto.job.TopCategoryProjection;
 import com.example.jobfinder.model.Category;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

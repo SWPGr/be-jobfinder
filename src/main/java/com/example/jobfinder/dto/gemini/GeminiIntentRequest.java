@@ -1,7 +1,6 @@
 // src/main/java/com/example/jobfinder/dto/gemini/GeminiIntentRequest.java
 package com.example.jobfinder.dto.gemini;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

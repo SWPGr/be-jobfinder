@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
